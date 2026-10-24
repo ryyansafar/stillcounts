@@ -1,1 +1,28 @@
-<!doctype html><title>Still Counts</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="stylesheet" href="/static/style.css">
+<title>Still Counts</title>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Still Counts</h1>
+    <span id="status" class="pill" role="status" aria-live="polite">starting</span>
+  </header>
+  <div class="sub">Field camp ledger. Keeps counting with no signal. <span id="who"></span></div>
+  <div id="list"></div>
+  <div class="add">
+    <input id="newitem" type="text" placeholder="Add an item (for example Lanterns)" maxlength="40" aria-label="New item name">
+    <button id="addbtn" type="button" style="min-width:90px">Add</button>
+  </div>
+  <footer id="foot"></footer>
+</main>
+<script src="/static/crdt.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

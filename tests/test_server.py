@@ -99,3 +99,25 @@ def test_static_app_and_health(tmp_path):
     assert c.get("/health").json() == {"ok": True}
     assert c.get("/").status_code == 200
     assert c.get("/board").status_code == 200
+
+
+def test_service_worker_is_served_from_the_root_scope(tmp_path):
+    c, _ = make(tmp_path)
+    r = c.get("/sw.js")
+    assert r.status_code == 200 and r.headers["service-worker-allowed"] == "/"
+    assert "stillcounts-v1" in r.text
+    assert c.get("/static/crdt.js").status_code == 200
+
+
+def test_seed_is_idempotent(tmp_path):
+    c, _ = make(tmp_path)
+    assert c.post("/api/seed").json()["accepted"] == 6
+    assert c.post("/api/seed").json()["accepted"] == 0
+    assert c.get("/api/state").json()["state"]["rice"]["qty"] == 200
+
+
+def test_chaos_results_default_to_empty_and_read_the_file(tmp_path):
+    c, _ = make(tmp_path)
+    assert c.get("/api/chaos").json() == {"runs": []}
+    (tmp_path / "chaos_results.json").write_text(json.dumps({"runs": [{"seed": 1, "ok": True}]}))
+    assert c.get("/api/chaos").json()["runs"][0]["seed"] == 1

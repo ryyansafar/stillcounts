@@ -1,1 +1,52 @@
-<!doctype html><title>Board</title>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/style.css">
+<title>Still Counts · board</title>
+<style>
+main { max-width: 1200px; }
+.big { font-size: clamp(32px, 6vw, 72px); font-weight: 800; line-height: 1.05; margin: 8px 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.stat b { display: block; font-size: 44px; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+td.qty { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+td.neg { color: var(--bad); }
+.tabs { display: flex; gap: 8px; margin: 16px 0; }
+.tabs button { padding: 8px 18px; }
+.tabs button[aria-pressed="true"] { background: var(--olive); }
+.run { padding: 8px 12px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.ok { color: var(--good); } .fail { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Still Counts · board</h1><span id="conn" class="pill" role="status">connecting</span></header>
+  <div class="tabs">
+    <button type="button" id="tab-ledger" aria-pressed="true">Ledger</button>
+    <button type="button" id="tab-attack" aria-pressed="false">Attack</button>
+    <button type="button" id="seed">Load starting stock (seeded)</button>
+  </div>
+  <section id="ledger">
+    <div class="big" id="headline">Waiting for phones</div>
+    <div class="stats">
+      <div class="stat"><b id="s-ops">0</b><span>operations</span></div>
+      <div class="stat"><b id="s-lost">0</b><span>lost</span></div>
+      <div class="stat"><b id="s-conf">0</b><span>conflicts merged</span></div>
+      <div class="stat"><b id="s-phones">0</b><span>phones seen</span></div>
+    </div>
+    <table><thead><tr><th>Item</th><th>Stock</th><th>Note</th></tr></thead><tbody id="rows"></tbody></table>
+  </section>
+  <section id="attack" class="hidden">
+    <div class="big" id="attack-head">Attack harness</div>
+    <div id="runs"></div>
+  </section>
+</main>
+<script src="/static/board.js"></script>
+</body>
+</html>

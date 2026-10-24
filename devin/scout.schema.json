@@ -1,0 +1,45 @@
+{
+ "type": "object",
+ "properties": {
+  "area": {
+   "type": "string"
+  },
+  "scenarios": {
+   "type": "array",
+   "maxItems": 8,
+   "items": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "steps": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      }
+     },
+     "expected": {
+      "type": "string"
+     },
+     "why_it_might_break": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "steps",
+     "expected",
+     "why_it_might_break"
+    ]
+   }
+  },
+  "notes": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "area",
+  "scenarios"
+ ]
+}

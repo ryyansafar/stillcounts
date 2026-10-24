@@ -1,0 +1,48 @@
+{
+ "type": "object",
+ "properties": {
+  "harness_files": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "scenarios_run": {
+   "type": "integer"
+  },
+  "failures": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "seed": {
+      "type": "integer"
+     },
+     "scenario": {
+      "type": "string"
+     },
+     "error": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "seed",
+     "scenario",
+     "error"
+    ]
+   }
+  },
+  "pr_url": {
+   "type": "string"
+  },
+  "notes": {
+   "type": "string"
+  }
+ },
+ "required": [
+  "harness_files",
+  "scenarios_run",
+  "failures",
+  "pr_url"
+ ]
+}

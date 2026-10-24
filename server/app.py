@@ -114,6 +114,25 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
         return {"state": merge(store.ops), "stats": stats(store.ops), "log_size": len(store.ops),
                 "replicas": sorted({o.replica for o in store.ops})}
 
+    SEED_STOCK = {"blankets": 100, "rice": 200, "water": 500, "paracetamol": 60, "tarpaulin": 40, "baby-food": 80}
+
+    @app.post("/api/seed")
+    def seed() -> dict:
+        """Starting stock for the demo. Fixed ids make it idempotent: pressing it twice adds nothing."""
+        ops = [Op(id=f"seed:{i}", replica="seed", lamport=1, kind="adjust", item=item, value=qty)
+               for i, (item, qty) in enumerate(SEED_STOCK.items(), start=1)]
+        return {"accepted": store.append(ops)}
+
+    @app.get("/api/chaos")
+    def chaos() -> dict:
+        path = Path(store_path).parent / "chaos_results.json"
+        if not path.exists():
+            return {"runs": []}
+        try:
+            return json.loads(path.read_text())
+        except ValueError:
+            return {"runs": []}
+
     @app.get("/api/log")
     def log() -> dict:
         return {"ops": [_to_dict(o) for o in store.ops]}
@@ -127,6 +146,11 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
     @app.get("/board")
     def board():
         return FileResponse(client_dir / "board.html")
+
+    @app.get("/sw.js")
+    def service_worker():
+        return FileResponse(client_dir / "sw.js", media_type="application/javascript",
+                            headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"})
 
     app.mount("/static", StaticFiles(directory=client_dir), name="static")
     return app

@@ -1,0 +1,7834 @@
+[
+ {
+  "name": "seed-1-n20",
+  "ops": [
+   {
+    "id": "ph-a:1",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "ph-a",
+    "value": -32
+   },
+   {
+    "id": "ph-b:1",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 1,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:2",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 2,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:3",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "ph-b",
+    "value": -21
+   },
+   {
+    "id": "ph-a:2",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 4,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:4",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 4,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:5",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 5,
+    "replica": "ph-b",
+    "value": -30
+   },
+   {
+    "id": "ph-b:6",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 6,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:3",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 5,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:7",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 7,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-b:8",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 8,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-b:9",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 9,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:10",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 10,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:11",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 11,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-a:4",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 6,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:12",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 12,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-b:13",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 13,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:5",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 13,
+    "replica": "ph-a",
+    "value": -26
+   },
+   {
+    "id": "ph-b:14",
+    "item": "water",
+    "kind": "note",
+    "lamport": 14,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:15",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 15,
+    "replica": "ph-b",
+    "value": "Alpha"
+   }
+  ],
+  "state": {
+   "baby-food": {
+    "alive": true,
+    "name": "Bravo",
+    "note": "Alpha",
+    "qty": 0
+   },
+   "blankets": {
+    "alive": false,
+    "name": "blankets",
+    "note": "Bravo",
+    "qty": 0
+   },
+   "paracetamol": {
+    "alive": true,
+    "name": "Bravo",
+    "note": "Alpha",
+    "qty": 0
+   },
+   "rice": {
+    "alive": false,
+    "name": "Alpha",
+    "note": "Delta",
+    "qty": -56
+   },
+   "tarpaulin": {
+    "alive": true,
+    "name": "Alpha",
+    "note": "Delta",
+    "qty": -21
+   },
+   "water": {
+    "alive": false,
+    "name": "water",
+    "note": "Delta",
+    "qty": -32
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 6,
+   "ops": 20,
+   "oversold": [
+    "tarpaulin"
+   ]
+  }
+ },
+ {
+  "name": "seed-2-n60",
+  "ops": [
+   {
+    "id": "ph-a:1",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "ph-a",
+    "value": 17
+   },
+   {
+    "id": "ph-c:1",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "ph-c",
+    "value": -28
+   },
+   {
+    "id": "ph-c:2",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 2,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-c:3",
+    "item": "water",
+    "kind": "note",
+    "lamport": 3,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:2",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "ph-a",
+    "value": 34
+   },
+   {
+    "id": "ph-a:3",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "ph-a",
+    "value": -12
+   },
+   {
+    "id": "ph-b:1",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 2,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:2",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 3,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-b:3",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 4,
+    "replica": "ph-b",
+    "value": 11
+   },
+   {
+    "id": "ph-b:4",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 5,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:5",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 6,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:4",
+    "item": "water",
+    "kind": "create",
+    "lamport": 4,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:6",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 7,
+    "replica": "ph-b",
+    "value": -40
+   },
+   {
+    "id": "ph-b:7",
+    "item": "water",
+    "kind": "create",
+    "lamport": 8,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:5",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 5,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:8",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 9,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:6",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 6,
+    "replica": "ph-c",
+    "value": -13
+   },
+   {
+    "id": "ph-c:7",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 10,
+    "replica": "ph-c",
+    "value": -7
+   },
+   {
+    "id": "ph-c:8",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 11,
+    "replica": "ph-c",
+    "value": -28
+   },
+   {
+    "id": "ph-c:9",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-c",
+    "value": 12
+   },
+   {
+    "id": "ph-a:4",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 4,
+    "replica": "ph-a",
+    "value": -2
+   },
+   {
+    "id": "ph-a:5",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 5,
+    "replica": "ph-a",
+    "value": 9
+   },
+   {
+    "id": "ph-a:6",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 6,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:9",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 10,
+    "replica": "ph-b",
+    "value": -1
+   },
+   {
+    "id": "ph-b:10",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 11,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-b:11",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-b",
+    "value": 36
+   },
+   {
+    "id": "ph-c:10",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 13,
+    "replica": "ph-c",
+    "value": -31
+   },
+   {
+    "id": "ph-a:7",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-a",
+    "value": 9
+   },
+   {
+    "id": "ph-c:11",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 14,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:8",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 13,
+    "replica": "ph-a",
+    "value": 39
+   },
+   {
+    "id": "ph-b:12",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 13,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:12",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 15,
+    "replica": "ph-c",
+    "value": -7
+   },
+   {
+    "id": "ph-b:13",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 14,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:9",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 14,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:10",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 15,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:14",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 15,
+    "replica": "ph-b",
+    "value": -10
+   },
+   {
+    "id": "ph-a:11",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 16,
+    "replica": "ph-a",
+    "value": -16
+   },
+   {
+    "id": "ph-a:12",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 17,
+    "replica": "ph-a",
+    "value": -2
+   },
+   {
+    "id": "ph-c:13",
+    "item": "water",
+    "kind": "create",
+    "lamport": 16,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:13",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 18,
+    "replica": "ph-a",
+    "value": 28
+   },
+   {
+    "id": "ph-c:14",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 19,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:14",
+    "item": "water",
+    "kind": "create",
+    "lamport": 19,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:15",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 20,
+    "replica": "ph-c",
+    "value": 19
+   },
+   {
+    "id": "ph-c:16",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 21,
+    "replica": "ph-c",
+    "value": -27
+   },
+   {
+    "id": "ph-a:15",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 21,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-a:16",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 22,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:17",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 22,
+    "replica": "ph-c",
+    "value": -24
+   },
+   {
+    "id": "ph-b:15",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 16,
+    "replica": "ph-b",
+    "value": 13
+   },
+   {
+    "id": "ph-a:17",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 23,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:18",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 24,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:19",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 25,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-c:18",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 23,
+    "replica": "ph-c",
+    "value": 19
+   },
+   {
+    "id": "ph-b:16",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 17,
+    "replica": "ph-b",
+    "value": 31
+   },
+   {
+    "id": "ph-c:19",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 24,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-b:17",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 18,
+    "replica": "ph-b",
+    "value": -11
+   },
+   {
+    "id": "ph-b:18",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 19,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:20",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 25,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:19",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 25,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:21",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 26,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:20",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 26,
+    "replica": "ph-b",
+    "value": false
+   }
+  ],
+  "state": {
+   "baby-food": {
+    "alive": true,
+    "name": "Delta",
+    "note": "Alpha",
+    "qty": 24
+   },
+   "blankets": {
+    "alive": false,
+    "name": "Alpha",
+    "note": "Alpha",
+    "qty": -11
+   },
+   "paracetamol": {
+    "alive": true,
+    "name": "Bravo",
+    "note": "Alpha",
+    "qty": -8
+   },
+   "rice": {
+    "alive": true,
+    "name": "rice",
+    "note": "",
+    "qty": -35
+   },
+   "tarpaulin": {
+    "alive": true,
+    "name": "Bravo",
+    "note": "Charlie",
+    "qty": -26
+   },
+   "water": {
+    "alive": true,
+    "name": "Alpha",
+    "note": "Alpha",
+    "qty": 74
+   }
+  },
+  "stats": {
+   "conflicts": 14,
+   "items": 6,
+   "ops": 60,
+   "oversold": [
+    "paracetamol",
+    "rice",
+    "tarpaulin"
+   ]
+  }
+ },
+ {
+  "name": "seed-163-n240",
+  "ops": [
+   {
+    "id": "ph-c:1",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 1,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:1",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "ph-b",
+    "value": -10
+   },
+   {
+    "id": "ph-a:1",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 1,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-a:2",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 2,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-c:2",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 2,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:3",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "ph-c",
+    "value": -21
+   },
+   {
+    "id": "ph-c:4",
+    "item": "water",
+    "kind": "create",
+    "lamport": 4,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:3",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "ph-a",
+    "value": 33
+   },
+   {
+    "id": "ph-a:4",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 4,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:5",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 5,
+    "replica": "ph-a",
+    "value": -32
+   },
+   {
+    "id": "ph-b:2",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "ph-b",
+    "value": 9
+   },
+   {
+    "id": "ph-b:3",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 3,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:5",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 5,
+    "replica": "ph-c",
+    "value": 17
+   },
+   {
+    "id": "ph-c:6",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 6,
+    "replica": "ph-c",
+    "value": -15
+   },
+   {
+    "id": "ph-a:6",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 6,
+    "replica": "ph-a",
+    "value": 29
+   },
+   {
+    "id": "ph-a:7",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 7,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-a:8",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 8,
+    "replica": "ph-a",
+    "value": -40
+   },
+   {
+    "id": "ph-a:9",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 9,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-a:10",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 10,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:7",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 7,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:11",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 11,
+    "replica": "ph-a",
+    "value": -33
+   },
+   {
+    "id": "ph-c:8",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 8,
+    "replica": "ph-c",
+    "value": -39
+   },
+   {
+    "id": "ph-b:4",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 10,
+    "replica": "ph-b",
+    "value": 3
+   },
+   {
+    "id": "ph-a:12",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 12,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:13",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 13,
+    "replica": "ph-a",
+    "value": 31
+   },
+   {
+    "id": "ph-b:5",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 11,
+    "replica": "ph-b",
+    "value": -10
+   },
+   {
+    "id": "ph-b:6",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 12,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-a:14",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 14,
+    "replica": "ph-a",
+    "value": 29
+   },
+   {
+    "id": "ph-b:7",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 13,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:15",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 15,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:8",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 14,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-a:16",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 16,
+    "replica": "ph-a",
+    "value": 26
+   },
+   {
+    "id": "ph-b:9",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 15,
+    "replica": "ph-b",
+    "value": -7
+   },
+   {
+    "id": "ph-a:17",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 17,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:9",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 9,
+    "replica": "ph-c",
+    "value": 13
+   },
+   {
+    "id": "ph-b:10",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 16,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:18",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 18,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:10",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 10,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-b:11",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 17,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:11",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 11,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:12",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 18,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:19",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 19,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:13",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 20,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:14",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 21,
+    "replica": "ph-b",
+    "value": -9
+   },
+   {
+    "id": "ph-b:15",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 22,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-a:20",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 20,
+    "replica": "ph-a",
+    "value": 19
+   },
+   {
+    "id": "ph-a:21",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 21,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:16",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 23,
+    "replica": "ph-b",
+    "value": -25
+   },
+   {
+    "id": "ph-a:22",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 22,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:17",
+    "item": "water",
+    "kind": "create",
+    "lamport": 24,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:23",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 23,
+    "replica": "ph-a",
+    "value": 2
+   },
+   {
+    "id": "ph-a:24",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 24,
+    "replica": "ph-a",
+    "value": 30
+   },
+   {
+    "id": "ph-a:25",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 25,
+    "replica": "ph-a",
+    "value": -16
+   },
+   {
+    "id": "ph-a:26",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 26,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:27",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 27,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:28",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 28,
+    "replica": "ph-a",
+    "value": -10
+   },
+   {
+    "id": "ph-a:29",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 29,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:12",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-c",
+    "value": -9
+   },
+   {
+    "id": "ph-a:30",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 30,
+    "replica": "ph-a",
+    "value": 20
+   },
+   {
+    "id": "ph-a:31",
+    "item": "water",
+    "kind": "create",
+    "lamport": 31,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:13",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 31,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:14",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 32,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:18",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 25,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:19",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 33,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:15",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 33,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:32",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 32,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:20",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 34,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:33",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 33,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:21",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 35,
+    "replica": "ph-b",
+    "value": 31
+   },
+   {
+    "id": "ph-c:16",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 34,
+    "replica": "ph-c",
+    "value": -14
+   },
+   {
+    "id": "ph-a:34",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 34,
+    "replica": "ph-a",
+    "value": -10
+   },
+   {
+    "id": "ph-b:22",
+    "item": "water",
+    "kind": "note",
+    "lamport": 36,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:35",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 35,
+    "replica": "ph-a",
+    "value": -35
+   },
+   {
+    "id": "ph-b:23",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 37,
+    "replica": "ph-b",
+    "value": -33
+   },
+   {
+    "id": "ph-c:17",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 35,
+    "replica": "ph-c",
+    "value": -11
+   },
+   {
+    "id": "ph-a:36",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 36,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:24",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 38,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:25",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 39,
+    "replica": "ph-b",
+    "value": -2
+   },
+   {
+    "id": "ph-c:18",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 36,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:19",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 39,
+    "replica": "ph-c",
+    "value": -23
+   },
+   {
+    "id": "ph-b:26",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 40,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-a:37",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 37,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:38",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 41,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:39",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 42,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-c:20",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 40,
+    "replica": "ph-c",
+    "value": 2
+   },
+   {
+    "id": "ph-b:27",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 41,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-a:40",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 43,
+    "replica": "ph-a",
+    "value": -12
+   },
+   {
+    "id": "ph-c:21",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 41,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-b:28",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 42,
+    "replica": "ph-b",
+    "value": 17
+   },
+   {
+    "id": "ph-a:41",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 44,
+    "replica": "ph-a",
+    "value": -17
+   },
+   {
+    "id": "ph-c:22",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 42,
+    "replica": "ph-c",
+    "value": 2
+   },
+   {
+    "id": "ph-b:29",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 43,
+    "replica": "ph-b",
+    "value": 17
+   },
+   {
+    "id": "ph-a:42",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 45,
+    "replica": "ph-a",
+    "value": 19
+   },
+   {
+    "id": "ph-c:23",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 43,
+    "replica": "ph-c",
+    "value": -16
+   },
+   {
+    "id": "ph-b:30",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 44,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:24",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 44,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:31",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 45,
+    "replica": "ph-b",
+    "value": 19
+   },
+   {
+    "id": "ph-b:32",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 46,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:33",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 47,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-b:34",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 48,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:25",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 45,
+    "replica": "ph-c",
+    "value": -21
+   },
+   {
+    "id": "ph-b:35",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 49,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:26",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 46,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:36",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 50,
+    "replica": "ph-b",
+    "value": 39
+   },
+   {
+    "id": "ph-a:43",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 46,
+    "replica": "ph-a",
+    "value": -20
+   },
+   {
+    "id": "ph-a:44",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 47,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:45",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 48,
+    "replica": "ph-a",
+    "value": -27
+   },
+   {
+    "id": "ph-c:27",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 49,
+    "replica": "ph-c",
+    "value": 31
+   },
+   {
+    "id": "ph-c:28",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 50,
+    "replica": "ph-c",
+    "value": 14
+   },
+   {
+    "id": "ph-b:37",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 51,
+    "replica": "ph-b",
+    "value": 12
+   },
+   {
+    "id": "ph-b:38",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 52,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-b:39",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 53,
+    "replica": "ph-b",
+    "value": -23
+   },
+   {
+    "id": "ph-b:40",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 54,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:41",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 55,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-a:46",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 49,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:29",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 51,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:42",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 56,
+    "replica": "ph-b",
+    "value": -18
+   },
+   {
+    "id": "ph-c:30",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 57,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:47",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 58,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-a:48",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 59,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-c:31",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 58,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-a:49",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 60,
+    "replica": "ph-a",
+    "value": -37
+   },
+   {
+    "id": "ph-a:50",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 61,
+    "replica": "ph-a",
+    "value": 34
+   },
+   {
+    "id": "ph-b:43",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 57,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:32",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 62,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:51",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 62,
+    "replica": "ph-a",
+    "value": 23
+   },
+   {
+    "id": "ph-a:52",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 63,
+    "replica": "ph-a",
+    "value": 2
+   },
+   {
+    "id": "ph-a:53",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 64,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:33",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 63,
+    "replica": "ph-c",
+    "value": -13
+   },
+   {
+    "id": "ph-c:34",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 64,
+    "replica": "ph-c",
+    "value": -8
+   },
+   {
+    "id": "ph-b:44",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 58,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-b:45",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 59,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:54",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 65,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:55",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 66,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:35",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 65,
+    "replica": "ph-c",
+    "value": -22
+   },
+   {
+    "id": "ph-a:56",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 67,
+    "replica": "ph-a",
+    "value": -31
+   },
+   {
+    "id": "ph-c:36",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 66,
+    "replica": "ph-c",
+    "value": 1
+   },
+   {
+    "id": "ph-b:46",
+    "item": "water",
+    "kind": "create",
+    "lamport": 60,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:37",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 67,
+    "replica": "ph-c",
+    "value": 11
+   },
+   {
+    "id": "ph-c:38",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 68,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-c:39",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 69,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:40",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 70,
+    "replica": "ph-c",
+    "value": 17
+   },
+   {
+    "id": "ph-a:57",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 68,
+    "replica": "ph-a",
+    "value": 28
+   },
+   {
+    "id": "ph-c:41",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 71,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:42",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 72,
+    "replica": "ph-c",
+    "value": 10
+   },
+   {
+    "id": "ph-c:43",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 73,
+    "replica": "ph-c",
+    "value": -28
+   },
+   {
+    "id": "ph-a:58",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 69,
+    "replica": "ph-a",
+    "value": -2
+   },
+   {
+    "id": "ph-c:44",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 74,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:59",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 70,
+    "replica": "ph-a",
+    "value": -22
+   },
+   {
+    "id": "ph-a:60",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 71,
+    "replica": "ph-a",
+    "value": -36
+   },
+   {
+    "id": "ph-c:45",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 75,
+    "replica": "ph-c",
+    "value": 22
+   },
+   {
+    "id": "ph-b:47",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 61,
+    "replica": "ph-b",
+    "value": -2
+   },
+   {
+    "id": "ph-c:46",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 76,
+    "replica": "ph-c",
+    "value": -30
+   },
+   {
+    "id": "ph-a:61",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 72,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:48",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 62,
+    "replica": "ph-b",
+    "value": -1
+   },
+   {
+    "id": "ph-a:62",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 73,
+    "replica": "ph-a",
+    "value": -2
+   },
+   {
+    "id": "ph-c:47",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 77,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:48",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 78,
+    "replica": "ph-c",
+    "value": -1
+   },
+   {
+    "id": "ph-a:63",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 74,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-b:49",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 63,
+    "replica": "ph-b",
+    "value": 5
+   },
+   {
+    "id": "ph-b:50",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 76,
+    "replica": "ph-b",
+    "value": -27
+   },
+   {
+    "id": "ph-c:49",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 79,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-c:50",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 80,
+    "replica": "ph-c",
+    "value": -3
+   },
+   {
+    "id": "ph-c:51",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 81,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:52",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 82,
+    "replica": "ph-c",
+    "value": -5
+   },
+   {
+    "id": "ph-a:64",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 80,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:51",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 77,
+    "replica": "ph-b",
+    "value": 36
+   },
+   {
+    "id": "ph-a:65",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 81,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:66",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 82,
+    "replica": "ph-a",
+    "value": 32
+   },
+   {
+    "id": "ph-b:52",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 78,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-a:67",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 83,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:53",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 83,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:68",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 84,
+    "replica": "ph-a",
+    "value": -29
+   },
+   {
+    "id": "ph-a:69",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 85,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:54",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 84,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-a:70",
+    "item": "water",
+    "kind": "note",
+    "lamport": 86,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:55",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 85,
+    "replica": "ph-c",
+    "value": -29
+   },
+   {
+    "id": "ph-a:71",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 87,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:56",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 86,
+    "replica": "ph-c",
+    "value": -2
+   },
+   {
+    "id": "ph-b:53",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 79,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-b:54",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 80,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:57",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 87,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-a:72",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 88,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:55",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 81,
+    "replica": "ph-b",
+    "value": 11
+   },
+   {
+    "id": "ph-c:58",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 88,
+    "replica": "ph-c",
+    "value": -39
+   },
+   {
+    "id": "ph-c:59",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 89,
+    "replica": "ph-c",
+    "value": 37
+   },
+   {
+    "id": "ph-a:73",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 89,
+    "replica": "ph-a",
+    "value": 33
+   },
+   {
+    "id": "ph-b:56",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 82,
+    "replica": "ph-b",
+    "value": -40
+   },
+   {
+    "id": "ph-b:57",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 83,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:60",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 90,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:74",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 90,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:58",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 84,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:61",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 91,
+    "replica": "ph-c",
+    "value": 31
+   },
+   {
+    "id": "ph-c:62",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 92,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:59",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 85,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:63",
+    "item": "water",
+    "kind": "note",
+    "lamport": 93,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:75",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 91,
+    "replica": "ph-a",
+    "value": 32
+   },
+   {
+    "id": "ph-a:76",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 92,
+    "replica": "ph-a",
+    "value": 14
+   },
+   {
+    "id": "ph-b:60",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 86,
+    "replica": "ph-b",
+    "value": -10
+   },
+   {
+    "id": "ph-b:61",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 87,
+    "replica": "ph-b",
+    "value": 40
+   },
+   {
+    "id": "ph-a:77",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 94,
+    "replica": "ph-a",
+    "value": 5
+   },
+   {
+    "id": "ph-c:64",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 95,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:62",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 88,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:65",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 96,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:63",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 89,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-a:78",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 95,
+    "replica": "ph-a",
+    "value": -27
+   },
+   {
+    "id": "ph-a:79",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 96,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-c:66",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 97,
+    "replica": "ph-c",
+    "value": 31
+   },
+   {
+    "id": "ph-c:67",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 98,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:64",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 90,
+    "replica": "ph-b",
+    "value": 23
+   },
+   {
+    "id": "ph-c:68",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 99,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:65",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 91,
+    "replica": "ph-b",
+    "value": -11
+   },
+   {
+    "id": "ph-c:69",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 100,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-c:70",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 101,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:66",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 92,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-b:67",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 99,
+    "replica": "ph-b",
+    "value": 6
+   },
+   {
+    "id": "ph-b:68",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 100,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:71",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 102,
+    "replica": "ph-c",
+    "value": 39
+   },
+   {
+    "id": "ph-c:72",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 103,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:80",
+    "item": "water",
+    "kind": "note",
+    "lamport": 97,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:73",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 104,
+    "replica": "ph-c",
+    "value": 6
+   },
+   {
+    "id": "ph-b:69",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 101,
+    "replica": "ph-b",
+    "value": -26
+   },
+   {
+    "id": "ph-b:70",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 102,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-c:74",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 105,
+    "replica": "ph-c",
+    "value": 21
+   },
+   {
+    "id": "ph-c:75",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 106,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:71",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 103,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:76",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 107,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-c:77",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 108,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:72",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 109,
+    "replica": "ph-b",
+    "value": 6
+   },
+   {
+    "id": "ph-c:78",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 109,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:79",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 110,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-c:80",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 111,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:81",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 98,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:73",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 110,
+    "replica": "ph-b",
+    "value": 17
+   },
+   {
+    "id": "ph-c:81",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 112,
+    "replica": "ph-c",
+    "value": -5
+   },
+   {
+    "id": "ph-a:82",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 99,
+    "replica": "ph-a",
+    "value": -7
+   },
+   {
+    "id": "ph-c:82",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 113,
+    "replica": "ph-c",
+    "value": 7
+   },
+   {
+    "id": "ph-c:83",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 114,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:74",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 111,
+    "replica": "ph-b",
+    "value": -2
+   },
+   {
+    "id": "ph-c:84",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 115,
+    "replica": "ph-c",
+    "value": 38
+   }
+  ],
+  "state": {
+   "baby-food": {
+    "alive": true,
+    "name": "Delta",
+    "note": "Bravo",
+    "qty": -16
+   },
+   "blankets": {
+    "alive": false,
+    "name": "Delta",
+    "note": "Delta",
+    "qty": -53
+   },
+   "paracetamol": {
+    "alive": false,
+    "name": "Delta",
+    "note": "Delta",
+    "qty": 74
+   },
+   "rice": {
+    "alive": true,
+    "name": "Alpha",
+    "note": "Bravo",
+    "qty": -4
+   },
+   "tarpaulin": {
+    "alive": false,
+    "name": "Alpha",
+    "note": "Charlie",
+    "qty": 26
+   },
+   "water": {
+    "alive": false,
+    "name": "Alpha",
+    "note": "Bravo",
+    "qty": 0
+   }
+  },
+  "stats": {
+   "conflicts": 71,
+   "items": 6,
+   "ops": 240,
+   "oversold": [
+    "baby-food",
+    "rice"
+   ]
+  }
+ },
+ {
+  "name": "seed-7-n100",
+  "ops": [
+   {
+    "id": "ph-c:1",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 1,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:1",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "ph-a",
+    "value": -33
+   },
+   {
+    "id": "ph-b:1",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 1,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:2",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "ph-a",
+    "value": -15
+   },
+   {
+    "id": "ph-a:3",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 3,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:4",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 4,
+    "replica": "ph-a",
+    "value": 10
+   },
+   {
+    "id": "ph-a:5",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 5,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:6",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 6,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-a:7",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 7,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-d:1",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 1,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:2",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "ph-c",
+    "value": -6
+   },
+   {
+    "id": "ph-c:3",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "ph-c",
+    "value": 19
+   },
+   {
+    "id": "ph-a:8",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 8,
+    "replica": "ph-a",
+    "value": -32
+   },
+   {
+    "id": "ph-d:2",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 9,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:4",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 4,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:9",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 9,
+    "replica": "ph-a",
+    "value": -4
+   },
+   {
+    "id": "ph-c:5",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 5,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-d:3",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 10,
+    "replica": "ph-d",
+    "value": 23
+   },
+   {
+    "id": "ph-b:2",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 2,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:6",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 10,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:10",
+    "item": "water",
+    "kind": "note",
+    "lamport": 10,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-d:4",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 11,
+    "replica": "ph-d",
+    "value": 23
+   },
+   {
+    "id": "ph-d:5",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-d",
+    "value": -10
+   },
+   {
+    "id": "ph-b:3",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "ph-b",
+    "value": -17
+   },
+   {
+    "id": "ph-c:7",
+    "item": "water",
+    "kind": "note",
+    "lamport": 11,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:4",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 4,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:6",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 13,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-d:7",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 14,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:11",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 14,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:8",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-c",
+    "value": -35
+   },
+   {
+    "id": "ph-a:12",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 15,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:5",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 5,
+    "replica": "ph-b",
+    "value": 23
+   },
+   {
+    "id": "ph-c:9",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 13,
+    "replica": "ph-c",
+    "value": 31
+   },
+   {
+    "id": "ph-d:8",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 15,
+    "replica": "ph-d",
+    "value": 17
+   },
+   {
+    "id": "ph-d:9",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 16,
+    "replica": "ph-d",
+    "value": -14
+   },
+   {
+    "id": "ph-c:10",
+    "item": "water",
+    "kind": "note",
+    "lamport": 17,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:11",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 18,
+    "replica": "ph-c",
+    "value": -35
+   },
+   {
+    "id": "ph-c:12",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 19,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-d:10",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 17,
+    "replica": "ph-d",
+    "value": 23
+   },
+   {
+    "id": "ph-a:13",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 16,
+    "replica": "ph-a",
+    "value": 13
+   },
+   {
+    "id": "ph-c:13",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 20,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-c:14",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 21,
+    "replica": "ph-c",
+    "value": -22
+   },
+   {
+    "id": "ph-b:6",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 6,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:15",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 22,
+    "replica": "ph-c",
+    "value": -25
+   },
+   {
+    "id": "ph-b:7",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 7,
+    "replica": "ph-b",
+    "value": 6
+   },
+   {
+    "id": "ph-d:11",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 18,
+    "replica": "ph-d",
+    "value": false
+   },
+   {
+    "id": "ph-b:8",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 8,
+    "replica": "ph-b",
+    "value": 10
+   },
+   {
+    "id": "ph-d:12",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 19,
+    "replica": "ph-d",
+    "value": -2
+   },
+   {
+    "id": "ph-a:14",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 17,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:9",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 9,
+    "replica": "ph-b",
+    "value": -17
+   },
+   {
+    "id": "ph-b:10",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 10,
+    "replica": "ph-b",
+    "value": 17
+   },
+   {
+    "id": "ph-d:13",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 20,
+    "replica": "ph-d",
+    "value": 30
+   },
+   {
+    "id": "ph-d:14",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 21,
+    "replica": "ph-d",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:15",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 18,
+    "replica": "ph-a",
+    "value": -10
+   },
+   {
+    "id": "ph-b:11",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 23,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-d:15",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 22,
+    "replica": "ph-d",
+    "value": -16
+   },
+   {
+    "id": "ph-b:12",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 24,
+    "replica": "ph-b",
+    "value": 36
+   },
+   {
+    "id": "ph-a:16",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 19,
+    "replica": "ph-a",
+    "value": 40
+   },
+   {
+    "id": "ph-b:13",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 25,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:14",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 26,
+    "replica": "ph-b",
+    "value": -29
+   },
+   {
+    "id": "ph-b:15",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 27,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:17",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 20,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:16",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 23,
+    "replica": "ph-c",
+    "value": 10
+   },
+   {
+    "id": "ph-c:17",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 24,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:16",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 23,
+    "replica": "ph-d",
+    "value": -11
+   },
+   {
+    "id": "ph-d:17",
+    "item": "water",
+    "kind": "create",
+    "lamport": 24,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:16",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 28,
+    "replica": "ph-b",
+    "value": 2
+   },
+   {
+    "id": "ph-c:18",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 25,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:18",
+    "item": "water",
+    "kind": "note",
+    "lamport": 25,
+    "replica": "ph-d",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:18",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 21,
+    "replica": "ph-a",
+    "value": -17
+   },
+   {
+    "id": "ph-c:19",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 28,
+    "replica": "ph-c",
+    "value": 17
+   },
+   {
+    "id": "ph-d:19",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 26,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-a:19",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 22,
+    "replica": "ph-a",
+    "value": -18
+   },
+   {
+    "id": "ph-a:20",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 23,
+    "replica": "ph-a",
+    "value": -5
+   },
+   {
+    "id": "ph-c:20",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 29,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-d:20",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 27,
+    "replica": "ph-d",
+    "value": -3
+   },
+   {
+    "id": "ph-b:17",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 29,
+    "replica": "ph-b",
+    "value": -12
+   },
+   {
+    "id": "ph-b:18",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 30,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-b:19",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 31,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:21",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 30,
+    "replica": "ph-c",
+    "value": -1
+   },
+   {
+    "id": "ph-a:21",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 24,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:20",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 32,
+    "replica": "ph-b",
+    "value": 32
+   },
+   {
+    "id": "ph-d:21",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 28,
+    "replica": "ph-d",
+    "value": -15
+   },
+   {
+    "id": "ph-c:22",
+    "item": "water",
+    "kind": "create",
+    "lamport": 32,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:21",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 33,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:22",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 25,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:22",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 34,
+    "replica": "ph-b",
+    "value": -11
+   },
+   {
+    "id": "ph-c:23",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 33,
+    "replica": "ph-c",
+    "value": 36
+   },
+   {
+    "id": "ph-c:24",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 34,
+    "replica": "ph-c",
+    "value": 12
+   },
+   {
+    "id": "ph-a:23",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 26,
+    "replica": "ph-a",
+    "value": 33
+   },
+   {
+    "id": "ph-b:23",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 35,
+    "replica": "ph-b",
+    "value": 6
+   },
+   {
+    "id": "ph-b:24",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 36,
+    "replica": "ph-b",
+    "value": -20
+   },
+   {
+    "id": "ph-c:25",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 35,
+    "replica": "ph-c",
+    "value": -39
+   },
+   {
+    "id": "ph-d:22",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 29,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-b:25",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 37,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-b:26",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 38,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:27",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 39,
+    "replica": "ph-b",
+    "value": 7
+   },
+   {
+    "id": "ph-d:23",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 30,
+    "replica": "ph-d",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:28",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 40,
+    "replica": "ph-b",
+    "value": -33
+   },
+   {
+    "id": "ph-a:24",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 27,
+    "replica": "ph-a",
+    "value": 17
+   }
+  ],
+  "state": {
+   "baby-food": {
+    "alive": true,
+    "name": "Alpha",
+    "note": "Bravo",
+    "qty": 106
+   },
+   "blankets": {
+    "alive": true,
+    "name": "Charlie",
+    "note": "Alpha",
+    "qty": -21
+   },
+   "paracetamol": {
+    "alive": false,
+    "name": "Charlie",
+    "note": "Delta",
+    "qty": -2
+   },
+   "rice": {
+    "alive": false,
+    "name": "Alpha",
+    "note": "Delta",
+    "qty": 43
+   },
+   "tarpaulin": {
+    "alive": false,
+    "name": "Delta",
+    "note": "Alpha",
+    "qty": -73
+   },
+   "water": {
+    "alive": true,
+    "name": "Alpha",
+    "note": "Alpha",
+    "qty": -67
+   }
+  },
+  "stats": {
+   "conflicts": 25,
+   "items": 6,
+   "ops": 100,
+   "oversold": [
+    "blankets",
+    "water"
+   ]
+  }
+ },
+ {
+  "name": "seed-99-n500",
+  "ops": [
+   {
+    "id": "ph-d:1",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 1,
+    "replica": "ph-d",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:1",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "ph-b",
+    "value": 34
+   },
+   {
+    "id": "ph-e:1",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "ph-e",
+    "value": -24
+   },
+   {
+    "id": "ph-d:2",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "ph-d",
+    "value": 12
+   },
+   {
+    "id": "ph-e:2",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 2,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-a:1",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 1,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:3",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "ph-e",
+    "value": -30
+   },
+   {
+    "id": "ph-e:4",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 4,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:1",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 4,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-b:2",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 3,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-a:2",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "ph-a",
+    "value": -10
+   },
+   {
+    "id": "ph-c:2",
+    "item": "water",
+    "kind": "create",
+    "lamport": 5,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:5",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 5,
+    "replica": "ph-e",
+    "value": -29
+   },
+   {
+    "id": "ph-c:3",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 6,
+    "replica": "ph-c",
+    "value": 4
+   },
+   {
+    "id": "ph-b:3",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 4,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-b:4",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 5,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:3",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 6,
+    "replica": "ph-a",
+    "value": -14
+   },
+   {
+    "id": "ph-e:6",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 6,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:4",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 7,
+    "replica": "ph-a",
+    "value": -33
+   },
+   {
+    "id": "ph-c:4",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 8,
+    "replica": "ph-c",
+    "value": 26
+   },
+   {
+    "id": "ph-c:5",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 9,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:6",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 10,
+    "replica": "ph-c",
+    "value": 26
+   },
+   {
+    "id": "ph-d:3",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 3,
+    "replica": "ph-d",
+    "value": false
+   },
+   {
+    "id": "ph-c:7",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 11,
+    "replica": "ph-c",
+    "value": -25
+   },
+   {
+    "id": "ph-c:8",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-c",
+    "value": 17
+   },
+   {
+    "id": "ph-a:5",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 8,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-e:7",
+    "item": "water",
+    "kind": "create",
+    "lamport": 11,
+    "replica": "ph-e",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:8",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 12,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-e:9",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 13,
+    "replica": "ph-e",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:9",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 13,
+    "replica": "ph-c",
+    "value": 19
+   },
+   {
+    "id": "ph-b:5",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 6,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-c:10",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 14,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-c:11",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 15,
+    "replica": "ph-c",
+    "value": -1
+   },
+   {
+    "id": "ph-e:10",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 14,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-e:11",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 15,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-d:4",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 4,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:6",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 7,
+    "replica": "ph-b",
+    "value": -38
+   },
+   {
+    "id": "ph-a:6",
+    "item": "water",
+    "kind": "create",
+    "lamport": 9,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:12",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 16,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-b:7",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 8,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:12",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 16,
+    "replica": "ph-c",
+    "value": 25
+   },
+   {
+    "id": "ph-d:5",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 5,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-b:8",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 9,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:9",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 10,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:10",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 11,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:13",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 17,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:7",
+    "item": "water",
+    "kind": "note",
+    "lamport": 10,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-e:14",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 18,
+    "replica": "ph-e",
+    "value": -38
+   },
+   {
+    "id": "ph-a:8",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 11,
+    "replica": "ph-a",
+    "value": -36
+   },
+   {
+    "id": "ph-c:13",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 17,
+    "replica": "ph-c",
+    "value": 15
+   },
+   {
+    "id": "ph-b:11",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 18,
+    "replica": "ph-b",
+    "value": 5
+   },
+   {
+    "id": "ph-e:15",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 19,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:16",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 20,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-b:12",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 19,
+    "replica": "ph-b",
+    "value": 11
+   },
+   {
+    "id": "ph-c:14",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 18,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-e:17",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 21,
+    "replica": "ph-e",
+    "value": 13
+   },
+   {
+    "id": "ph-c:15",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 22,
+    "replica": "ph-c",
+    "value": -15
+   },
+   {
+    "id": "ph-d:6",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 6,
+    "replica": "ph-d",
+    "value": 39
+   },
+   {
+    "id": "ph-a:9",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 12,
+    "replica": "ph-a",
+    "value": 24
+   },
+   {
+    "id": "ph-c:16",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 23,
+    "replica": "ph-c",
+    "value": 2
+   },
+   {
+    "id": "ph-c:17",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 24,
+    "replica": "ph-c",
+    "value": 36
+   },
+   {
+    "id": "ph-c:18",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 25,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:10",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 13,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:19",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 26,
+    "replica": "ph-c",
+    "value": 40
+   },
+   {
+    "id": "ph-b:13",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 20,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-c:20",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 27,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:14",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 21,
+    "replica": "ph-b",
+    "value": -17
+   },
+   {
+    "id": "ph-b:15",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 22,
+    "replica": "ph-b",
+    "value": -37
+   },
+   {
+    "id": "ph-a:11",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 14,
+    "replica": "ph-a",
+    "value": 4
+   },
+   {
+    "id": "ph-c:21",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 28,
+    "replica": "ph-c",
+    "value": -33
+   },
+   {
+    "id": "ph-d:7",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 7,
+    "replica": "ph-d",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:18",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 22,
+    "replica": "ph-e",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:19",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 28,
+    "replica": "ph-e",
+    "value": 14
+   },
+   {
+    "id": "ph-a:12",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 15,
+    "replica": "ph-a",
+    "value": -31
+   },
+   {
+    "id": "ph-b:16",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 27,
+    "replica": "ph-b",
+    "value": -16
+   },
+   {
+    "id": "ph-b:17",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 28,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-e:20",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 29,
+    "replica": "ph-e",
+    "value": 37
+   },
+   {
+    "id": "ph-c:22",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 29,
+    "replica": "ph-c",
+    "value": -3
+   },
+   {
+    "id": "ph-d:8",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 29,
+    "replica": "ph-d",
+    "value": 12
+   },
+   {
+    "id": "ph-c:23",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 30,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-e:21",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 30,
+    "replica": "ph-e",
+    "value": true
+   },
+   {
+    "id": "ph-c:24",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 31,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-b:18",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 29,
+    "replica": "ph-b",
+    "value": -10
+   },
+   {
+    "id": "ph-e:22",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 31,
+    "replica": "ph-e",
+    "value": 25
+   },
+   {
+    "id": "ph-b:19",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 30,
+    "replica": "ph-b",
+    "value": -12
+   },
+   {
+    "id": "ph-b:20",
+    "item": "water",
+    "kind": "note",
+    "lamport": 31,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:13",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 16,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-c:25",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 32,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:26",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 33,
+    "replica": "ph-c",
+    "value": -5
+   },
+   {
+    "id": "ph-a:14",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 17,
+    "replica": "ph-a",
+    "value": -18
+   },
+   {
+    "id": "ph-c:27",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 34,
+    "replica": "ph-c",
+    "value": 29
+   },
+   {
+    "id": "ph-e:23",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 33,
+    "replica": "ph-e",
+    "value": -2
+   },
+   {
+    "id": "ph-c:28",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 35,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-c:29",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 36,
+    "replica": "ph-c",
+    "value": -19
+   },
+   {
+    "id": "ph-d:9",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 30,
+    "replica": "ph-d",
+    "value": 30
+   },
+   {
+    "id": "ph-d:10",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 31,
+    "replica": "ph-d",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:15",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 18,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-b:21",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 32,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-a:16",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 35,
+    "replica": "ph-a",
+    "value": -1
+   },
+   {
+    "id": "ph-d:11",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 32,
+    "replica": "ph-d",
+    "value": -19
+   },
+   {
+    "id": "ph-b:22",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 33,
+    "replica": "ph-b",
+    "value": -27
+   },
+   {
+    "id": "ph-d:12",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 33,
+    "replica": "ph-d",
+    "value": 17
+   },
+   {
+    "id": "ph-b:23",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 34,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-e:24",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 34,
+    "replica": "ph-e",
+    "value": 9
+   },
+   {
+    "id": "ph-c:30",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 37,
+    "replica": "ph-c",
+    "value": 29
+   },
+   {
+    "id": "ph-c:31",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 38,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:24",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 38,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:25",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 35,
+    "replica": "ph-e",
+    "value": 10
+   },
+   {
+    "id": "ph-e:26",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 36,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:13",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 36,
+    "replica": "ph-d",
+    "value": -13
+   },
+   {
+    "id": "ph-a:17",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 36,
+    "replica": "ph-a",
+    "value": -10
+   },
+   {
+    "id": "ph-c:32",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 39,
+    "replica": "ph-c",
+    "value": -6
+   },
+   {
+    "id": "ph-e:27",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 40,
+    "replica": "ph-e",
+    "value": 22
+   },
+   {
+    "id": "ph-e:28",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 41,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:25",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 39,
+    "replica": "ph-b",
+    "value": 36
+   },
+   {
+    "id": "ph-b:26",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 40,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-d:14",
+    "item": "water",
+    "kind": "note",
+    "lamport": 37,
+    "replica": "ph-d",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:29",
+    "item": "water",
+    "kind": "note",
+    "lamport": 42,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:18",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 37,
+    "replica": "ph-a",
+    "value": -28
+   },
+   {
+    "id": "ph-a:19",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 41,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-c:33",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 41,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-e:30",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 43,
+    "replica": "ph-e",
+    "value": true
+   },
+   {
+    "id": "ph-b:27",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 44,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:31",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 44,
+    "replica": "ph-e",
+    "value": 17
+   },
+   {
+    "id": "ph-a:20",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 42,
+    "replica": "ph-a",
+    "value": -17
+   },
+   {
+    "id": "ph-a:21",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 43,
+    "replica": "ph-a",
+    "value": 38
+   },
+   {
+    "id": "ph-b:28",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 45,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:34",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 42,
+    "replica": "ph-c",
+    "value": -19
+   },
+   {
+    "id": "ph-a:22",
+    "item": "water",
+    "kind": "note",
+    "lamport": 44,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:29",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 46,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:35",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 43,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:23",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 45,
+    "replica": "ph-a",
+    "value": -32
+   },
+   {
+    "id": "ph-c:36",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 44,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-d:15",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 38,
+    "replica": "ph-d",
+    "value": -23
+   },
+   {
+    "id": "ph-e:32",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 45,
+    "replica": "ph-e",
+    "value": -1
+   },
+   {
+    "id": "ph-d:16",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 39,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:24",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 46,
+    "replica": "ph-a",
+    "value": -10
+   },
+   {
+    "id": "ph-d:17",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 46,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:33",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 47,
+    "replica": "ph-e",
+    "value": -16
+   },
+   {
+    "id": "ph-e:34",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 48,
+    "replica": "ph-e",
+    "value": -19
+   },
+   {
+    "id": "ph-e:35",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 49,
+    "replica": "ph-e",
+    "value": -22
+   },
+   {
+    "id": "ph-e:36",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 50,
+    "replica": "ph-e",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:37",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 49,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-d:18",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 47,
+    "replica": "ph-d",
+    "value": 31
+   },
+   {
+    "id": "ph-a:25",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 47,
+    "replica": "ph-a",
+    "value": 15
+   },
+   {
+    "id": "ph-b:30",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 47,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-b:31",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 48,
+    "replica": "ph-b",
+    "value": 26
+   },
+   {
+    "id": "ph-b:32",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 49,
+    "replica": "ph-b",
+    "value": -10
+   },
+   {
+    "id": "ph-e:37",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 51,
+    "replica": "ph-e",
+    "value": 21
+   },
+   {
+    "id": "ph-b:33",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 50,
+    "replica": "ph-b",
+    "value": -33
+   },
+   {
+    "id": "ph-d:19",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 48,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:34",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 51,
+    "replica": "ph-b",
+    "value": false
+   },
+   {
+    "id": "ph-d:20",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 49,
+    "replica": "ph-d",
+    "value": -6
+   },
+   {
+    "id": "ph-b:35",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 52,
+    "replica": "ph-b",
+    "value": -16
+   },
+   {
+    "id": "ph-d:21",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 50,
+    "replica": "ph-d",
+    "value": -12
+   },
+   {
+    "id": "ph-a:26",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 48,
+    "replica": "ph-a",
+    "value": 25
+   },
+   {
+    "id": "ph-b:36",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 53,
+    "replica": "ph-b",
+    "value": 33
+   },
+   {
+    "id": "ph-a:27",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 49,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-d:22",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 51,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-b:37",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 54,
+    "replica": "ph-b",
+    "value": 9
+   },
+   {
+    "id": "ph-d:23",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 52,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:38",
+    "item": "water",
+    "kind": "note",
+    "lamport": 52,
+    "replica": "ph-e",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:39",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 53,
+    "replica": "ph-e",
+    "value": -30
+   },
+   {
+    "id": "ph-b:38",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 55,
+    "replica": "ph-b",
+    "value": 21
+   },
+   {
+    "id": "ph-a:28",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 50,
+    "replica": "ph-a",
+    "value": 35
+   },
+   {
+    "id": "ph-a:29",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 55,
+    "replica": "ph-a",
+    "value": 2
+   },
+   {
+    "id": "ph-c:38",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 50,
+    "replica": "ph-c",
+    "value": -3
+   },
+   {
+    "id": "ph-b:39",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 56,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:40",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 54,
+    "replica": "ph-e",
+    "value": 31
+   },
+   {
+    "id": "ph-c:39",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 51,
+    "replica": "ph-c",
+    "value": -19
+   },
+   {
+    "id": "ph-a:30",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 56,
+    "replica": "ph-a",
+    "value": -14
+   },
+   {
+    "id": "ph-d:24",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 53,
+    "replica": "ph-d",
+    "value": 12
+   },
+   {
+    "id": "ph-d:25",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 54,
+    "replica": "ph-d",
+    "value": 32
+   },
+   {
+    "id": "ph-a:31",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 57,
+    "replica": "ph-a",
+    "value": -22
+   },
+   {
+    "id": "ph-a:32",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 58,
+    "replica": "ph-a",
+    "value": 1
+   },
+   {
+    "id": "ph-b:40",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 57,
+    "replica": "ph-b",
+    "value": 18
+   },
+   {
+    "id": "ph-c:40",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 52,
+    "replica": "ph-c",
+    "value": -39
+   },
+   {
+    "id": "ph-b:41",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 58,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:26",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 59,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-d:27",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 60,
+    "replica": "ph-d",
+    "value": -9
+   },
+   {
+    "id": "ph-e:41",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 55,
+    "replica": "ph-e",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:33",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 59,
+    "replica": "ph-a",
+    "value": 18
+   },
+   {
+    "id": "ph-d:28",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 61,
+    "replica": "ph-d",
+    "value": -4
+   },
+   {
+    "id": "ph-b:42",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 60,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:43",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 61,
+    "replica": "ph-b",
+    "value": 16
+   },
+   {
+    "id": "ph-c:41",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 53,
+    "replica": "ph-c",
+    "value": 28
+   },
+   {
+    "id": "ph-a:34",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 60,
+    "replica": "ph-a",
+    "value": -1
+   },
+   {
+    "id": "ph-e:42",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 56,
+    "replica": "ph-e",
+    "value": 24
+   },
+   {
+    "id": "ph-b:44",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 62,
+    "replica": "ph-b",
+    "value": 33
+   },
+   {
+    "id": "ph-d:29",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 62,
+    "replica": "ph-d",
+    "value": -19
+   },
+   {
+    "id": "ph-e:43",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 62,
+    "replica": "ph-e",
+    "value": -7
+   },
+   {
+    "id": "ph-e:44",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 63,
+    "replica": "ph-e",
+    "value": -13
+   },
+   {
+    "id": "ph-c:42",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 54,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:35",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 63,
+    "replica": "ph-a",
+    "value": -5
+   },
+   {
+    "id": "ph-a:36",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 64,
+    "replica": "ph-a",
+    "value": -29
+   },
+   {
+    "id": "ph-d:30",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 63,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:45",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 63,
+    "replica": "ph-b",
+    "value": 12
+   },
+   {
+    "id": "ph-c:43",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 55,
+    "replica": "ph-c",
+    "value": -14
+   },
+   {
+    "id": "ph-b:46",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 64,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-d:31",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 64,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-b:47",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 65,
+    "replica": "ph-b",
+    "value": -9
+   },
+   {
+    "id": "ph-b:48",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 66,
+    "replica": "ph-b",
+    "value": 6
+   },
+   {
+    "id": "ph-b:49",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 67,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-e:45",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 64,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:46",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 65,
+    "replica": "ph-e",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:47",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 66,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-d:32",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 65,
+    "replica": "ph-d",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:50",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 68,
+    "replica": "ph-b",
+    "value": -34
+   },
+   {
+    "id": "ph-b:51",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 69,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:37",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 65,
+    "replica": "ph-a",
+    "value": 39
+   },
+   {
+    "id": "ph-a:38",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 69,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:44",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 69,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-d:33",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 66,
+    "replica": "ph-d",
+    "value": -14
+   },
+   {
+    "id": "ph-c:45",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 70,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:34",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 67,
+    "replica": "ph-d",
+    "value": 17
+   },
+   {
+    "id": "ph-d:35",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 68,
+    "replica": "ph-d",
+    "value": 2
+   },
+   {
+    "id": "ph-e:48",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 67,
+    "replica": "ph-e",
+    "value": -25
+   },
+   {
+    "id": "ph-b:52",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 70,
+    "replica": "ph-b",
+    "value": -9
+   },
+   {
+    "id": "ph-d:36",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 69,
+    "replica": "ph-d",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:49",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 68,
+    "replica": "ph-e",
+    "value": -31
+   },
+   {
+    "id": "ph-a:39",
+    "item": "water",
+    "kind": "create",
+    "lamport": 70,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:50",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 69,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-e:51",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 70,
+    "replica": "ph-e",
+    "value": 7
+   },
+   {
+    "id": "ph-a:40",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 71,
+    "replica": "ph-a",
+    "value": -19
+   },
+   {
+    "id": "ph-e:52",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 71,
+    "replica": "ph-e",
+    "value": 3
+   },
+   {
+    "id": "ph-c:46",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 71,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-a:41",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 72,
+    "replica": "ph-a",
+    "value": -35
+   },
+   {
+    "id": "ph-d:37",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 70,
+    "replica": "ph-d",
+    "value": 20
+   },
+   {
+    "id": "ph-a:42",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 73,
+    "replica": "ph-a",
+    "value": -15
+   },
+   {
+    "id": "ph-e:53",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 72,
+    "replica": "ph-e",
+    "value": -33
+   },
+   {
+    "id": "ph-c:47",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 72,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:54",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 73,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:53",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 71,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-d:38",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 71,
+    "replica": "ph-d",
+    "value": 23
+   },
+   {
+    "id": "ph-a:43",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 74,
+    "replica": "ph-a",
+    "value": 34
+   },
+   {
+    "id": "ph-e:55",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 74,
+    "replica": "ph-e",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:44",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 75,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:54",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 72,
+    "replica": "ph-b",
+    "value": 11
+   },
+   {
+    "id": "ph-b:55",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 73,
+    "replica": "ph-b",
+    "value": 5
+   },
+   {
+    "id": "ph-e:56",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 75,
+    "replica": "ph-e",
+    "value": true
+   },
+   {
+    "id": "ph-b:56",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 74,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:45",
+    "item": "water",
+    "kind": "note",
+    "lamport": 76,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:48",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 73,
+    "replica": "ph-c",
+    "value": 30
+   },
+   {
+    "id": "ph-c:49",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 74,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:46",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 77,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:57",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 76,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:39",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 76,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-b:57",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 75,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:47",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 78,
+    "replica": "ph-a",
+    "value": -14
+   },
+   {
+    "id": "ph-b:58",
+    "item": "water",
+    "kind": "create",
+    "lamport": 76,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:40",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 77,
+    "replica": "ph-d",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:48",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 79,
+    "replica": "ph-a",
+    "value": -15
+   },
+   {
+    "id": "ph-c:50",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 75,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-a:49",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 80,
+    "replica": "ph-a",
+    "value": -25
+   },
+   {
+    "id": "ph-d:41",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 78,
+    "replica": "ph-d",
+    "value": 4
+   },
+   {
+    "id": "ph-c:51",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 76,
+    "replica": "ph-c",
+    "value": -1
+   },
+   {
+    "id": "ph-b:59",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 77,
+    "replica": "ph-b",
+    "value": 25
+   },
+   {
+    "id": "ph-c:52",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 77,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-b:60",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 78,
+    "replica": "ph-b",
+    "value": -35
+   },
+   {
+    "id": "ph-c:53",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 78,
+    "replica": "ph-c",
+    "value": 17
+   },
+   {
+    "id": "ph-b:61",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 79,
+    "replica": "ph-b",
+    "value": -19
+   },
+   {
+    "id": "ph-a:50",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 81,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:54",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 79,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:62",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 80,
+    "replica": "ph-b",
+    "value": -21
+   },
+   {
+    "id": "ph-e:58",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 77,
+    "replica": "ph-e",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:59",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 78,
+    "replica": "ph-e",
+    "value": true
+   },
+   {
+    "id": "ph-e:60",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 79,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-e:61",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 82,
+    "replica": "ph-e",
+    "value": 33
+   },
+   {
+    "id": "ph-d:42",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 79,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-d:43",
+    "item": "water",
+    "kind": "note",
+    "lamport": 80,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-d:44",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 81,
+    "replica": "ph-d",
+    "value": -22
+   },
+   {
+    "id": "ph-d:45",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 82,
+    "replica": "ph-d",
+    "value": 6
+   },
+   {
+    "id": "ph-b:63",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 81,
+    "replica": "ph-b",
+    "value": 37
+   },
+   {
+    "id": "ph-b:64",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 82,
+    "replica": "ph-b",
+    "value": -38
+   },
+   {
+    "id": "ph-a:51",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 82,
+    "replica": "ph-a",
+    "value": -28
+   },
+   {
+    "id": "ph-d:46",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 83,
+    "replica": "ph-d",
+    "value": -27
+   },
+   {
+    "id": "ph-b:65",
+    "item": "water",
+    "kind": "note",
+    "lamport": 83,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:52",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 83,
+    "replica": "ph-a",
+    "value": -5
+   },
+   {
+    "id": "ph-e:62",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 83,
+    "replica": "ph-e",
+    "value": 12
+   },
+   {
+    "id": "ph-b:66",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 84,
+    "replica": "ph-b",
+    "value": -23
+   },
+   {
+    "id": "ph-d:47",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 84,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-d:48",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 85,
+    "replica": "ph-d",
+    "value": 17
+   },
+   {
+    "id": "ph-c:55",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 80,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-d:49",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 86,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:67",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 85,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-d:50",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 87,
+    "replica": "ph-d",
+    "value": 13
+   },
+   {
+    "id": "ph-c:56",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 88,
+    "replica": "ph-c",
+    "value": 28
+   },
+   {
+    "id": "ph-e:63",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 86,
+    "replica": "ph-e",
+    "value": -26
+   },
+   {
+    "id": "ph-a:53",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 84,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:54",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 86,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:55",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 87,
+    "replica": "ph-a",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-e:64",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 87,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-c:57",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 89,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:56",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 88,
+    "replica": "ph-a",
+    "value": -1
+   },
+   {
+    "id": "ph-b:68",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 86,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:69",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 87,
+    "replica": "ph-b",
+    "value": 17
+   },
+   {
+    "id": "ph-a:57",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 89,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:70",
+    "item": "water",
+    "kind": "create",
+    "lamport": 88,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-e:65",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 88,
+    "replica": "ph-e",
+    "value": -32
+   },
+   {
+    "id": "ph-e:66",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 89,
+    "replica": "ph-e",
+    "value": -28
+   },
+   {
+    "id": "ph-d:51",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 88,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-d:52",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 89,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:71",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 89,
+    "replica": "ph-b",
+    "value": -38
+   },
+   {
+    "id": "ph-b:72",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 90,
+    "replica": "ph-b",
+    "value": 35
+   },
+   {
+    "id": "ph-d:53",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 90,
+    "replica": "ph-d",
+    "value": -38
+   },
+   {
+    "id": "ph-a:58",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 90,
+    "replica": "ph-a",
+    "value": 25
+   },
+   {
+    "id": "ph-a:59",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 91,
+    "replica": "ph-a",
+    "value": -28
+   },
+   {
+    "id": "ph-d:54",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 91,
+    "replica": "ph-d",
+    "value": -31
+   },
+   {
+    "id": "ph-a:60",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 92,
+    "replica": "ph-a",
+    "value": -26
+   },
+   {
+    "id": "ph-b:73",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 93,
+    "replica": "ph-b",
+    "value": -23
+   },
+   {
+    "id": "ph-e:67",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 90,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:61",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 93,
+    "replica": "ph-a",
+    "value": -29
+   },
+   {
+    "id": "ph-d:55",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 92,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:62",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 94,
+    "replica": "ph-a",
+    "value": -30
+   },
+   {
+    "id": "ph-d:56",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 93,
+    "replica": "ph-d",
+    "value": -20
+   },
+   {
+    "id": "ph-b:74",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 94,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-e:68",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 91,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-e:69",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 92,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-a:63",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 95,
+    "replica": "ph-a",
+    "value": 5
+   },
+   {
+    "id": "ph-a:64",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 96,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-e:70",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 95,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:75",
+    "item": "water",
+    "kind": "create",
+    "lamport": 95,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:65",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 97,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-d:57",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 94,
+    "replica": "ph-d",
+    "value": 28
+   },
+   {
+    "id": "ph-e:71",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 96,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:76",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 96,
+    "replica": "ph-b",
+    "value": 15
+   },
+   {
+    "id": "ph-b:77",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 97,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:72",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 97,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:78",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 98,
+    "replica": "ph-b",
+    "value": -3
+   },
+   {
+    "id": "ph-e:73",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 98,
+    "replica": "ph-e",
+    "value": -17
+   },
+   {
+    "id": "ph-d:58",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 98,
+    "replica": "ph-d",
+    "value": -28
+   },
+   {
+    "id": "ph-a:66",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 98,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-b:79",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 99,
+    "replica": "ph-b",
+    "value": 16
+   },
+   {
+    "id": "ph-b:80",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 100,
+    "replica": "ph-b",
+    "value": 32
+   },
+   {
+    "id": "ph-c:58",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 100,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-a:67",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 99,
+    "replica": "ph-a",
+    "value": true
+   },
+   {
+    "id": "ph-a:68",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 100,
+    "replica": "ph-a",
+    "value": 10
+   },
+   {
+    "id": "ph-a:69",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 101,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-a:70",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 102,
+    "replica": "ph-a",
+    "value": 23
+   },
+   {
+    "id": "ph-d:59",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 102,
+    "replica": "ph-d",
+    "value": -29
+   },
+   {
+    "id": "ph-d:60",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 103,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-b:81",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 101,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:74",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 104,
+    "replica": "ph-e",
+    "value": -21
+   },
+   {
+    "id": "ph-c:59",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 101,
+    "replica": "ph-c",
+    "value": false
+   },
+   {
+    "id": "ph-a:71",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 103,
+    "replica": "ph-a",
+    "value": -16
+   },
+   {
+    "id": "ph-a:72",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 104,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:82",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 102,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:60",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 102,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-a:73",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 105,
+    "replica": "ph-a",
+    "value": 37
+   },
+   {
+    "id": "ph-e:75",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 105,
+    "replica": "ph-e",
+    "value": true
+   },
+   {
+    "id": "ph-d:61",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 104,
+    "replica": "ph-d",
+    "value": 3
+   },
+   {
+    "id": "ph-d:62",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 105,
+    "replica": "ph-d",
+    "value": 1
+   },
+   {
+    "id": "ph-b:83",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 103,
+    "replica": "ph-b",
+    "value": 26
+   },
+   {
+    "id": "ph-b:84",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 104,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:74",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 106,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-e:76",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 106,
+    "replica": "ph-e",
+    "value": -3
+   },
+   {
+    "id": "ph-b:85",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 105,
+    "replica": "ph-b",
+    "value": -20
+   },
+   {
+    "id": "ph-a:75",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 107,
+    "replica": "ph-a",
+    "value": 10
+   },
+   {
+    "id": "ph-c:61",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 103,
+    "replica": "ph-c",
+    "value": -29
+   },
+   {
+    "id": "ph-e:77",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 107,
+    "replica": "ph-e",
+    "value": 35
+   },
+   {
+    "id": "ph-a:76",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 108,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-a:77",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 109,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:86",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 110,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:78",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 111,
+    "replica": "ph-e",
+    "value": -14
+   },
+   {
+    "id": "ph-c:62",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 104,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-d:63",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 106,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-e:79",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 112,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:63",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 105,
+    "replica": "ph-c",
+    "value": -6
+   },
+   {
+    "id": "ph-d:64",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 113,
+    "replica": "ph-d",
+    "value": -31
+   },
+   {
+    "id": "ph-a:78",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 110,
+    "replica": "ph-a",
+    "value": -32
+   },
+   {
+    "id": "ph-b:87",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 111,
+    "replica": "ph-b",
+    "value": -10
+   },
+   {
+    "id": "ph-e:80",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 113,
+    "replica": "ph-e",
+    "value": -12
+   },
+   {
+    "id": "ph-d:65",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 114,
+    "replica": "ph-d",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:79",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 111,
+    "replica": "ph-a",
+    "value": -13
+   },
+   {
+    "id": "ph-c:64",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 106,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-a:80",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 112,
+    "replica": "ph-a",
+    "value": 12
+   },
+   {
+    "id": "ph-e:81",
+    "item": "water",
+    "kind": "note",
+    "lamport": 114,
+    "replica": "ph-e",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:82",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 115,
+    "replica": "ph-e",
+    "value": -4
+   },
+   {
+    "id": "ph-b:88",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 112,
+    "replica": "ph-b",
+    "value": true
+   },
+   {
+    "id": "ph-e:83",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 116,
+    "replica": "ph-e",
+    "value": true
+   },
+   {
+    "id": "ph-d:66",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 115,
+    "replica": "ph-d",
+    "value": 17
+   },
+   {
+    "id": "ph-d:67",
+    "item": "water",
+    "kind": "note",
+    "lamport": 116,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:84",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 117,
+    "replica": "ph-e",
+    "value": 4
+   },
+   {
+    "id": "ph-d:68",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 117,
+    "replica": "ph-d",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-d:69",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 118,
+    "replica": "ph-d",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:85",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 118,
+    "replica": "ph-e",
+    "value": 17
+   },
+   {
+    "id": "ph-c:65",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 107,
+    "replica": "ph-c",
+    "value": 36
+   },
+   {
+    "id": "ph-d:70",
+    "item": "rice",
+    "kind": "delete",
+    "lamport": 119,
+    "replica": "ph-d",
+    "value": true
+   },
+   {
+    "id": "ph-a:81",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 113,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:82",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 114,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-e:86",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 119,
+    "replica": "ph-e",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:83",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 115,
+    "replica": "ph-a",
+    "value": -38
+   },
+   {
+    "id": "ph-e:87",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 120,
+    "replica": "ph-e",
+    "value": 16
+   },
+   {
+    "id": "ph-a:84",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 116,
+    "replica": "ph-a",
+    "value": -27
+   },
+   {
+    "id": "ph-b:89",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 113,
+    "replica": "ph-b",
+    "value": 37
+   },
+   {
+    "id": "ph-e:88",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 121,
+    "replica": "ph-e",
+    "value": 21
+   },
+   {
+    "id": "ph-c:66",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 119,
+    "replica": "ph-c",
+    "value": -18
+   },
+   {
+    "id": "ph-c:67",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 120,
+    "replica": "ph-c",
+    "value": 38
+   },
+   {
+    "id": "ph-c:68",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 122,
+    "replica": "ph-c",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-a:85",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 117,
+    "replica": "ph-a",
+    "value": -32
+   },
+   {
+    "id": "ph-a:86",
+    "item": "water",
+    "kind": "note",
+    "lamport": 121,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-d:71",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 120,
+    "replica": "ph-d",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:90",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 114,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:91",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 115,
+    "replica": "ph-b",
+    "value": 31
+   },
+   {
+    "id": "ph-b:92",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 116,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:69",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 123,
+    "replica": "ph-c",
+    "value": 7
+   },
+   {
+    "id": "ph-b:93",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 117,
+    "replica": "ph-b",
+    "value": 27
+   },
+   {
+    "id": "ph-e:89",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 122,
+    "replica": "ph-e",
+    "value": -36
+   },
+   {
+    "id": "ph-b:94",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 118,
+    "replica": "ph-b",
+    "value": -34
+   },
+   {
+    "id": "ph-e:90",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 123,
+    "replica": "ph-e",
+    "value": 40
+   },
+   {
+    "id": "ph-c:70",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 124,
+    "replica": "ph-c",
+    "value": -32
+   },
+   {
+    "id": "ph-b:95",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 119,
+    "replica": "ph-b",
+    "value": 6
+   },
+   {
+    "id": "ph-d:72",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 121,
+    "replica": "ph-d",
+    "value": -16
+   },
+   {
+    "id": "ph-d:73",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 122,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:91",
+    "item": "paracetamol",
+    "kind": "note",
+    "lamport": 124,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:74",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 123,
+    "replica": "ph-d",
+    "value": false
+   },
+   {
+    "id": "ph-a:87",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 122,
+    "replica": "ph-a",
+    "value": 13
+   },
+   {
+    "id": "ph-d:75",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 124,
+    "replica": "ph-d",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:88",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 125,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:71",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 125,
+    "replica": "ph-c",
+    "value": 36
+   },
+   {
+    "id": "ph-c:72",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 126,
+    "replica": "ph-c",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:89",
+    "item": "paracetamol",
+    "kind": "delete",
+    "lamport": 126,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-a:90",
+    "item": "tarpaulin",
+    "kind": "delete",
+    "lamport": 127,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-e:92",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 128,
+    "replica": "ph-e",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:96",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 120,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-c:73",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 127,
+    "replica": "ph-c",
+    "value": -1
+   },
+   {
+    "id": "ph-b:97",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 121,
+    "replica": "ph-b",
+    "value": 24
+   },
+   {
+    "id": "ph-e:93",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 129,
+    "replica": "ph-e",
+    "value": -29
+   },
+   {
+    "id": "ph-a:91",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 128,
+    "replica": "ph-a",
+    "value": -10
+   },
+   {
+    "id": "ph-b:98",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 122,
+    "replica": "ph-b",
+    "value": -35
+   },
+   {
+    "id": "ph-a:92",
+    "item": "baby-food",
+    "kind": "create",
+    "lamport": 129,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:99",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 123,
+    "replica": "ph-b",
+    "value": -34
+   },
+   {
+    "id": "ph-d:76",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 125,
+    "replica": "ph-d",
+    "value": 13
+   },
+   {
+    "id": "ph-a:93",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 130,
+    "replica": "ph-a",
+    "value": 20
+   },
+   {
+    "id": "ph-b:100",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 124,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-d:77",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 126,
+    "replica": "ph-d",
+    "value": false
+   },
+   {
+    "id": "ph-b:101",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 125,
+    "replica": "ph-b",
+    "value": 20
+   },
+   {
+    "id": "ph-b:102",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 126,
+    "replica": "ph-b",
+    "value": -30
+   },
+   {
+    "id": "ph-c:74",
+    "item": "rice",
+    "kind": "create",
+    "lamport": 128,
+    "replica": "ph-c",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-a:94",
+    "item": "tarpaulin",
+    "kind": "note",
+    "lamport": 131,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:78",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 127,
+    "replica": "ph-d",
+    "value": 37
+   },
+   {
+    "id": "ph-a:95",
+    "item": "blankets",
+    "kind": "delete",
+    "lamport": 132,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-d:79",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 132,
+    "replica": "ph-d",
+    "value": -24
+   },
+   {
+    "id": "ph-e:94",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 130,
+    "replica": "ph-e",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-c:75",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 129,
+    "replica": "ph-c",
+    "value": 12
+   },
+   {
+    "id": "ph-a:96",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 133,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-a:97",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 134,
+    "replica": "ph-a",
+    "value": 37
+   },
+   {
+    "id": "ph-b:103",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 127,
+    "replica": "ph-b",
+    "value": 40
+   },
+   {
+    "id": "ph-b:104",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 128,
+    "replica": "ph-b",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:98",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 135,
+    "replica": "ph-a",
+    "value": 36
+   },
+   {
+    "id": "ph-d:80",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 133,
+    "replica": "ph-d",
+    "value": -39
+   },
+   {
+    "id": "ph-b:105",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 129,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-c:76",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 130,
+    "replica": "ph-c",
+    "value": -34
+   },
+   {
+    "id": "ph-e:95",
+    "item": "rice",
+    "kind": "note",
+    "lamport": 131,
+    "replica": "ph-e",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:106",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 130,
+    "replica": "ph-b",
+    "value": 12
+   },
+   {
+    "id": "ph-a:99",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 136,
+    "replica": "ph-a",
+    "value": 33
+   },
+   {
+    "id": "ph-c:77",
+    "item": "blankets",
+    "kind": "create",
+    "lamport": 131,
+    "replica": "ph-c",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-b:107",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 131,
+    "replica": "ph-b",
+    "value": 29
+   },
+   {
+    "id": "ph-d:81",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 134,
+    "replica": "ph-d",
+    "value": 9
+   },
+   {
+    "id": "ph-b:108",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 132,
+    "replica": "ph-b",
+    "value": -16
+   },
+   {
+    "id": "ph-d:82",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 135,
+    "replica": "ph-d",
+    "value": -40
+   },
+   {
+    "id": "ph-b:109",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 133,
+    "replica": "ph-b",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-b:110",
+    "item": "tarpaulin",
+    "kind": "create",
+    "lamport": 134,
+    "replica": "ph-b",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:100",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 137,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-a:101",
+    "item": "water",
+    "kind": "note",
+    "lamport": 138,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-a:102",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 139,
+    "replica": "ph-a",
+    "value": false
+   },
+   {
+    "id": "ph-a:103",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 140,
+    "replica": "ph-a",
+    "value": "Delta"
+   },
+   {
+    "id": "ph-c:78",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 132,
+    "replica": "ph-c",
+    "value": true
+   },
+   {
+    "id": "ph-d:83",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 140,
+    "replica": "ph-d",
+    "value": 5
+   },
+   {
+    "id": "ph-a:104",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 141,
+    "replica": "ph-a",
+    "value": 11
+   },
+   {
+    "id": "ph-a:105",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 142,
+    "replica": "ph-a",
+    "value": 27
+   },
+   {
+    "id": "ph-a:106",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 143,
+    "replica": "ph-a",
+    "value": -16
+   },
+   {
+    "id": "ph-a:107",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 144,
+    "replica": "ph-a",
+    "value": -8
+   },
+   {
+    "id": "ph-a:108",
+    "item": "baby-food",
+    "kind": "note",
+    "lamport": 145,
+    "replica": "ph-a",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:111",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 135,
+    "replica": "ph-b",
+    "value": 11
+   },
+   {
+    "id": "ph-d:84",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 141,
+    "replica": "ph-d",
+    "value": 37
+   },
+   {
+    "id": "ph-e:96",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 132,
+    "replica": "ph-e",
+    "value": -31
+   },
+   {
+    "id": "ph-b:112",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 136,
+    "replica": "ph-b",
+    "value": -3
+   },
+   {
+    "id": "ph-d:85",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 142,
+    "replica": "ph-d",
+    "value": 20
+   },
+   {
+    "id": "ph-a:109",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 146,
+    "replica": "ph-a",
+    "value": -11
+   },
+   {
+    "id": "ph-b:113",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 137,
+    "replica": "ph-b",
+    "value": 35
+   },
+   {
+    "id": "ph-c:79",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 133,
+    "replica": "ph-c",
+    "value": -31
+   },
+   {
+    "id": "ph-e:97",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 133,
+    "replica": "ph-e",
+    "value": 32
+   },
+   {
+    "id": "ph-d:86",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 143,
+    "replica": "ph-d",
+    "value": -5
+   },
+   {
+    "id": "ph-d:87",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 144,
+    "replica": "ph-d",
+    "value": 39
+   },
+   {
+    "id": "ph-d:88",
+    "item": "water",
+    "kind": "create",
+    "lamport": 145,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-e:98",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 134,
+    "replica": "ph-e",
+    "value": 8
+   },
+   {
+    "id": "ph-a:110",
+    "item": "blankets",
+    "kind": "adjust",
+    "lamport": 147,
+    "replica": "ph-a",
+    "value": 27
+   },
+   {
+    "id": "ph-d:89",
+    "item": "water",
+    "kind": "create",
+    "lamport": 146,
+    "replica": "ph-d",
+    "value": "Charlie"
+   },
+   {
+    "id": "ph-b:114",
+    "item": "paracetamol",
+    "kind": "create",
+    "lamport": 138,
+    "replica": "ph-b",
+    "value": "Bravo"
+   },
+   {
+    "id": "ph-b:115",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 139,
+    "replica": "ph-b",
+    "value": 9
+   },
+   {
+    "id": "ph-b:116",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 140,
+    "replica": "ph-b",
+    "value": -35
+   },
+   {
+    "id": "ph-e:99",
+    "item": "water",
+    "kind": "delete",
+    "lamport": 135,
+    "replica": "ph-e",
+    "value": false
+   },
+   {
+    "id": "ph-e:100",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 148,
+    "replica": "ph-e",
+    "value": 37
+   },
+   {
+    "id": "ph-e:101",
+    "item": "baby-food",
+    "kind": "delete",
+    "lamport": 149,
+    "replica": "ph-e",
+    "value": true
+   },
+   {
+    "id": "ph-d:90",
+    "item": "water",
+    "kind": "adjust",
+    "lamport": 147,
+    "replica": "ph-d",
+    "value": 22
+   },
+   {
+    "id": "ph-a:111",
+    "item": "blankets",
+    "kind": "note",
+    "lamport": 148,
+    "replica": "ph-a",
+    "value": "Alpha"
+   },
+   {
+    "id": "ph-d:91",
+    "item": "tarpaulin",
+    "kind": "adjust",
+    "lamport": 148,
+    "replica": "ph-d",
+    "value": 18
+   },
+   {
+    "id": "ph-c:80",
+    "item": "baby-food",
+    "kind": "adjust",
+    "lamport": 134,
+    "replica": "ph-c",
+    "value": -22
+   },
+   {
+    "id": "ph-e:102",
+    "item": "paracetamol",
+    "kind": "adjust",
+    "lamport": 150,
+    "replica": "ph-e",
+    "value": 40
+   }
+  ],
+  "state": {
+   "baby-food": {
+    "alive": false,
+    "name": "Alpha",
+    "note": "Charlie",
+    "qty": 62
+   },
+   "blankets": {
+    "alive": true,
+    "name": "Delta",
+    "note": "Alpha",
+    "qty": 60
+   },
+   "paracetamol": {
+    "alive": true,
+    "name": "Bravo",
+    "note": "Alpha",
+    "qty": -168
+   },
+   "rice": {
+    "alive": false,
+    "name": "Alpha",
+    "note": "Delta",
+    "qty": 10
+   },
+   "tarpaulin": {
+    "alive": true,
+    "name": "Delta",
+    "note": "Alpha",
+    "qty": 82
+   },
+   "water": {
+    "alive": true,
+    "name": "Charlie",
+    "note": "Delta",
+    "qty": -47
+   }
+  },
+  "stats": {
+   "conflicts": 160,
+   "items": 6,
+   "ops": 500,
+   "oversold": [
+    "paracetamol",
+    "water"
+   ]
+  }
+ },
+ {
+  "name": "tie-breaks-on-replica",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "x",
+    "kind": "create",
+    "lamport": 3,
+    "replica": "a",
+    "value": "Old"
+   },
+   {
+    "id": "b:1",
+    "item": "x",
+    "kind": "create",
+    "lamport": 3,
+    "replica": "b",
+    "value": "New"
+   }
+  ],
+  "state": {
+   "x": {
+    "alive": true,
+    "name": "New",
+    "note": "",
+    "qty": 0
+   }
+  },
+  "stats": {
+   "conflicts": 1,
+   "items": 1,
+   "ops": 2,
+   "oversold": []
+  }
+ },
+ {
+  "name": "duplicates",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": 5
+   },
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": 5
+   },
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": 5
+   },
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": 5
+   }
+  ],
+  "state": {
+   "rice": {
+    "alive": true,
+    "name": "rice",
+    "note": "",
+    "qty": 5
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 1,
+   "ops": 1,
+   "oversold": []
+  }
+ },
+ {
+  "name": "unicode-text",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "x",
+    "kind": "note",
+    "lamport": 1,
+    "replica": "a",
+    "value": "അടൂർ ✓"
+   },
+   {
+    "id": "b:2",
+    "item": "x",
+    "kind": "create",
+    "lamport": 2,
+    "replica": "b",
+    "value": "Camp 🏕"
+   }
+  ],
+  "state": {
+   "x": {
+    "alive": true,
+    "name": "Camp 🏕",
+    "note": "അടൂർ ✓",
+    "qty": 0
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 1,
+   "ops": 2,
+   "oversold": []
+  }
+ },
+ {
+  "name": "restore-after-delete",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "x",
+    "kind": "delete",
+    "lamport": 1,
+    "replica": "a",
+    "value": true
+   },
+   {
+    "id": "b:2",
+    "item": "x",
+    "kind": "delete",
+    "lamport": 2,
+    "replica": "b",
+    "value": false
+   }
+  ],
+  "state": {
+   "x": {
+    "alive": true,
+    "name": "x",
+    "note": "",
+    "qty": 0
+   }
+  },
+  "stats": {
+   "conflicts": 1,
+   "items": 1,
+   "ops": 2,
+   "oversold": []
+  }
+ },
+ {
+  "name": "oversell",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "b",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": 10
+   },
+   {
+    "id": "b:1",
+    "item": "b",
+    "kind": "adjust",
+    "lamport": 2,
+    "replica": "b",
+    "value": -7
+   },
+   {
+    "id": "c:2",
+    "item": "b",
+    "kind": "adjust",
+    "lamport": 3,
+    "replica": "c",
+    "value": -6
+   }
+  ],
+  "state": {
+   "b": {
+    "alive": true,
+    "name": "b",
+    "note": "",
+    "qty": -3
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 1,
+   "ops": 3,
+   "oversold": [
+    "b"
+   ]
+  }
+ },
+ {
+  "name": "empty",
+  "ops": [],
+  "state": {},
+  "stats": {
+   "conflicts": 0,
+   "items": 0,
+   "ops": 0,
+   "oversold": []
+  }
+ }
+]

@@ -1,33 +1,28 @@
-/* Heart-rate bar. Colours come from style.css (--bg, --panel, --line, --text, --muted, --good, --warn, --bad). */
-.hrw { position: sticky; top: 0; z-index: 20; background: var(--panel); border-bottom: 1px solid var(--line); }
-.hrw-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 4px 14px; border: 0; border-radius: 0; background: transparent; text-align: left; }
-.hrw-heart { color: var(--bad); font-size: 22px; }
-.hrw-bpm { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 2ch; }
-.hrw-unit { color: var(--muted); font-size: 13px; }
-.hrw-spark { flex: 1; min-width: 60px; max-width: 160px; height: 28px; color: var(--good); }
-.hrw-chip { padding: 4px 12px; border-radius: 999px; border: 2px solid var(--line); font-size: 14px; font-weight: 700; white-space: nowrap; }
-.hrw-chip.calm { border-color: var(--good); color: var(--good); }
-.hrw-chip.elevated { border-color: var(--warn); color: var(--warn); }
-.hrw-chip.high { border-color: var(--bad); color: var(--bad); }
-.hrw-chip.calibrating { color: var(--muted); }
-.hrw-src { margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: .08em; padding: 3px 8px; border: 1px dashed var(--muted); border-radius: 6px; color: var(--muted); white-space: nowrap; }
-.hrw-src.strap { border-color: var(--warn); color: var(--warn); }
-.hrw-panel { padding: 4px 14px 14px; }
-.hrw-panel h4 { font-size: 13px; margin: 12px 0 4px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.hrw-sim, .hrw-note, .hrw-why { font-size: 14px; color: var(--muted); margin: 6px 0; }
-.hrw-why { color: var(--text); }
-.hrw-slide { display: flex; align-items: center; gap: 12px; min-height: 52px; font-weight: 700; }
-.hrw-slide input { flex: 1; min-height: 44px; }
+/* Heart-rate item: one small button in the top bar; the slider and the rest live in a popover. */
+.hrhost { position: relative; flex: none; }
+.hrw { position: relative; }
+.hrw-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--text); font: inherit; cursor: pointer; }
+.hrw-toggle:hover { background: #2f2f2f; }
+.hrw-heart { color: var(--muted); font-size: 16px; }
+.hrw-bpm { font-variant-numeric: tabular-nums; min-width: 2ch; }
+.hrw-unit { color: var(--muted); font-size: 12px; }
+.hrw.level2 .hrw-heart { color: var(--warn); }
+.hrw.level1 .hrw-heart { color: var(--bad); }
+.hrw-panel { position: absolute; right: 0; top: 100%; margin-top: 6px; z-index: 30; width: min(340px, calc(100vw - 24px)); max-height: 70vh; overflow-y: auto; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 12px; padding: 10px 14px 12px; color: var(--text); }
+.hrw-status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.hrw-spark { flex: 1; min-width: 40px; max-width: 120px; height: 24px; color: var(--muted); }
+.hrw-chip, .hrw-src { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.hrw-chip.elevated { color: var(--warn); }
+.hrw-chip.high { color: var(--bad); }
+.hrw-src { margin-left: auto; }
+.hrw-panel h4 { font-size: 12px; font-weight: 600; margin: 12px 0 4px; color: var(--muted); }
+.hrw-sim, .hrw-note, .hrw-why { font-size: 13px; color: var(--muted); margin: 6px 0; }
+.hrw-slide { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.hrw-slide input { flex: 1; min-height: 44px; accent-color: var(--accent, #5b7bd5); }
 .hrw-slide output { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
 .hrw-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
-.hrw-btn { flex: 1 1 140px; min-height: 52px; padding: 0 12px; }
+.hrw-btn { flex: 1 1 110px; min-height: 44px; padding: 0 10px; font: inherit; border-radius: 10px; background: #343434; border: 1px solid #444; color: var(--text); cursor: pointer; }
 .hrw-btn:disabled, .hrw-slide input:disabled { opacity: .45; cursor: not-allowed; }
-.hrw-log { list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
-.hrw-breath { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 15px; }
-.hrw-orb { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--olive); border: 2px solid var(--good); animation: hrw-breathe 10s ease-in-out infinite; }
-@keyframes hrw-breathe { 0%, 100% { transform: scale(.7); } 40% { transform: scale(1.25); } }
-@media (prefers-reduced-motion: reduce) { .hrw-orb { animation: none; } }
-.hrw.level2 { border-bottom-color: var(--warn); }
-.hrw.level1 { border-bottom-color: var(--bad); }
-@media (min-width: 720px) { .hrw-toggle { padding: 4px max(14px, calc((100vw - 720px) / 2)); } .hrw-panel, .hrw-breath { padding-left: max(14px, calc((100vw - 720px) / 2)); padding-right: max(14px, calc((100vw - 720px) / 2)); } }
+.hrw-log { list-style: none; margin: 0; padding: 0; font-size: 12px; color: var(--muted); display: grid; gap: 2px; }
+.hrw-breath { font-size: 13px; color: var(--text); margin: 8px 0 0; }
 .hrw .hidden { display: none; }

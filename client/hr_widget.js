@@ -97,7 +97,7 @@
     var line = doc.createElementNS(SVGNS, "polyline"); line.setAttribute("fill", "none"); line.setAttribute("stroke", "currentColor"); line.setAttribute("stroke-width", "2"); svg.appendChild(line);
     var srcEl = h(doc, "span", { class: "hrw-src", text: "SIMULATOR" });
     var toggle = h(doc, "button", { class: "hrw-toggle", type: "button", "aria-expanded": "false", "aria-label": "Heart rate controls" }, [
-      h(doc, "span", { class: "hrw-heart", "aria-hidden": "true", text: "♥" }), bpmEl, h(doc, "span", { class: "hrw-unit", text: "bpm" }), svg, chip, srcEl]);
+      h(doc, "span", { class: "hrw-heart", "aria-hidden": "true", text: "♥" }), bpmEl, h(doc, "span", { class: "hrw-unit", text: "bpm" })]);
 
     var whyEl = h(doc, "p", { class: "hrw-why", "aria-live": "polite", text: "Calibrating baseline for 30 s." });
     var slider = h(doc, "input", { type: "range", min: String(HR.MIN_TARGET), max: String(HR.MAX_TARGET), value: "72", "aria-label": "Simulated heart rate" });
@@ -109,25 +109,25 @@
     var strapBtn = mkBtn("Connect strap", connectStrapClick);
     var strapNote = h(doc, "p", { class: "hrw-note", text: HR.bleSupported(nav) ? HR.BLE_NOTE : "Web Bluetooth is not available in this browser, so only the simulator works here. " + HR.BLE_NOTE });
     if (!HR.bleSupported(nav)) strapBtn.disabled = true;
-    var breathing = h(doc, "div", { class: "hrw-breath hidden", role: "status" }, [h(doc, "span", { class: "hrw-orb" }), h(doc, "span", { text: "Breathe in for 4, out for 6. The next step waits for you." })]);
+    var breathing = h(doc, "div", { class: "hrw-breath hidden", role: "status" }, [h(doc, "span", { text: "Breathe in for 4, out for 6. The next step waits for you." })]);
     var logEl = h(doc, "ul", { class: "hrw-log" });
     var panel = h(doc, "div", { class: "hrw-panel hidden" }, [
+      h(doc, "div", { class: "hrw-status" }, [chip, svg, srcEl]), breathing,
       h(doc, "p", { class: "hrw-sim", text: "Simulated heart rate. Drag the slider or use the buttons to try how Devin adapts." }),
       h(doc, "label", { class: "hrw-slide" }, [h(doc, "span", { text: "Simulator" }), slider, sliderVal]),
       h(doc, "div", { class: "hrw-row" }, [spikeBtn, calmBtn, calBtn]),
       h(doc, "div", { class: "hrw-row" }, [strapBtn]), strapNote, whyEl,
       h(doc, "h4", { text: "Adaptation log" }), logEl,
       h(doc, "p", { class: "hrw-note", text: "Your heart rate stays on this device and is never sent to the server. Not a medical device." })]);
-    var bar = h(doc, "div", { class: "hrw level3", role: "region", "aria-label": "Heart rate adaptation" }, [toggle, breathing, panel]);
+    var bar = h(doc, "div", { class: "hrw level3", role: "region", "aria-label": "Heart rate adaptation" }, [toggle, panel]);
     host.appendChild(bar);
 
     function setSlider(v) { slider.value = String(v); sliderVal.textContent = String(v); }
     slider.addEventListener("input", function () { sim.setTarget(Number(slider.value)); sliderVal.textContent = String(sim.target()); });
-    toggle.addEventListener("click", function () {
-      var open = toggle.getAttribute("aria-expanded") !== "true";
-      toggle.setAttribute("aria-expanded", String(open));
-      panel.className = "hrw-panel" + (open ? "" : " hidden");
-    });
+    function setOpen(open) { toggle.setAttribute("aria-expanded", String(open)); panel.className = "hrw-panel" + (open ? "" : " hidden"); }
+    toggle.addEventListener("click", function () { setOpen(toggle.getAttribute("aria-expanded") !== "true"); });
+    doc.addEventListener("click", function (e) { if (!bar.contains(e.target)) setOpen(false); });
+    doc.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
 
     function render() {
       var v = ctrl.view(), d = v.detector, s = d.baseline === null ? "calibrating" : d.stress;

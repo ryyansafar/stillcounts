@@ -41,15 +41,13 @@
     function $(id) { return doc.getElementById(id); }
 
     // ---------- bubbles ----------
-    function devin(kids, cls) { return h("div", { className: "msg devin " + (cls || "") }, [h("span", { className: "avatar", "aria-hidden": "true", text: "D" }), h("div", { className: "bubble" }, kids)]); }
-    function tutor(kids, cls) { return h("div", { className: "msg tutor " + (cls || "") }, [h("span", { className: "avatar", "aria-hidden": "true", text: "T" }), h("div", { className: "bubble" }, kids)]); }
+    function devin(kids, cls) { return h("div", { className: "msg devin " + (cls || "") }, [h("div", { className: "bubble" }, kids)]); }
+    function tutor(kids, cls) { return h("div", { className: "msg tutor " + (cls || "") }, [h("div", { className: "bubble" }, kids)]); }
 
     function codePanel(b) {
       if (b.locked) {
         return h("div", { className: "codepanel locked", "data-code-state": "locked", role: "group", "aria-label": "Code locked" }, [
-          h("span", { className: "padlock", "aria-hidden": "true" }),
-          h("div", {}, [h("strong", { text: "Code locked" }), h("div", { className: "sub", text: "Devin wrote it and stopped. Earn this stage to read it." })]),
-          h("div", { className: "redact", "aria-hidden": "true" }, [h("i"), h("i"), h("i"), h("i")])]);
+          h("strong", { text: "Code locked" }), h("div", { className: "sub", text: "Devin wrote it and stopped. Earn this stage to read it." })]);
       }
       if (b.needCode) {
         var btn = on(h("button", { type: "button", className: "primary", "data-action": "reveal", text: "Reveal the code" }), "click", function () {
@@ -215,7 +213,7 @@
     function checkpointBubble(b) {
       var cps = normalized(b.view), kids = [];
       var earned = b.passed.predict && b.passed.bug && b.passed.write;
-      kids.push(h("div", { className: "eyebrow", text: "Tutor checkpoint · stage " + b.n }),
+      kids.push(h("div", { className: "eyebrow", text: "Checkpoint, stage " + b.n }),
         h("p", { className: "sub", text: earned ? "Earned. Explain is optional practice." : b.canWork ? "Pass predict, find the bug and write to unlock this stage's code. Devin stays stopped until you do."
                                                      : "Locked until the stage before it is earned." }));
       V.KINDS.forEach(function (kind) {
@@ -232,7 +230,7 @@
       });
       var prof = P.levelProfile(b.level);
       if (prof.level < 3 && !earned) {
-        kids.splice(1, 0, h("div", { className: "levelnote", "data-level": prof.level }, [chip("Difficulty " + prof.level + ": " + prof.label, prof.level === 1 ? "bad" : "warn"),
+        kids.splice(1, 0, h("div", { className: "levelnote", "data-level": prof.level }, [h("span", { text: "Difficulty " + prof.level + ": " + prof.label }),
           prof.breathing ? h("span", { className: "breath", text: "Breathe in for 4, out for 6. Nothing here is timed and nothing is skipped." }) : null]));
       }
       return tutor(kids, earned ? "earned" : "");
@@ -273,7 +271,7 @@
         var r = V.sidebarRow(c);
         var row = h("div", { className: "chatrow" + (active && active.id === c.id ? " current" : "") }, [
           on(h("button", { type: "button", className: "pick", "data-chat": c.id, "aria-current": active && active.id === c.id ? "true" : null }, [
-            h("span", { className: "t", text: r.title }), h("span", { className: "m" }, [chip(r.badge, r.badge === "LIVE" ? "live" : "sim"), h("span", { text: r.progress })])]), "click",
+            h("span", { className: "t", text: r.title }), h("span", { className: "m", text: r.progress + (c.source === "live" ? "" : " · simulated") })]), "click",
             function () { ui.sideOpen = false; ui.stick = true; ctl.select(c.id); }),
           on(h("button", { type: "button", className: "del", "aria-label": "Delete chat " + r.title, text: "×" }), "click", function () { ctl.remove(c.id); })]);
         return row;
@@ -284,19 +282,18 @@
     }
 
     function renderTop(chat) {
-      var top = $("topbar"), kids = [on(h("button", { type: "button", className: "burger", "aria-label": "Chats", text: "☰" }), "click", function () { ui.sideOpen = !ui.sideOpen; renderSide(); })];
+      var top = $("topbar"), kids = [on(h("button", { type: "button", className: "burger", "aria-label": "Chats", text: "\u2630" }), "click", function () { ui.sideOpen = !ui.sideOpen; renderSide(); })];
       if (!chat) { kids.push(h("div", { className: "ttl", text: "New chat" })); top.replaceChildren.apply(top, kids); $("banner").className = "banner hidden"; return; }
       var b = V.badge(chat), a = V.acu(chat), s = chat.session, link = s && V.safeLink(s.url), gate = K.gateState(chat);
-      kids.push(h("div", { className: "ttl", text: chat.title }), h("span", { className: "badge " + b.cls, "data-source": chat.source, title: b.why, text: b.text }));
-      if (a) kids.push(h("div", { className: "acu", "data-acu": "1", title: "Compute units used by this session against its cap" }, [h("span", { text: a.text }),
-        h("span", { className: "bar" }, [h("span", { className: "fill", style: "width:" + a.pct + "%" })])]));
-      if (link) kids.push(h("a", { className: "navlink", href: link, target: "_blank", rel: "noopener noreferrer", text: "Open in Devin" }));
+      var stat = chat.source === "live" ? "Live Devin session" : "";
+      kids.push(h("div", { className: "ttl", text: chat.title }), h("span", { className: "status " + (chat.source === "live" ? "live" : "sim"), "data-source": chat.source, title: b.why, text: stat }));
+      if (link) kids.push(h("a", { href: link, target: "_blank", rel: "noopener noreferrer", text: "Open in Devin" }));
       if (s && !chat.stopped && ["working", "waiting", "starting"].indexOf(s.phase) >= 0) {
         kids.push(on(h("button", { type: "button", className: "stop", "data-action": "stop", text: "Stop" }), "click", function () { ctl.stop(chat.id); }));
       }
       top.replaceChildren.apply(top, kids);
       var ban = $("banner");
-      if (chat.source === "replay") { ban.className = "banner sim"; ban.textContent = b.why; }
+      if (chat.source === "replay") { ban.className = "banner sim"; ban.textContent = "Simulated replay, not a real Devin session. " + b.why.charAt(0).toUpperCase() + b.why.slice(1); }
       else if (gate.kind === "limit" || gate.kind === "error") {
         ban.className = "banner warn"; ban.textContent = gate.text + " ";
         ban.appendChild(on(h("button", { type: "button", "data-action": "fallback", text: "Switch to a labelled replay" }), "click", function () { ctl.fallbackNow(chat.id, gate.kind === "limit" ? "quota" : "api_error"); }));
@@ -307,13 +304,14 @@
       var bar = $("livebar"), v = P.statusView(chat);
       if (!v) { bar.className = "livebar hidden"; bar.replaceChildren(); return; }
       bar.className = "livebar " + (v.live ? "live" : "sim");
-      var kids = [h("span", { className: "chip " + v.cls, "data-live": "phase", text: v.text }), h("span", { className: "chip", "data-live": "detail", title: "status_detail from the Devin session", text: v.detail || "no status yet" })];
-      if (v.acu) kids.push(h("span", { className: "chip", "data-live": "acu", text: (v.live ? "ACU " : "Simulated ACU ") + v.acu.used + " of " + v.acu.cap }));
-      kids.push(h("span", { className: "chip", "data-live": "prs", text: v.prs.total ? v.prs.total + " PR" + (v.prs.total === 1 ? "" : "s") + " · CI " + v.prs.passing + " passing, " + v.prs.failing + " failing, " + v.prs.pending + " running" + (v.prs.reviewComments ? " · Devin Review " + v.prs.reviewComments : "") : "no pull requests yet" }));
-      if (v.slow) kids.push(h("span", { className: "chip warn", "data-live": "pace", text: "Slow pace: Devin is held back at difficulty 1" }));
-      if (v.link) kids.push(h("a", { className: "navlink", href: v.link, target: "_blank", rel: "noopener noreferrer", text: "Session link" }));
-      var line = h("div", { className: "livemsg", text: v.last ? "Devin: " + v.last : v.gate.text });
-      bar.replaceChildren.apply(bar, [h("div", { className: "liverow" }, kids), line]);
+      var parts = [v.text];
+      if (v.detail && v.live) parts.push(v.detail);
+      if (v.acu) parts.push((v.live ? "ACU " : "Simulated ACU ") + v.acu.used + " of " + v.acu.cap);
+      parts.push(v.prs.total ? v.prs.total + " PR" + (v.prs.total === 1 ? "" : "s") + ", CI " + v.prs.passing + " passing, " + v.prs.failing + " failing, " + v.prs.pending + " running" + (v.prs.reviewComments ? ", Devin Review " + v.prs.reviewComments : "") : "no pull requests yet");
+      if (v.slow) parts.push("slow pace: Devin is held back at difficulty 1");
+      var kids = [h("span", { "data-live": "phase", text: parts.join(" \u00b7 ") })];
+      if (v.link) kids.push(" ", h("a", { href: v.link, target: "_blank", rel: "noopener noreferrer", text: "Session" }));
+      bar.replaceChildren.apply(bar, kids);
     }
 
     function renderGate(chat) {
@@ -328,20 +326,16 @@
       var w = $("welcome");
       w.className = chat ? "welcome hidden" : "welcome";
       if (chat || w.children.length) return;
-      w.appendChild(h("img", { className: "mark", src: "/static/icons/logo.svg", alt: "", width: "56", height: "56" }));
-      w.appendChild(h("h1", { text: "Ask Devin to build something small." }));
-      w.appendChild(h("p", { className: "lede", text: "Devin builds it stage by stage and stops after each one. You earn every stage with a prediction, a bug hunt and a bit of code, and only then do you see the code and does Devin go on." }));
-      var chips = h("div", { className: "ideas" }, IDEAS.map(function (t) {
+      w.appendChild(h("h1", { text: "What should Devin build?" }));
+      w.appendChild(h("div", { className: "ideas" }, IDEAS.map(function (t) {
         return on(h("button", { type: "button", className: "idea", text: "Build " + t }), "click", function () { send("Build " + t); });
-      }));
-      w.appendChild(chips);
-      w.appendChild(on(h("button", { type: "button", className: "demo", "data-action": "demo", text: "Try the built-in demo course (simulated Devin, instant)" }), "click", function () { send("Show me the built-in demo course", { demo: true }); }));
-      w.appendChild(h("p", { className: "sub", text: "A live build needs this server to hold a Devin token. If it does not, or the usage limit is hit, you get a replay that says SIMULATED everywhere." }));
+      })));
+      w.appendChild(on(h("button", { type: "button", className: "demo", "data-action": "demo", text: "Try the built-in demo (simulated)" }), "click", function () { send("Show me the built-in demo course", { demo: true }); }));
     }
 
     function renderComposer(chat) {
       var box = $("prompt"), running = chat && chat.session && !chat.stopped && V && ["working", "waiting", "starting"].indexOf(chat.session.phase) >= 0;
-      box.placeholder = running ? "Message Devin…" : chat ? "This build is over. Type to start a new chat." : "Ask Devin to build something small…";
+      box.placeholder = running ? "Message Devin" : chat ? "This build is over. Type to start a new chat." : "Ask Devin to build something small";
     }
 
     function render() {
@@ -353,13 +347,14 @@
       var box = $("prompt");
       text = String(text === undefined ? box.value : text).trim();
       if (!text) return;
-      box.value = "";
+      box.value = ""; box.style.height = "";
       ui.sideOpen = false; ui.stick = true;
       return ctl.submit(text, opts);
     }
 
     // ---------- wiring ----------
     on($("thread"), "scroll", function () { var t = $("thread"); ui.stick = t.scrollHeight - t.scrollTop - t.clientHeight < 120; });
+    on($("prompt"), "input", function () { var p = $("prompt"); p.style.height = "auto"; p.style.height = Math.min(p.scrollHeight, 160) + "px"; });
     on($("send"), "click", function () { send(); });
     on($("prompt"), "keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
     on($("newchat"), "click", function () { ui.sideOpen = false; ctl.newChat(); var p = $("prompt"); if (p.focus) p.focus(); });

@@ -58,3 +58,27 @@ def test_the_browser_never_holds_a_devin_token():
     for name in CHAT_FILES:
         text = (CLIENT / name).read_text().lower()
         assert "bearer" not in text and "devin_token" not in text and "authorization" not in text, name
+
+
+def test_the_shell_is_an_ordinary_chat_layout_with_quiet_secondary_links():
+    html = (CLIENT / "chat.html").read_text()
+    for needle in ('id="newchat"', 'id="chatlist"', 'id="thread"', 'id="prompt"', 'id="send"', 'id="hr-widget"'):
+        assert needle in html, needle
+    assert html.index('id="hr-widget"') < html.index('id="thread"'), "the heart rate item lives in the top bar"
+    menu = re.search(r'<details class="menu".*?</details>', html, re.S).group(0)
+    for href in ("/ledger", "/board", "/static/learn.html", "/race", "/static/results.html"):
+        assert f'href="{href}"' in menu, href
+
+
+def test_no_decoration_one_font_stack_and_no_remote_fonts():
+    css = (CLIENT / "chat.css").read_text() + (CLIENT / "hr_widget.css").read_text()
+    assert "box-shadow: 0 0" not in css and "text-shadow" not in css
+    assert "@keyframes" not in css, "no animated flourishes"
+    assert "@font-face" not in css and not re.search(r"https?://fonts\.", css)
+    assert "system-ui" in css
+
+
+def test_the_empty_state_has_no_marketing_copy():
+    js = (CLIENT / "chat.js").read_text()
+    body = js[js.index("function renderWelcome"):js.index("function renderComposer")]
+    assert "lede" not in body and "stage by stage" not in body

@@ -26,9 +26,10 @@ def test_the_chaos_summary_agrees_with_itself():
 
 
 def test_the_demo_preflight_command_turns_on_phone_writes():
-    preflight = DEMO.split("## Before you go on", 1)[1].split("## Beat 1", 1)[0]
+    preflight = DEMO.split("## Before you go on", 1)[1].split("## The path", 1)[0]
     first_block = preflight.split("```bash", 1)[1].split("```", 1)[0]
-    assert "STILLCOUNTS_LEARN_WRITE_LAN=1" in first_block and "scripts/run.sh" in first_block
+    assert "scripts/run.sh" in first_block
+    assert "STILLCOUNTS_LEARN_WRITE_LAN=1" in preflight and "HTTP 403" in preflight
     assert "runs on the demo laptop" in preflight
 
 

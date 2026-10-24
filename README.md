@@ -143,7 +143,7 @@ The server tells browsers apart by a random id it issues itself in an HttpOnly c
 - On the chat, grading needs the server. With the network off the chat still opens and replays, but a checkpoint answer says "needs a signal". Offline predict with provisional passes exists on the Learn page only.
 - The find-the-bug lock lives in the server's memory (restarting clears it).
 - Only one course exists, and it is about one small merge function.
-- The write sandbox is defence in depth, not a security boundary: RLIMIT_AS works on Linux only, the 256 MB allocation guard works on macOS and Linux, and a public deployment should run the server in a container as an unprivileged user.
+- The write sandbox is defence in depth, not a security boundary: RLIMIT_AS (1 GB) is Linux only and macOS ignores it, the 256 MB allocation guard works on macOS and Linux, and a public deployment should run the server in a container as an unprivileged user.
 - Three attack scenarios still fail on some seeds: `life_storage_quota`, `net_retry_same_id_new_content` and `net_restore_old_backup`. `data/chaos_summary.json` has the real numbers of a 500-seed run (671 of 12500 runs failed). They are pinned as strict expected failures in `tests/test_regress_*.py`.
 - The Results numbers and the proof card are self-reported demo numbers, not a study: no control group, tiny sample.
 

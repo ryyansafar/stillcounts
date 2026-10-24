@@ -23,15 +23,28 @@
   var clock = new C.Clock(replica, saved.lamport || 0);
   var myName = load("sc_name", "");
   var known = {}; ops.forEach(function (o) { known[o.id] = true; });
-  var online = false, busy = false, lastSync = null;
+  var online = false, busy = false, lastSync = null, lastView = null;
+
+  // Tabs of one phone share this record, so fold in whatever another tab wrote before overwriting it.
+  function absorb(stored) {
+    if (!stored || !stored.ops) return false;
+    var added = false;
+    stored.ops.forEach(function (o) { if (!known[o.id]) { ops.push(o); known[o.id] = true; added = true; } });
+    (stored.synced || []).forEach(function (id) { synced[id] = true; });
+    clock.observe(stored.lamport || 0);
+    rejected = Math.max(rejected, stored.rejected || 0);
+    return added;
+  }
 
   function persist() {
+    absorb(load("sc_state", null));
     save("sc_state", { ops: ops, synced: Object.keys(synced), cursor: cursor, epoch: epoch, rejected: rejected, lamport: clock.time });
   }
 
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
   function addOp(kind, item, value) {
+    absorb(load("sc_state", null));
     var op = { id: replica + ":" + uid(), replica: replica, lamport: clock.tick(), kind: kind, item: item, value: value };
     ops.push(op); known[op.id] = true; persist(); render(); sync();
   }
@@ -68,7 +81,19 @@
     var state = C.merge(ops), stats = C.stats(ops), list = document.getElementById("list");
     var ids = ITEMS.map(function (x) { return x[0]; });
     Object.keys(state).forEach(function (k) { if (ids.indexOf(k) < 0) ids.push(k); });
-    var focused = document.activeElement && document.activeElement.getAttribute("data-note");
+    var view = JSON.stringify(ids.map(function (id) { var s = state[id]; return s ? [id, s.name, s.qty, s.note, s.alive] : [id]; }));
+    if (view !== lastView) { lastView = view; renderList(ids, state, list); }
+    document.getElementById("who").textContent = "This phone: " + replica;
+    document.getElementById("foot").textContent = stats.ops + " operations · " + stats.conflicts + " conflicts merged" +
+      (lastSync ? " · last sync " + lastSync.toLocaleTimeString() : " · not synced yet") +
+      (rejected ? " · " + rejected + " rejected by the server" : "");
+    setStatus();
+  }
+
+  // Rebuilt only when the ledger changes, so a finger mid-tap or a half-typed note is not thrown away.
+  function renderList(ids, state, list) {
+    var active = document.activeElement, focused = active && active.getAttribute && active.getAttribute("data-note");
+    var draft = focused ? { value: active.value, start: active.selectionStart, end: active.selectionEnd } : null;
     list.replaceChildren();
     ids.forEach(function (id) {
       var s = state[id] || { name: id, qty: 0, note: "", alive: true };
@@ -89,19 +114,20 @@
       note.setAttribute("data-note", id); note.setAttribute("aria-label", label + " note");
       note.addEventListener("change", function () { addOp("note", id, note.value); });
       card.appendChild(note); list.appendChild(card);
-      if (focused === id) { note.focus(); }
+      if (focused === id) { note.value = draft.value; note.focus(); note.setSelectionRange(draft.start, draft.end); }
     });
-    document.getElementById("who").textContent = "This phone: " + replica;
-    document.getElementById("foot").textContent = stats.ops + " operations · " + stats.conflicts + " conflicts merged" +
-      (lastSync ? " · last sync " + lastSync.toLocaleTimeString() : " · not synced yet") +
-      (rejected ? " · " + rejected + " rejected by the server" : "");
-    setStatus();
+  }
+
+  // Unicode-aware so names in Malayalam, Hindi or Tamil get their own item instead of all collapsing to one id.
+  function itemId(name) {
+    var slug = Array.from(name.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, "-").replace(/^-+/, "")).slice(0, 40).join("");
+    return slug.replace(/-+$/, "") || "item-" + uid();
   }
 
   document.getElementById("addbtn").addEventListener("click", function () {
     var input = document.getElementById("newitem"), name = input.value.trim();
     if (!name) return;
-    var id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
+    var id = itemId(name);
     addOp("create", id, name); input.value = "";
   });
 
@@ -111,6 +137,7 @@
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(function () {});
   window.addEventListener("online", sync);
+  window.addEventListener("storage", function (e) { if (e.key === "sc_state" && absorb(load("sc_state", null))) render(); });
   window.addEventListener("offline", function () { online = false; render(); });
   setInterval(sync, 2000);
   render(); sync();

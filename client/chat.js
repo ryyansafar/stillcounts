@@ -293,7 +293,7 @@
       }
       top.replaceChildren.apply(top, kids);
       var ban = $("banner");
-      if (chat.source === "replay") { ban.className = "banner sim"; ban.textContent = "Simulated replay, not a real Devin session. " + b.why.charAt(0).toUpperCase() + b.why.slice(1); }
+      if (chat.source === "replay") { ban.className = "banner sim"; ban.textContent = "Simulated replay, not a real Devin session. Logs, pull requests and ACU are simulated."; }
       else if (gate.kind === "limit" || gate.kind === "error") {
         ban.className = "banner warn"; ban.textContent = gate.text + " ";
         ban.appendChild(on(h("button", { type: "button", "data-action": "fallback", text: "Switch to a labelled replay" }), "click", function () { ctl.fallbackNow(chat.id, gate.kind === "limit" ? "quota" : "api_error"); }));

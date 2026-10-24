@@ -79,3 +79,7 @@ MIT.
 - Buy Me a Coffee: https://buymeacoffee.com/ryyansafar
 - PayPal: https://www.paypal.com/paypalme/ryyansafar
 - Razorpay: https://razorpay.me/@ryyansafar
+
+## Heart-rate adaptation (Learn)
+
+A top-bar widget (`client/hr_widget.js`) reads a heart rate from a **simulator** (default, always labelled SIMULATOR) or an optional Web Bluetooth strap (`client/hr.js`, untested without hardware). `client/stress.js` is a pure detector and policy: baseline = median of the first 30 s, abrupt rise (+15 bpm or +20% in 10 s) or sustained x1.25 for 20 s, with hysteresis and cooldown. It maps to difficulty level 3, 2 or 1 and always explains why. Easier never means auto-passed. Heart rate stays on the device and is never sent to the server. Not a medical device. The chat shell integrates through `window.EarnHooks` (`getDifficulty`, `onAdapt`, `reportAttempt`).

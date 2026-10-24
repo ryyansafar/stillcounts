@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+.env
+*.pyc
+.devin_ids.json
+.sessions.json
+node_modules/
+data/*.jsonl

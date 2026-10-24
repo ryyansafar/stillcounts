@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -d .venv ] || python3 -m venv .venv
-.venv/bin/pip install -q pytest pytest-cov hypothesis fastapi uvicorn requests httpx jsonschema
+.venv/bin/pip install -q pytest pytest-cov hypothesis fastapi uvicorn requests httpx jsonschema segno
 case "${1:-serve}" in
   test)  .venv/bin/python -m pytest -q && node --test client/test/ ;;
   oracle) .venv/bin/python -m oracle.oracle --seed "${2:-0xA3}" --ops "${3:-240}" --perms "${4:-200}" ;;

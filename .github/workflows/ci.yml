@@ -9,7 +9,7 @@ jobs:
         with: { python-version: "3.12" }
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
-      - run: pip install pytest pytest-cov hypothesis fastapi uvicorn requests httpx jsonschema
+      - run: pip install pytest pytest-cov hypothesis fastapi uvicorn requests httpx jsonschema segno
       - run: python -m pytest -q --cov=stillcounts --cov=server --cov=oracle
       - run: node --test client/test/
       - run: python -m oracle.oracle --seed 0xA3 --ops 240 --perms 200

@@ -14,7 +14,7 @@ The ledger is a set of operations, each with a unique id. The state is a pure fu
 `oracle/` replays the same operations in hundreds of random orders, with duplicates, and fails if any result differs. It also catches deliberately broken merges. The agents that attack the product may run the oracle but are never allowed to edit it (`.github/CODEOWNERS`).
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install pytest hypothesis fastapi uvicorn requests httpx jsonschema
+python3 -m venv .venv && .venv/bin/pip install pytest hypothesis fastapi uvicorn requests httpx jsonschema segno
 .venv/bin/python -m pytest -q
 .venv/bin/python -m oracle.oracle --seed 0xA3 --ops 240 --perms 200
 .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port 8000

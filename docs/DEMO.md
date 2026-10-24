@@ -39,7 +39,7 @@ scripts/run.sh          # prints the board link with this run's join token
 
 ## Close (2:30 to 3:00)
 
-- **Play**: two phones open `/race` (QR code on the board's Race tab). Same operations, shuffled differently on each phone; first to the right merged stock wins.
+- **Play**: two phones open `/race` (QR code on the board's Race tab). Same operations, shuffled differently on each phone; faster correct answers rank higher.
 - **Devin, honestly**: `docs/devin.md` has the table. 9 cloud sessions, 5 pull requests, all merged by a human; a 2.3 MB file was replaced, a sandbox that allowed `import os` was rewritten by hand, and the cloud quota ran out. Later work is labelled Devin CLI, local.
 - Do not quote the quiz as a result. A few volunteers is a demo, not a study.
 

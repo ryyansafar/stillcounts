@@ -106,14 +106,55 @@
     return { cls: "bad", text: "Not yet: " + failureText(r, kind) + hint + " Try again; Devin stays stopped until you earn it.", points: points };
   }
 
-  function sidebarRow(chat) {
+  function relTime(ts, now) {
+    if (typeof ts !== "number" || typeof now !== "number") return "";
+    var s = Math.max(0, Math.floor((now - ts) / 1000));
+    if (s < 60) return "just now";
+    if (s < 3600) return Math.floor(s / 60) + "m ago";
+    if (s < 86400) return Math.floor(s / 3600) + "h ago";
+    return Math.floor(s / 86400) + "d ago";
+  }
+
+  function sidebarRow(chat, now) {
     var earned = chat.stages.filter(function (s) { return K.isEarned(s); }).length;
     return { id: chat.id, title: chat.title, badge: chat.source === "live" ? "LIVE" : "REPLAY",
-             progress: chat.plan.length ? earned + " of " + chat.plan.length + " earned" : "starting" };
+             progress: chat.plan.length ? earned + " of " + chat.plan.length + " earned" : "starting", when: relTime(chat.updatedAt, now) };
+  }
+
+  // Stage progress rail: the earned stages, the one being worked, the ones still locked.
+  function stageRail(chat) {
+    var plan = chat.plan || [];
+    if (!plan.length) return { label: "Planning", items: [], current: 0 };
+    var current = 0;
+    var items = plan.map(function (p) {
+      var earned = K.isEarned(K.stageOf(chat, p.n)), state = earned ? "earned" : !current ? "working" : "locked";
+      if (!earned && !current) current = p.n;
+      return { n: p.n, title: p.title, state: state };
+    });
+    return { label: current ? "Stage " + current + " of " + plan.length : "All stages earned", items: items, current: current };
+  }
+
+  // Difficulty 3 is the full task, 1 is the gentlest. Three dots, filled from the left.
+  function levelDots(level) {
+    var n = Math.max(1, Math.min(3, Math.round(Number(level) || 1)));
+    return [n >= 1, n >= 2, n >= 3];
+  }
+
+  // Which course answers the prompt. Only one course ships (the field ledger); anything else is generated live or falls back to it.
+  var LEDGER_WORDS = /(ledger|inventory|stock|sync|offline|crdt|merge|warehouse|relief|supplies)/i;
+  function courseChip(text, source) {
+    var t = String(text || "").trim();
+    if (!t) return { text: "Course: chosen after you send", matched: false };
+    if (LEDGER_WORDS.test(t)) return { text: "Course: Field ledger sync", matched: true };
+    return { text: source === "replay" ? "Course: built-in demo (simulated)" : "Course: generated from your task", matched: false };
+  }
+
+  function replayLabel(chat) {
+    return chat && chat.source === "live" ? "Live Devin session" : "Replay, simulated: not a real Devin session";
   }
 
   var api = { KINDS: KINDS, blocks: blocks, badge: badge, acu: acu, ciLabel: ciLabel, reviewLabel: reviewLabel, outcome: outcome,
-              safeLink: safeLink, sidebarRow: sidebarRow, currentKind: currentKind };
+              safeLink: safeLink, sidebarRow: sidebarRow, stageRail: stageRail, relTime: relTime, levelDots: levelDots, courseChip: courseChip, replayLabel: replayLabel, currentKind: currentKind };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
   root.ChatView = api;
 })(typeof self !== "undefined" ? self : this);

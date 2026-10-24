@@ -110,3 +110,68 @@ test("a failed answer never repeats the expected value or the right option", () 
   assert.match(b.text, /not the bug/);
   assert.ok(!/dedupe|\bb\b/.test(b.text.replace(/not the bug/, "")));
 });
+
+// ---------- design review round 1: rail, relative time, level dots, mode chip, honest replay label ----------
+test("stageRail: earned, then the one being worked, then locked, with a 'Stage X of N' label", () => {
+  let c = chat();
+  let rail = V.stageRail(c);
+  assert.strictEqual(rail.label, "Stage 1 of 2");
+  assert.deepStrictEqual(rail.items.map((i) => i.state), ["working", "locked"]);
+  c = K.reduce(c, { type: "checkpoint", n: 1, kind: "write", passed: true, progress: { predict: true, bug: true, write: true }, code: "a = 1", now: 5 }).chat;
+  rail = V.stageRail(c);
+  assert.deepStrictEqual(rail.items.map((i) => i.state), ["earned", "working"]);
+  assert.strictEqual(rail.label, "Stage 2 of 2");
+});
+
+test("stageRail: when every stage is earned the label says so and nothing is working", () => {
+  let c = chat();
+  c = K.reduce(c, { type: "checkpoint", n: 1, kind: "write", passed: true, progress: { predict: true, bug: true, write: true }, code: "a = 1", now: 5 }).chat;
+  c.plan = [c.plan[0]];
+  const rail = V.stageRail(c);
+  assert.strictEqual(rail.label, "All stages earned");
+  assert.ok(rail.items.every((i) => i.state === "earned"));
+});
+
+test("stageRail of an empty plan is empty, never a crash", () => {
+  const c = K.createChat({ id: "x", prompt: "p", now: 1 });
+  assert.deepStrictEqual(V.stageRail(c), { label: "Planning", items: [], current: 0 });
+});
+
+test("relTime: coarse, never in the future, tolerant of garbage", () => {
+  assert.strictEqual(V.relTime(1000, 1000), "just now");
+  assert.strictEqual(V.relTime(0, 5 * 60000), "5m ago");
+  assert.strictEqual(V.relTime(0, 3 * 3600000), "3h ago");
+  assert.strictEqual(V.relTime(0, 2 * 86400000), "2d ago");
+  assert.strictEqual(V.relTime(5000, 1000), "just now");
+  assert.strictEqual(V.relTime(undefined, 1000), "");
+});
+
+test("levelDots: difficulty 1..3 maps to filled dots, clamped", () => {
+  assert.deepStrictEqual(V.levelDots(3), [true, true, true]);
+  assert.deepStrictEqual(V.levelDots(1), [true, false, false]);
+  assert.deepStrictEqual(V.levelDots(0), [true, false, false]);
+  assert.deepStrictEqual(V.levelDots(9), [true, true, true]);
+});
+
+test("courseChip: matches the built-in ledger course by topic, otherwise says it is generated, and is honest about replay", () => {
+  assert.match(V.courseChip("build an offline inventory ledger", "live").text, /Field ledger/);
+  assert.strictEqual(V.courseChip("build an offline inventory ledger", "live").matched, true);
+  const other = V.courseChip("a tip calculator", "live");
+  assert.strictEqual(other.matched, false);
+  assert.match(other.text, /generated/i);
+  assert.match(V.courseChip("a tip calculator", "replay").text, /built-in demo/i);
+  assert.strictEqual(V.courseChip("", "live").text, "Course: chosen after you send");
+});
+
+test("replayLabel: a replay is never called a real session", () => {
+  assert.match(V.replayLabel({ source: "replay" }), /simulated/i);
+  assert.ok(!/replayed from a real/i.test(V.replayLabel({ source: "replay" })));
+  assert.match(V.replayLabel({ source: "replay" }), /not a real/i);
+  assert.match(V.replayLabel({ source: "live" }), /live/i);
+});
+
+test("sidebarRow carries a relative time", () => {
+  const c = chat();
+  c.updatedAt = 0;
+  assert.strictEqual(V.sidebarRow(c, 2 * 3600000).when, "2h ago");
+});

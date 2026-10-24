@@ -6,6 +6,7 @@ import io
 import json
 import os
 import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Any, Callable
@@ -16,6 +17,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from server.learn_api import learn_router
 from stillcounts.crdt import Op, dedupe, merge, stats
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -163,8 +165,11 @@ def _referee_score() -> dict:
 
 
 def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
-               notifier: Callable[[str, str], None] | None = None) -> FastAPI:
+               notifier: Callable[[str, str], None] | None = None,
+               learn_grader: Any = None, learn_stages: str | Path | None = None,
+               learn_clock: Callable[[], float] = time.monotonic) -> FastAPI:
     app = FastAPI(title="Still Counts base")
+    app.include_router(learn_router(Path(store_path).parent / "learn_progress.json", learn_stages, learn_grader, learn_clock))
     store = LogStore(Path(store_path))
     names_path = Path(store_path).with_suffix(Path(store_path).suffix + ".names")
     try:

@@ -188,7 +188,7 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
         label = state.get(op.item, {}).get("name", op.item)
         if op.kind == "adjust":
             return f"{'+' if op.value > 0 else ''}{op.value} {label}"
-        return {"create": f"named {op.item} {op.value!r}", "note": f"noted {label}", "delete": ("removed " if op.value else "restored ") + label}[op.kind]
+        return {"create": f"added {op.value}", "note": f"noted {label}", "delete": ("removed " if op.value else "restored ") + label}[op.kind]
     notified: set[str] = set()
 
     def check_oversell() -> None:

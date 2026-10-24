@@ -1,0 +1,104 @@
+{
+ "id": "validate",
+ "title": "Course 2: Validate before you trust",
+ "blurb": "Built by the course engine from this repository's own server code (server/app.py) and graded by this repository's own tests.",
+ "tests": [
+  "tests/test_server_hardening.py",
+  "tests/test_server.py"
+ ],
+ "functions": {
+  "server/app.py:_clean_text": {
+   "id": "validate-clean-text",
+   "title": "Is this text safe to store?",
+   "summary": "Every item name, id and note a phone sends passes through this check first. It refuses text that is empty, too long, has control characters or has an unpaired surrogate.",
+   "inputs": [
+    "\"rice\", 200",
+    "\"\", 200",
+    "\"x\" * 201, 200",
+    "\"x\" * 200, 200",
+    "\"a\\x01b\", 64",
+    "\"\\ud800\", 64",
+    "\"rice\", 4",
+    "\"rice\", 3",
+    "\"tab\\there\", 200",
+    "\"caf\\u00e9\", 200",
+    "\"x\", 1",
+    "\"xy\", 1"
+   ],
+   "views": [
+    {
+     "id": "ok",
+     "question": "Is the text accepted? (yes or no)",
+     "observe": "result is None"
+    },
+    {
+     "id": "rule",
+     "question": "Which rule refuses it: length, control, surrogate, or accepted if none does?",
+     "choices": [
+      "accepted",
+      "length",
+      "control",
+      "surrogate"
+     ],
+     "observe": "'accepted' if result is None else ('length' if 'characters' in result else 'control' if 'control' in result else 'surrogate')"
+    }
+   ]
+  },
+  "server/app.py:validate_op": {
+   "id": "validate-op",
+   "title": "Refuse a bad operation, keep the rest",
+   "summary": "The server checks every operation strictly, with no coercion and no unbounded values, and answers with an operation or a reason, so one poison operation cannot reach the ledger.",
+   "inputs": [
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': '', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'a\\x01b', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 0, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': True, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 1152921504606846976, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 100010, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 100005, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 1000000001}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 1000000000}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 0}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'explode', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'create', 'item': 'rice', 'value': ''}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'create', 'item': 'rice', 'value': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'note', 'item': 'rice', 'value': ''}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'delete', 'item': 'rice', 'value': True}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'delete', 'item': 'rice', 'value': 'yes'}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 10, 'extra': 1}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': '5'}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 1.5}, 0",
+    "{'id': 'ph-a:1', 'replica': 7, 'lamport': 5, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 0",
+    "{'id': 'ph-a:1', 'replica': 'ph-a', 'lamport': 100010, 'kind': 'adjust', 'item': 'rice', 'value': 10}, 20"
+   ],
+   "views": [
+    {
+     "id": "ok",
+     "question": "Is the operation accepted? (yes or no)",
+     "observe": "result[1] is None"
+    },
+    {
+     "id": "word",
+     "question": "What is the first word of the reason it gives, or accepted if there is none?",
+     "choices": [
+      "accepted",
+      "operation",
+      "id",
+      "replica",
+      "item",
+      "lamport",
+      "adjust",
+      "create",
+      "delete",
+      "value",
+      "unknown"
+     ],
+     "observe": "'accepted' if result[1] is None else result[1].split()[0].rstrip(':')"
+    }
+   ]
+  }
+ }
+}

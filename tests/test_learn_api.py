@@ -63,24 +63,33 @@ def env(tmp_path):
         app = create_app(tmp_path / "ops.jsonl", learn_grader=grader, learn_stages=stages, learn_clock=clock)
         return TestClient(app)
 
-    return types.SimpleNamespace(client=make(), make=make, grader=grader, clock=clock, tmp=tmp_path)
+    client = make()
+
+    def other():                                    # a second browser: same server, its own cookie jar
+        return TestClient(client.app)
+
+    return types.SimpleNamespace(client=client, make=make, other=other, grader=grader, clock=clock, tmp=tmp_path)
 
 
-H = {"X-Learner-Id": "ana"}
+COOKIE = "sc_learner"
 
 
-def post(c, stage, kind, value, headers=H):
+def post(c, stage, kind, value, headers=None):
     key = {"predict": "answer", "bug": "answer", "write": "source", "explain": "text"}[kind]
-    return c.post(f"/api/learn/{stage}/{kind}", json={key: value}, headers=headers)
+    return c.post(f"/api/learn/{stage}/{kind}", json={key: value}, headers=headers or {})
 
 
-def earn(env, stage="lww", headers=H):
+def earn(env, stage="lww", client=None):
     for kind in ("predict", "bug", "write"):
-        assert post(env.client, stage, kind, "right", headers).json()["passed"] is True
+        assert post(client or env.client, stage, kind, "right").json()["passed"] is True
+
+
+def stages_of(c, **kw):
+    return c.get("/api/learn/stages", **kw).json()["stages"]
 
 
 def test_stages_list_hides_locked_code_and_answers(env):
-    r = env.client.get("/api/learn/stages", headers=H)
+    r = env.client.get("/api/learn/stages")
     assert r.status_code == 200
     stages = r.json()["stages"]
     assert [s["id"] for s in stages] == ["lww", "counter"]
@@ -111,21 +120,21 @@ def test_code_unlocks_only_after_predict_bug_and_write_pass(env):
     for kind in ("predict", "bug"):
         r = post(c, "lww", kind, "right").json()
         assert r["unlocked"] is False and r["code"] is None
-    assert "max(ops, key=_order)" not in c.get("/api/learn/stages", headers=H).text
+    assert "max(ops, key=_order)" not in c.get("/api/learn/stages").text
     r = post(c, "lww", "write", "right").json()
     assert r["unlocked"] is True and r["code"].startswith("def _lww")
-    stage = c.get("/api/learn/stages", headers=H).json()["stages"][0]
+    stage = c.get("/api/learn/stages").json()["stages"][0]
     assert stage["unlocked"] is True and stage["code"].startswith("def _lww")
     assert stage["write"]["solution"] == "secret"                   # once earned, nothing is hidden
 
 
 def test_explain_is_not_required_to_unlock_and_reveals_the_rubric_after(env):
     c = env.client
-    stage = c.get("/api/learn/stages", headers=H).json()["stages"][0]
+    stage = c.get("/api/learn/stages").json()["stages"][0]
     assert "rubric" not in stage["explain"]
     r = post(c, "lww", "explain", "Lamport time, because phone clocks drift").json()
     assert r["result"]["rubric"] == ["mentions lamport", "mentions clock skew"] and r["unlocked"] is False
-    stage = c.get("/api/learn/stages", headers=H).json()["stages"][0]
+    stage = c.get("/api/learn/stages").json()["stages"][0]
     assert stage["progress"]["explain"] is True and stage["explain"]["rubric"] == ["mentions lamport", "mentions clock skew"]
     assert stage["code"] is None
 
@@ -134,51 +143,80 @@ def test_a_failed_attempt_never_undoes_a_pass(env):
     c = env.client
     post(c, "lww", "predict", "right")
     post(c, "lww", "predict", "wrong")
-    assert c.get("/api/learn/stages", headers=H).json()["stages"][0]["progress"]["predict"] is True
+    assert c.get("/api/learn/stages").json()["stages"][0]["progress"]["predict"] is True
 
 
 def test_progress_is_per_learner(env):
     earn(env)
-    other = env.client.get("/api/learn/stages", headers={"X-Learner-Id": "ben"}).json()["stages"][0]
+    other = stages_of(env.other())[0]
     assert other["unlocked"] is False and other["code"] is None
-    assert env.client.get("/api/learn/stages", headers=H).json()["stages"][0]["unlocked"] is True
+    assert env.client.get("/api/learn/stages").json()["stages"][0]["unlocked"] is True
 
 
 def test_progress_is_stored_in_a_json_file_and_survives_a_restart(env):
     earn(env)
     saved = json.loads((env.tmp / "learn_progress.json").read_text())
-    assert saved["ana"]["lww"] == {"predict": True, "bug": True, "write": True, "explain": False}
-    again = env.make().get("/api/learn/stages", headers=H).json()["stages"][0]
+    mine = env.client.cookies.get(COOKIE)
+    assert list(saved) == [mine]
+    assert saved[mine]["lww"] == {"predict": True, "bug": True, "write": True, "explain": False}
+    restarted = env.make()
+    restarted.cookies.set(COOKIE, mine)
+    again = stages_of(restarted)[0]
     assert again["unlocked"] is True and again["code"].startswith("def _lww")
 
 
 def test_a_corrupt_progress_file_starts_fresh(env):
     (env.tmp / "learn_progress.json").write_text("{not json")
     c = env.make()
-    assert c.get("/api/learn/stages", headers=H).json()["stages"][0]["unlocked"] is False
+    assert c.get("/api/learn/stages").json()["stages"][0]["unlocked"] is False
     assert post(c, "lww", "predict", "right").status_code == 200
 
 
 def test_unlocking_one_stage_does_not_unlock_another(env):
     earn(env)
-    stages = env.client.get("/api/learn/stages", headers=H).json()["stages"]
+    stages = env.client.get("/api/learn/stages").json()["stages"]
     assert stages[1]["unlocked"] is False and "SECRET COUNTER CODE" not in json.dumps(stages)
 
 
 def test_unknown_stage_and_unknown_checkpoint(env):
     assert post(env.client, "nope", "predict", "x").status_code == 404
-    assert env.client.post("/api/learn/lww/hack", json={"answer": "x"}, headers=H).status_code == 404
+    assert env.client.post("/api/learn/lww/hack", json={"answer": "x"}).status_code == 404
     assert env.grader.calls == []
 
 
-@pytest.mark.parametrize("learner", ["", "a" * 65, "bad id", "../etc", "a.b"])
-def test_checkpoints_need_a_valid_learner_id(env, learner):
-    r = post(env.client, "lww", "predict", "right", headers={"X-Learner-Id": learner})
-    assert r.status_code == 422 and env.grader.calls == []
+def test_the_server_issues_the_learner_id_in_an_httponly_cookie(env):
+    r = env.client.get("/api/learn/stages")
+    set_cookie = r.headers["set-cookie"]
+    assert set_cookie.startswith(COOKIE + "=")
+    assert "httponly" in set_cookie.lower() and "samesite=lax" in set_cookie.lower() and "path=/" in set_cookie.lower()
+    first = env.client.cookies.get(COOKIE)
+    assert len(first) >= 22
+    assert COOKIE not in env.client.get("/api/learn/stages").headers.get("set-cookie", "")   # kept, not re-issued
+    assert env.client.cookies.get(COOKIE) == first
+    assert env.other().get("/api/learn/stages").cookies.get(COOKIE) != first                  # random per browser
 
 
-def test_checkpoints_need_a_learner_id_header(env):
-    assert env.client.post("/api/learn/lww/predict", json={"answer": "x"}).status_code == 422
+def test_a_checkpoint_post_without_a_cookie_still_works_and_issues_one(env):
+    r = post(env.client, "lww", "predict", "right")
+    assert r.status_code == 200 and COOKIE in r.headers["set-cookie"]
+    assert post(env.client, "lww", "predict", "right").json()["progress"]["predict"] is True
+
+
+def test_the_x_learner_id_header_is_ignored(env):
+    earn(env)
+    victim = {"X-Learner-Id": "victim"}
+    assert stages_of(env.client, headers=victim)[0]["unlocked"] is True        # still me, whatever the header says
+    thief = env.other()
+    assert stages_of(thief, headers={"X-Learner-Id": env.client.cookies.get(COOKIE)})[0]["unlocked"] is False
+    post(thief, "lww", "predict", "right", victim)
+    assert "victim" not in json.loads((env.tmp / "learn_progress.json").read_text())
+
+
+@pytest.mark.parametrize("forged", ["", "a" * 65, "bad id", "../etc", "a.b"])
+def test_a_malformed_cookie_is_replaced_not_trusted(env, forged):
+    r = env.client.get("/api/learn/stages", headers={"Cookie": f"{COOKIE}={forged}"})
+    assert r.status_code == 200 and COOKIE in r.headers["set-cookie"]
+    assert forged == "" or forged not in r.headers["set-cookie"]
 
 
 def test_learner_source_is_size_capped_before_it_runs(env):
@@ -202,7 +240,7 @@ def test_writes_are_rate_limited_per_learner(env):
     r = post(env.client, "lww", "write", "right")
     assert r.status_code == 429 and "retry-after" in {k.lower() for k in r.headers}
     assert len(env.grader.calls) == WRITE_LIMIT
-    assert post(env.client, "lww", "write", "right", {"X-Learner-Id": "ben"}).status_code == 200
+    assert post(env.other(), "lww", "write", "right").status_code == 200
     assert post(env.client, "lww", "predict", "right").status_code == 200    # only executing writes are limited
     env.clock.now += 61
     assert post(env.client, "lww", "write", "right").status_code == 200
@@ -211,8 +249,8 @@ def test_writes_are_rate_limited_per_learner(env):
 def test_writes_are_rate_limited_across_learners(env):
     from server.learn_api import GLOBAL_WRITE_LIMIT
     for i in range(GLOBAL_WRITE_LIMIT):
-        assert post(env.client, "lww", "write", "wrong", {"X-Learner-Id": f"l{i}"}).status_code == 200
-    assert post(env.client, "lww", "write", "wrong", {"X-Learner-Id": "fresh"}).status_code == 429
+        assert post(env.other(), "lww", "write", "wrong").status_code == 200
+    assert post(env.other(), "lww", "write", "wrong").status_code == 429
 
 
 def test_a_grader_error_is_a_clean_failure_not_a_crash(env):
@@ -248,8 +286,9 @@ def test_a_malformed_progress_entry_is_ignored(env):
     (env.tmp / "learn_progress.json").write_text(json.dumps({"ana": ["junk"], "ben": {"lww": "junk"}}))
     c = env.make()
     for who in ("ana", "ben"):
-        assert c.get("/api/learn/stages", headers={"X-Learner-Id": who}).json()["stages"][0]["unlocked"] is False
-        assert post(c, "lww", "predict", "right", {"X-Learner-Id": who}).json()["progress"]["predict"] is True
+        c.cookies.set(COOKIE, who)
+        assert stages_of(c)[0]["unlocked"] is False
+        assert post(c, "lww", "predict", "right").json()["progress"]["predict"] is True
 
 
 def test_predict_cases_show_their_ops_but_not_the_expected_result(env):
@@ -258,7 +297,7 @@ def test_predict_cases_show_their_ops_but_not_the_expected_result(env):
     path = env.tmp / "cases.json"
     path.write_text(json.dumps({"stages": stages}))
     c = TestClient(create_app(env.tmp / "ops.jsonl", learn_grader=env.grader, learn_stages=path))
-    r = c.get("/api/learn/stages", headers=H)
+    r = c.get("/api/learn/stages")
     assert r.json()["stages"][0]["predict"]["cases"] == [{"name": "same id twice", "ops": [{"id": "a:1"}]}]
     assert "777" not in r.text
 
@@ -267,7 +306,7 @@ def test_real_stages_hide_answers_until_unlocked(tmp_path):
     from learn.grader import load_stages
     real = {s["id"]: s for s in load_stages()}
     c = TestClient(create_app(tmp_path / "ops.jsonl", learn_grader=FakeGrader()))
-    for s in c.get("/api/learn/stages", headers=H).json()["stages"]:
+    for s in c.get("/api/learn/stages").json()["stages"]:
         src = real[s["id"]]
         assert s["code"] is None and s["predict"]["cases"] and s["bug"]["options"] and s["write"]["stub"]
         assert all("expected" not in case and "field" in case for case in s["predict"]["cases"])
@@ -290,8 +329,7 @@ def _write_from(host, monkeypatch, tmp_path, allow=False):
     app = FastAPI()
     app.include_router(learn_router(tmp_path / "p.json"))
     c = TestClient(app, client=(host, 5000))
-    return c.post("/api/learn/signed-adjust-sum/write", json={"source": "def quantity(ops):\n    return 0\n"},
-                  headers={"X-Learner-Id": "x"})
+    return c.post("/api/learn/signed-adjust-sum/write", json={"source": "def quantity(ops):\n    return 0\n"})
 
 
 def test_write_from_a_lan_address_is_refused_by_default(monkeypatch, tmp_path):

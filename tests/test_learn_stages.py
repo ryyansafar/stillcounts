@@ -51,8 +51,9 @@ def test_every_bug_is_a_real_mutant_that_the_referee_kills():
         mutated = SOURCE.replace(m["old"], m["new"], 1)
         assert mutated != SOURCE
         assert referee_failure(_load(mutated)) is not None
-        assert m["new"].splitlines()[0].strip() in bug["snippet"]
-        assert bug["line"].strip() in bug["snippet"]
+        assert 3 <= len(bug["excerpt"]) <= 5
+        assert m["new"].splitlines()[0].strip() in bug["excerpt"][bug["line_index"]]
+        assert len(bug["excerpt"]) < len(SOURCE.splitlines()) / 10
         assert bug["answer"] in {o["id"] for o in bug["options"]}
         assert len(bug["options"]) >= 3
         cx = bug["counterexample"]

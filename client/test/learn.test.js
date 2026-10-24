@@ -52,50 +52,68 @@ const CASES = [
   { id: "p3", prompt: "Is it oversold?", ops: OPS2, item: "rice", field: "oversold" },
 ];
 const REAL_CODE = "def merge(ops):\n    ...";
-const LEARNER = /^[A-Za-z0-9_-]{1,64}$/;
+const BUG_EXPLANATION = "Taking abs() counts a withdrawal as stock coming in.";
+
+const BUG_LINES = ["total = 0", "for o in group:", "total += abs(o.value)", "return total", "# end"];
+const scaled = (k) => OPS.map((o) => ({ ...o, value: o.value * k }));
 
 function fakeServer() {
   const passed = {};
   const calls = [];
+  const state = { p1: 12, lockedUntil: 0, now: 0 };
   let offline = false;
+  const cases = () => [{ ...CASES[0], ops: scaled(state.p1 / 12) }, CASES[1], CASES[2]];
   const progressOf = (id) => ({ predict: !!passed[id + "/predict"], bug: !!passed[id + "/bug"],
                                write: !!passed[id + "/write"], explain: !!passed[id + "/explain"] });
   const unlocked = (id) => passed[id + "/predict"] && passed[id + "/bug"] && passed[id + "/write"];
   const stage = (id, title, order) => ({
     id, order, title, summary: "A lesson.", unlocked: !!unlocked(id), progress: progressOf(id),
     code: unlocked(id) ? REAL_CODE : null,
-    predict: { prompt: "Predict the merged result.", cases: CASES },
-    bug: { prompt: "What is wrong?", snippet: "sum(abs(o.value) for o in group)",
+    predict: { prompt: "Predict the merged result.", cases: cases() },
+    bug: { prompt: "What is wrong?", excerpt: BUG_LINES,
            options: [{ id: "a", text: "counts magnitudes" }, { id: "b", text: "ignores replica" }] },
     write: { function: "quantity", prompt: "Write quantity(group)", stub: "def quantity(group):\n    pass\n" },
     explain: { prompt: "Why sum signed values?", min_points: 1 },
   });
   async function fetchStub(url, init) {
     const headers = (init && init.headers) || {};
-    calls.push({ url, method: (init && init.method) || "GET", headers, body: init && init.body ? JSON.parse(init.body) : null });
+    calls.push({ url, method: (init && init.method) || "GET", headers, credentials: init && init.credentials, body: init && init.body ? JSON.parse(init.body) : null });
     if (offline) throw new TypeError("Failed to fetch");
     const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
-    if (!LEARNER.test(headers["X-Learner-Id"] || "")) return json({ detail: "learner id required" }, 422);
     if (url === "/api/learn/stages") return json({ stages: [stage("quantity", "Quantities add up", 1), stage("lww", "Last writer wins", 2)] });
     const m = url.match(/^\/api\/learn\/([^/]+)\/(predict|bug|write|explain)$/);
     if (!m) return json({ detail: "not found" }, 404);
     const [, id, kind] = m; const body = JSON.parse(init.body);
     let ok, result = {};
-    if (kind === "predict") ok = body.answer.p1 === 12 && body.answer.p2 === "Rice B" && body.answer.p3 === true;
-    if (kind === "bug") ok = body.answer === "a";
+    if (kind === "predict") {
+      const right = { p1: state.p1, p2: "Rice B", p3: true };
+      const wrong = Object.keys(right).filter((k) => body.answer[k] !== right[k]);
+      ok = wrong.length === 0;
+      if (!ok) {                                   // a wrong case is named, never answered, and re-rolled
+        result = { wrong };
+        if (wrong.includes("p1")) { state.p1 *= 2; result.new_cases = [{ ...CASES[0], ops: scaled(state.p1 / 12) }]; }
+      }
+    }
+    if (kind === "bug") {      // same nesting as server/learn_api.py grade(): everything the grader says sits under result
+      if (state.lockedUntil > state.now) return { ok: false, status: 429, headers: { get: () => "30" }, json: async () => ({ detail: "locked" }) };
+      ok = !!body.answer && body.answer.option === "a" && body.answer.line === 2;
+      if (ok) result = { answer: "abs-of-value", mutant: "abs", explanation: BUG_EXPLANATION, counterexample: { case: "p1", ops: OPS, expected: 12, got: 18 } };
+      else { state.lockedUntil = state.now + 30; result = { locked_for: 30, options: [{ id: "b", text: "ignores replica" }, { id: "a", text: "counts magnitudes" }] }; }
+    }
     if (kind === "write") {
       ok = /sum\(/.test(body.source);
-      if (!ok) result = { passed: false, error: null, counterexample: { ops: OPS, expected: 12, got: 0 } };
+      if (!ok) result = { passed: false, error: "the result differs from the real merge", counterexample: { ops: OPS, expected: 12, got: 0 } };
     }
     if (kind === "explain") {
-      ok = body.text.trim().length > 0;
-      result = { passed: ok, covered: [{ id: "signed", point: "mentions signed adjustments" }], missed: [{ id: "order", point: "mentions order does not matter" }] };
+      ok = body.text.trim().split(/\s+/).length >= 25;
+      result = { passed: ok, covered: [{ id: "signed", point: "mentions signed adjustments" }], missed: [{ id: "order", point: "mentions order does not matter", needs: "quote numbers from your own case p1" }],
+                 reasons: ["write at least 25 words (you wrote 6)"], words: 6, min_words: 25 };
     }
-    if (ok || kind === "explain") passed[id + "/" + kind] = true;
+    if (ok) passed[id + "/" + kind] = true;
     return json({ stage: id, checkpoint: kind, passed: !!ok, result: Object.assign({ passed: !!ok }, result),
                   progress: progressOf(id), unlocked: !!unlocked(id), code: unlocked(id) ? REAL_CODE : null });
   }
-  return { fetch: fetchStub, calls, passed, setOffline: (v) => { offline = v; } };
+  return { fetch: fetchStub, calls, passed, state, setOffline: (v) => { offline = v; } };
 }
 
 async function mounted(server, storage) {
@@ -164,7 +182,6 @@ test("renders the stage list with locks and a progress bar", async () => {
   const server = fakeServer();
   const { root } = await mounted(server);
   assert.strictEqual(server.calls[0].url, "/api/learn/stages");
-  assert.match(server.calls[0].headers["X-Learner-Id"], LEARNER, "every request names the learner");
   const items = byAttr(root, "data-stage", "quantity").concat(byAttr(root, "data-stage", "lww"));
   assert.strictEqual(items.length, 2);
   assert.strictEqual(one(root, "data-stage", "lww").getAttribute("data-locked"), "true");
@@ -176,14 +193,35 @@ test("renders the stage list with locks and a progress bar", async () => {
   assert.strictEqual(byAttr(root, "data-case", "p1").length + byAttr(root, "data-case", "p2").length + byAttr(root, "data-case", "p3").length, 3);
 });
 
-test("the learner id is created once and kept", async () => {
+test("the learner is the server's HttpOnly cookie: no id is invented, stored or sent by the page", async () => {
   const storage = memoryStorage(), server = fakeServer();
-  await mounted(server, storage);
-  await mounted(server, storage);
-  const ids = new Set(server.calls.map((c) => c.headers["X-Learner-Id"]));
-  assert.strictEqual(ids.size, 1);
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server, storage);
+  await bug(root, app, "a");
+  assert.ok(server.calls.length >= 2);
+  server.calls.forEach((c) => assert.ok(!("X-Learner-Id" in c.headers), "the header is gone"));
+  assert.ok(!/learner/i.test(JSON.stringify(storage.dump)), "nothing learner-shaped in local storage");
+  assert.ok(!/X-Learner-Id/.test(read("learn.js").replace(/^\/\/.*$/gm, "")), "learn.js has no learner header code");
 });
 
+test("the browser is told to send the cookie with every request", async () => {
+  const server = fakeServer();
+  await mounted(server);
+  server.calls.forEach((c) => assert.strictEqual(c.credentials, "same-origin"));
+});
+
+// click the changed line (index 2 in BUG_LINES), pick the cause, press Check
+async function bug(root, app, option, line = 2) {
+  one(root, "data-line", String(line)).fire("click");
+  one(root, "data-choice", option).fire("click");
+  one(root, "data-action", "bug").fire("click"); await app.idle();
+}
+// what a learner who worked each case out would type, read from the cases the page is showing now
+function solved(app, stageId = "quantity") {
+  const out = {};
+  app.state.stages.find((s) => s.id === stageId).checkpoints.predict.cases.forEach((c) => { out[c.id] = String(L.predictAnswer(c)).replace("true", "yes").replace("false", "no"); });
+  return out;
+}
 function answerAll(root, values) {
   Object.keys(values).forEach((id) => { one(root, "data-input", "predict:" + id).value = values[id]; });
 }
@@ -194,18 +232,23 @@ test("earning predict, bug and write unlocks the next stage and reveals the real
 
   answerAll(root, { p1: "9", p2: "Rice B", p3: "yes" });
   one(root, "data-action", "predict").fire("click"); await app.idle();
-  assert.match(one(root, "data-result", "predict").textContent, /p1: the real merge gives 12/);
+  const miss = one(root, "data-result", "predict").textContent;
+  assert.match(miss, /Not right: p1/);
+  assert.ok(!/12|24/.test(miss), "a wrong guess never reveals the right answer: " + miss);
+  assert.match(miss, /replaced with new numbers/);
   assert.ok(!server.passed["quantity/predict"]);
+  assert.strictEqual(L.predictAnswer(app.state.stages[0].checkpoints.predict.cases[0]), 24, "p1 was swapped for the server's new case");
 
-  answerAll(root, { p1: "12" });
+  answerAll(root, solved(app));
   one(root, "data-action", "predict").fire("click"); await app.idle();
   const p = server.calls.filter((c) => c.url === "/api/learn/quantity/predict").pop();
-  assert.deepStrictEqual(p.body, { answer: { p1: 12, p2: "Rice B", p3: true } });
+  assert.deepStrictEqual(p.body, { answer: { p1: 24, p2: "Rice B", p3: true } });
   assert.strictEqual(one(root, "role", "progressbar").getAttribute("aria-valuenow"), "13");
 
-  one(root, "data-choice", "b").fire("click"); await app.idle();
+  await bug(root, app, "b");
   assert.ok(!server.passed["quantity/bug"]);
-  one(root, "data-choice", "a").fire("click"); await app.idle();
+  delete app.state.locks.quantity; server.state.now += 31;                       // the 30 s lock runs out
+  await bug(root, app, "a");
   assert.ok(server.passed["quantity/bug"]);
 
   const ta = one(root, "data-input", "write");
@@ -226,6 +269,51 @@ test("earning predict, bug and write unlocks the next stage and reveals the real
   one(root, "data-action", "explain").fire("click"); await app.idle();
   assert.match(one(root, "data-rubric", "explain").textContent, /Covered: mentions signed adjustments/);
   assert.match(one(root, "data-rubric", "explain").textContent, /Missed: mentions order does not matter/);
+});
+
+test("a correct find-the-bug shows the explanation the API nests under result", async () => {
+  const server = fakeServer();
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server);
+  await bug(root, app, "b");
+  assert.ok(!/abs\(\)/.test(one(root, "data-result", "bug").textContent), "a wrong pick does not reveal it");
+  delete app.state.locks.quantity; server.state.now += 31;
+  await bug(root, app, "a");
+  const text = one(root, "data-result", "bug").textContent;
+  assert.match(text, /Found it\./);
+  assert.ok(text.includes(BUG_EXPLANATION), text);
+});
+
+test("find-the-bug still copes with an un-nested explanation", async () => {
+  const server = fakeServer(), inner = server.fetch;
+  server.fetch = async (url, init) => {
+    const r = await inner(url, init), body = await r.json();
+    if (/\/bug$/.test(url)) { body.explanation = "flat"; body.result = { passed: body.passed }; }
+    return { ok: r.ok, status: r.status, json: async () => body };
+  };
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server);
+  await bug(root, app, "a");
+  assert.match(one(root, "data-result", "bug").textContent, /Found it\. flat/);
+});
+
+test("a failed write shows the counterexample first, then the error string", async () => {
+  const server = fakeServer();
+  server.passed["quantity/predict"] = true; server.passed["quantity/bug"] = true;
+  const { root, app } = await mounted(server);
+  one(root, "data-input", "write").value = "def quantity(group):\n    return 0\n";
+  one(root, "data-action", "write").fire("click"); await app.idle();
+  const text = one(root, "data-result", "write").textContent;
+  assert.match(text, /^Not yet: /);
+  const at = (re) => text.search(re);
+  assert.ok(at(/a:1/) > 0 && at(/real merge gives 12 and yours gives 0/) > at(/a:1/), "the operations come before expected and got: " + text);
+  assert.ok(at(/the result differs from the real merge/) > at(/yours gives 0/), "the error string comes after the counterexample: " + text);
+  assert.ok(text.includes("b:2") && text.includes("-3"), "every operation is shown");
+});
+
+test("failureText falls back to the error alone when there is no counterexample", () => {
+  assert.strictEqual(L.failureText({ error: "SyntaxError: bad", counterexample: null }), "SyntaxError: bad");
+  assert.match(L.failureText({}), /referee/);
 });
 
 test("a stale cache is corrected by the server's progress on reload", async () => {
@@ -254,7 +342,7 @@ test("works offline: stages come from the cache and predict is graded locally, t
 
   one(root, "data-action", "write").fire("click"); await app.idle();
   assert.match(one(root, "data-result", "write").textContent, /earn the previous checkpoint/i);
-  one(root, "data-choice", "a").fire("click"); await app.idle();
+  await bug(root, app, "a");
   assert.match(one(root, "data-result", "bug").textContent, /signal/i);
   assert.ok(!server.passed["quantity/bug"], "the bug checkpoint is only earned when the server grades it");
 
@@ -300,7 +388,7 @@ async function earnStageOne(server, root, app) {
   one(root, "data-view", "course").fire("click");
   answerAll(root, { p1: "12", p2: "Rice B", p3: "yes" });
   one(root, "data-action", "predict").fire("click"); await app.idle();
-  one(root, "data-choice", "a").fire("click"); await app.idle();
+  await bug(root, app, "a");
   one(root, "data-input", "write").value = "def quantity(group):\n    return sum(o.value for o in group)\n";
   one(root, "data-action", "write").fire("click"); await app.idle();
 }
@@ -320,7 +408,7 @@ test("the Understanding Map starts empty and colours code once a stage is earned
   const server = fakeServer(), { root, app } = await mounted(server);
   view(root, "map");
   assert.strictEqual(one(root, "data-gap", "none").textContent.includes("no code yet"), true);
-  assert.match(one(root, "data-map", "quantity").textContent, /Locked/);
+  assert.match(one(root, "data-map", "quantity").textContent, /Not revealed yet/);
   await earnStageOne(server, root, app);
   one(root, "data-action", "reveal").fire("click"); await app.idle();
   view(root, "map");
@@ -337,9 +425,9 @@ test("hints and first-try results are counted and shown on Results", async () =>
   assert.match(one(root, "data-hint", "predict").textContent, /^Hint: p1: 4 operations, 3 distinct ids/);
   answerAll(root, { p1: "9", p2: "Rice B", p3: "yes" });
   one(root, "data-action", "predict").fire("click"); await app.idle();           // wrong first
-  answerAll(root, { p1: "12" });
+  answerAll(root, solved(app));
   one(root, "data-action", "predict").fire("click"); await app.idle();
-  one(root, "data-choice", "a").fire("click"); await app.idle();                  // right first time
+  await bug(root, app, "a");                  // right first time
   assert.deepStrictEqual(app.state.attempts["quantity/predict"], { tries: 2, firstTry: false });
   assert.deepStrictEqual(app.state.attempts["quantity/bug"], { tries: 1, firstTry: true });
   view(root, "results");
@@ -417,4 +505,164 @@ test("the old ledger app is still reachable from the front door and the cache ho
   const sw = read("sw.js");
   for (const f of ["/static/ledger.html", "/static/understand.js", "/static/learn_views.js", "/board"]) assert.ok(sw.includes('"' + f + '"'), f);
   assert.match(read("ledger.html"), /href="\/"/);
+});
+
+// ---- an honest lock: no grader on the global, server is the judge, wrong picks cost time ----
+test("the browser global has no grader: Learn.predictAnswer and Learn.gradePredict do not exist", () => {
+  const vm = require("node:vm");
+  const sandbox = { self: null };
+  sandbox.self = sandbox;
+  vm.runInNewContext(read("learn.js"), sandbox);
+  assert.ok(sandbox.Learn && typeof sandbox.Learn.mount === "function");
+  assert.strictEqual(sandbox.Learn.predictAnswer, undefined);
+  assert.strictEqual(sandbox.Learn.gradePredict, undefined);
+  assert.ok(!/root\.Learn\s*=\s*Object\.assign/.test(read("learn.js")));
+});
+
+test("with a signal the server grades predict and a wrong answer names the case only", async () => {
+  const server = fakeServer(), { root, app } = await mounted(server);
+  answerAll(root, { p1: "12", p2: "Rice A", p3: "yes" });
+  one(root, "data-action", "predict").fire("click"); await app.idle();
+  assert.ok(server.calls.some((c) => c.url === "/api/learn/quantity/predict"), "even a locally right p1 goes to the server");
+  assert.match(one(root, "data-result", "predict").textContent, /^Not right: p2\./);
+  assert.ok(!/Rice B/.test(one(root, "data-result", "predict").textContent));
+  assert.ok(!app.state.passed["quantity/predict"]);
+});
+
+test("an offline pass is provisional, replayed on reconnect, and revoked when the server disagrees", async () => {
+  const storage = memoryStorage(), server = fakeServer();
+  await mounted(server, storage);
+  server.setOffline(true);
+  const { root, app } = await mounted(server, storage);
+  answerAll(root, solved(app));
+  one(root, "data-action", "predict").fire("click"); await app.idle();
+  assert.match(one(root, "data-result", "predict").textContent, /counts only when the server agrees/);
+  assert.strictEqual(app.state.passed["quantity/predict"], true);
+  assert.strictEqual(app.state.provisional["quantity/predict"], true);
+  assert.ok(JSON.parse(storage.getItem("sc_learn")).provisional["quantity/predict"], "the provisional mark survives a reload");
+  server.state.p1 = 24;                                    // the server's case for this learner changed meanwhile
+  server.setOffline(false);
+  await app.flush();
+  assert.ok(!server.passed["quantity/predict"]);
+  assert.strictEqual(app.state.passed["quantity/predict"], undefined, "the pass the phone gave itself is taken back");
+  assert.deepStrictEqual(app.state.provisional, {});
+  assert.strictEqual(app.state.queue.length, 0);
+});
+
+test("an offline pass the server confirms becomes a real one", async () => {
+  const storage = memoryStorage(), server = fakeServer();
+  await mounted(server, storage);
+  server.setOffline(true);
+  const { root, app } = await mounted(server, storage);
+  answerAll(root, solved(app));
+  one(root, "data-action", "predict").fire("click"); await app.idle();
+  server.setOffline(false);
+  await app.flush();
+  assert.ok(server.passed["quantity/predict"]);
+  assert.strictEqual(app.state.passed["quantity/predict"], true);
+  assert.deepStrictEqual(app.state.provisional, {});
+});
+
+test("offline, a wrong answer is not queued and does not show the right one", async () => {
+  const storage = memoryStorage(), server = fakeServer();
+  await mounted(server, storage);
+  server.setOffline(true);
+  const { root, app } = await mounted(server, storage);
+  answerAll(root, { p1: "9", p2: "Rice B", p3: "yes" });
+  one(root, "data-action", "predict").fire("click"); await app.idle();
+  const text = one(root, "data-result", "predict").textContent;
+  assert.match(text, /Not right: p1/);
+  assert.ok(!/12/.test(text));
+  assert.strictEqual(app.state.queue.length, 0);
+  assert.ok(!app.state.passed["quantity/predict"]);
+});
+
+test("a server error does not let the phone pass predict by itself", async () => {
+  const server = fakeServer(), inner = server.fetch;
+  server.fetch = async (url, init) => (/\/predict$/.test(url) ? { ok: false, status: 500, json: async () => ({}) } : inner(url, init));
+  const { root, app } = await mounted(server);
+  answerAll(root, solved(app));
+  one(root, "data-action", "predict").fire("click"); await app.idle();
+  assert.ok(!app.state.passed["quantity/predict"]);
+  assert.strictEqual(app.state.queue.length, 0);
+});
+
+test("find-the-bug needs a changed line and a cause before anything is sent", async () => {
+  const server = fakeServer();
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server);
+  assert.strictEqual(byAttr(root, "data-line", "0").length + byAttr(root, "data-line", "4").length, 2, "every excerpt line is clickable");
+  assert.ok(all(root, (n) => n.getAttribute && n.getAttribute("data-line") !== null).length <= 5, "an excerpt of at most five lines");
+  one(root, "data-choice", "a").fire("click");
+  one(root, "data-action", "bug").fire("click"); await app.idle();
+  assert.match(one(root, "data-result", "bug").textContent, /Click the changed line, pick the cause/);
+  assert.ok(!server.calls.some((c) => /\/bug$/.test(c.url)));
+  one(root, "data-line", "2").fire("click");
+  assert.strictEqual(one(root, "data-line", "2").getAttribute("aria-pressed"), "true");
+  one(root, "data-action", "bug").fire("click"); await app.idle();
+  const sent = server.calls.filter((c) => /\/bug$/.test(c.url)).pop();
+  assert.deepStrictEqual(sent.body, { answer: { option: "a", line: 2 } });
+});
+
+test("a wrong find-the-bug pick locks the options for 30 s, reshuffles them and shows no answer", async () => {
+  const server = fakeServer();
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server);
+  const order = () => all(root, (n) => n.getAttribute && n.getAttribute("data-choice") !== null).map((n) => n.getAttribute("data-choice"));
+  assert.deepStrictEqual(order(), ["a", "b"]);
+  await bug(root, app, "b", 0);
+  assert.deepStrictEqual(order(), ["b", "a"], "the server's new order is shown");
+  const text = one(root, "data-result", "bug").textContent;
+  assert.match(text, /locked for \d+ seconds/);
+  assert.ok(!/abs|magnitud/i.test(text));
+  const left = Math.round((app.state.locks.quantity - Date.now()) / 1000);
+  assert.ok(left >= 28 && left <= 30, "the lock is about 30 s: " + left);
+  assert.strictEqual(one(root, "data-choice", "a").disabled, true);
+  assert.strictEqual(one(root, "data-line", "2").disabled, true);
+  const before = server.calls.length;
+  await bug(root, app, "a");                                  // still locked: the page does not even ask
+  assert.strictEqual(server.calls.length, before);
+  assert.match(one(root, "data-result", "bug").textContent, /Locked for \d+ more seconds/);
+});
+
+test("the server's 429 starts the countdown, and a reload restores it from locked_for", async () => {
+  const server = fakeServer();
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server);
+  await bug(root, app, "b", 0);
+  delete app.state.locks.quantity;                            // the page forgot (a reload), the server did not
+  await bug(root, app, "a");
+  assert.ok(app.state.locks.quantity > Date.now(), "429 with Retry-After starts the lock again");
+  assert.match(one(root, "data-result", "bug").textContent, /Wait 30 seconds/);
+  const inner = server.fetch;
+  server.fetch = async (url, init) => {
+    const r = await inner(url, init);
+    if (url !== "/api/learn/stages") return r;
+    const body = await r.json(); body.stages[0].bug.locked_for = 17;
+    return { ok: true, status: 200, json: async () => body };
+  };
+  const again = await mounted(server);
+  const left = Math.round((again.app.state.locks.quantity - Date.now()) / 1000);
+  assert.ok(left >= 15 && left <= 17, "locked_for from the stage list is honoured: " + left);
+});
+
+test("explain says why it failed and a failed explain is not recorded as passed", async () => {
+  const server = fakeServer();
+  ["predict", "bug", "write"].forEach((k) => { server.passed["quantity/" + k] = true; });
+  const { root, app } = await mounted(server);
+  one(root, "data-stage", "quantity").children[0].fire("click");
+  one(root, "data-input", "explain").value = "too short";
+  one(root, "data-action", "explain").fire("click"); await app.idle();
+  const text = one(root, "data-rubric", "explain").textContent;
+  assert.match(text, /To pass: write at least 25 words/);
+  assert.match(text, /quote numbers from your own case p1/);
+  assert.match(one(root, "data-result", "explain").textContent, /never unlocks the reference code/);
+  assert.ok(!app.state.passed["quantity/explain"]);
+});
+
+test("the page tells the truth about what is gated", () => {
+  const src = read("learn.js") + read("learn_views.js");
+  assert.match(src, /merge code is public/);
+  assert.match(src, /nothing here is secret/);
+  assert.ok(!/stays locked|code stays locked|real code is unlocked/i.test(src));
 });

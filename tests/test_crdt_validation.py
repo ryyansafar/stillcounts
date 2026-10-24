@@ -41,3 +41,14 @@ def test_canonical_is_sorted_compact_and_keeps_non_ascii_characters():
 
 def test_a_clock_remembers_whose_it_is():
     assert Clock("ph-a", 7).replica == "ph-a"
+
+
+# Fixture note: Devin QA issue #9 (https://github.com/ryyansafar/stillcounts/issues/9) was found by the browser QA session
+# with Malayalam item names that all collapsed into one item. The slugging lived in client/app.js (see the matching test in
+# client/test/app.test.js); here we pin the other half, that the merge itself keeps distinct non-Latin item ids apart.
+# The fixture uses two neutral Greek words, chosen arbitrarily: the test is about identity, not about any language.
+def test_distinct_non_latin_item_ids_stay_distinct_items():
+    ops = [Op(id="a:1", replica="a", lamport=1, kind="adjust", item="\u03c1\u03cd\u03b6\u03b9", value=2),
+           Op(id="a:2", replica="a", lamport=2, kind="adjust", item="\u03b6\u03c5\u03b3\u03cc\u03c2", value=3)]
+    state = merge(ops)
+    assert len(state) == 2

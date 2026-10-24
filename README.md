@@ -2,7 +2,7 @@
 
 **Devin builds the app. You earn each piece of its code by showing you understand it.**
 
-Earn the Code is a learning tool for people who paste AI-written code they do not understand. Code arrives locked, one stage at a time. To unlock a stage you predict what it does, find a bug planted in it, write one small piece yourself and explain it in your own words. The first course is the real app in this repository: an offline-first ledger whose merge code is the thing you earn. (The repository and its URL are still called `stillcounts`.)
+Earn the Code is a learning tool for people who paste AI-written code they do not understand. The reference solution for each stage is revealed one stage at a time. To get it you predict what the code does on your own cases, find the changed line in a copy of it and name the cause, and write one small piece yourself; explaining it in your own words is practice. The merge code is public in this repository, and so is `client/crdt.js`, its JavaScript twin that every phone runs, so nothing here is secret. What the server gates is the guided path, the reference-solution reveal and the per-learner record of what you earned. The first course is the real app in this repository: an offline-first ledger whose merge code is the thing you earn. (The repository and its URL are still called `stillcounts`.)
 
 Built for Devin Hacks Kochi (24 Oct 2026).
 
@@ -18,46 +18,47 @@ Each stage of the course has the same four, defined in `learn/stages.json` (buil
 
 | Checkpoint | What you do | Who grades it |
 |---|---|---|
-| **Predict** | Say what a snippet returns for given inputs (for example, what is the stock of an item after these phones merge?). | Plain code. The answer key comes from running the real merge. In the browser it uses the same merge, so it works with no signal. |
-| **Find the bug** | You see a copy of the code changed by one line (a real mutant from `oracle/mutation.py`) and pick which of four statements says what is wrong. | Plain code, against the known mutant. |
-| **Write** | Write one small function. | Plain code. It is checked (no imports, no underscore attributes), run in a subprocess with a builtins whitelist and CPU, memory, file-size and process limits, plugged into the real ledger code and judged by the existing referee. |
-| **Explain** | Say in your own words why the code works. | Plain code, not a model: your text is matched against rubric points by keyword, and the rubric is shown after you answer so you can compare. Practice only: it does not gate the unlock, because keyword matching can be bluffed. |
+| **Predict** | Say what your own cases return (for example, what is the stock of an item after these phones merge?). The numbers are generated for you on the server from a per-learner seed (`learn/cases.py`). A wrong guess names only the wrong case, never the right answer, and that case is replaced by a new one with different numbers. | Plain code, on the server: it runs the real merge on your cases. With no signal the browser grades with the public JS twin; that pass is provisional, the answers are sent again when the signal returns, and the pass stands only if the server agrees. |
+| **Find the bug** | You see a 3 to 5 line excerpt around the line that was changed in a copy of the code (a real mutant from `oracle/mutation.py`). Click the changed line and pick which of four statements names the cause. Both must be right. A wrong pick says nothing about which half was wrong, locks the options for 30 seconds and reshuffles them. | Plain code, against the known mutant. |
+| **Write** | Write one small function. | Plain code. It is checked (no imports, no underscore attributes), run in a subprocess with a builtins whitelist, a 5 s timeout, CPU, file-size and process limits and a 256 MB allocation guard, plugged into the real ledger code and judged by the existing referee. Memory: on every platform the worker aborts past 256 MB of Python allocations (a tracemalloc watchdog) and the parent kills it past 448 MB resident; RLIMIT_AS (1 GB) is Linux only, macOS ignores it. |
+| **Explain** | Say in your own words why the code works. At least 25 words, one sentence (5 words or more) for each rubric point, and where the rubric asks, the numbers of your own case p1 in that sentence. | Plain code, not a model: each point needs its own sentence with one of its keywords, and the numbers are checked against your own case. The points are shown after you answer so you can compare. Practice only: it never unlocks anything, because keyword matching can still be bluffed by someone who writes the right words. |
 
-The real code for a stage stays locked until predict, find the bug and write are passed (`unlocked()` in `server/learn_api.py`). Four stages exist today: duplicate ids, signed adjustment sum, Lamport last-writer-wins, oversell flag.
+The reference solution for a stage is revealed, and the unlock recorded for you, once predict, find the bug and write are passed (`unlocked()` in `server/learn_api.py`). Explain alone can never do it. Four stages exist today: duplicate ids, signed adjustment sum, Lamport last-writer-wins, oversell flag.
 
 ## What is on main today, and what is not
 
-Be careful with this table when you demo. Rows marked "in progress" are being built on separate branches for this pivot and may not be on `main` yet.
+Be careful with this table when you demo. Rows marked "not built" do not exist in the code.
 
 | Piece | Status |
 |---|---|
-| Four stages, four checkpoints, locked code, plain-code grading, sandbox for the write checkpoint | Real, on main |
-| Predict graded in the browser, lessons cached by the service worker | Real, on main |
+| Four stages, four checkpoints, plain-code grading on the server, per-learner predict cases, reference-solution reveal after earning, sandbox for the write checkpoint | Real, on main |
+| Offline predict: graded in the browser on cached cases, provisional until the server re-checks it; lessons cached by the service worker | Real, on main |
 | Phone ledger that works with no signal and merges when it returns | Real, on main |
 | Referee Race: phones predict the same merged stock, in the order each phone sees the operations | Real, on main (`/race`) |
-| Attack harness: 24 hostile scenarios, 500 seeds each | Real, on main (`chaos/`) |
-| Understanding Map (every function and line coloured by what you earned), pasted-vs-understood gap score, weakest-function targeting, fading Devin help, shareable proof card, before/after quiz and unlocked-vs-written numbers, streaks | In progress, not on main when this was written |
-| `make_course`: turn a repository diff into a course automatically | In progress, not on main when this was written |
+| Attack harness: 25 scenarios (24 hostile ones from the Devin scouts plus one mixed-network control run), 500 seeds each | Real, on main (`chaos/`) |
+| Understanding tab (every line of the code coloured by what you earned), pasted-vs-understood gap score, before/after quiz, first-try and hints results, lines unlocked vs lines written, shareable proof card (self-reported) | Real, in the front door (`client/understand.js`, `client/learn_views.js`) |
+| Aiming the next checkpoint at your weakest function, Devin help that fades as you improve, streaks | Not built. The Results tab only shows Devin's scaffold lines next to yours. |
+| `make_course`: turn a repository diff into a course automatically | Not built |
 
-If a row says in progress, check the code before saying it out loud.
+If a row says not built, do not say it is.
 
 ## Measured results (the idea, not yet a study)
 
-The measure is meant to be: a short quiz before and after, first-try pass rate per checkpoint, and lines of the app unlocked versus lines you wrote yourself. A demo run with a few volunteers produces numbers, not evidence. It is not a study: no control group, tiny sample, quiz taken right after. Do not quote it as proof that the method works.
+The Results tab measures: a short quiz before and after, first-try pass rate per checkpoint, and lines of the app unlocked versus lines you wrote yourself. A demo run with a few volunteers produces numbers, not evidence. It is not a study: no control group, tiny sample, quiz taken right after. Do not quote it as proof that the method works.
 
 ## Track fit
 
-- **Primary, Track 2 (Make the invisible visible).** What you understand versus what you merely pasted is invisible. The planned Understanding Map shows it function by function, and the product then acts on it: it locks what you have not earned, aims the next checkpoint at your weakest function, and fades Devin's help as you improve. Today the locking and the per-stage progress are real; the map itself is in progress (see the table).
+- **Primary, Track 2 (Make the invisible visible).** What you understand versus what you merely pasted is invisible. The Understanding tab shows it line by line, and the product acts on it by holding back the reference solution until you have earned it. Aiming checkpoints at your weakest function and fading Devin's help are not built (see the table).
 - **Secondary, Track 3 (Works anyway).** Predict needs no network and the lessons are cached by `client/sw.js`, so a phone works with the Wi-Fi pulled. The whole `client/` folder is about 250 KB with no build step. Find the bug, write and explain need the base laptop. The ledger itself is the original offline demo.
-- **Tertiary, Track 4 (Play).** Referee Race at `/race`: every phone gets the same operations in its own shuffled order, with duplicates, and races to predict the merge. The answer key is the real merge. Streaks are in progress.
-- **Track 1 (Busywork).** Writing a course by hand is the busywork. `make_course` is meant to remove it by building a course from any diff. In progress; the four current stages were written with Devin's help and edited by hand.
+- **Tertiary, Track 4 (Play).** Referee Race at `/race`: every phone gets the same operations in its own shuffled order, with duplicates, and races to predict the merge. The answer key is the real merge. Streaks are not built.
+- **Track 1 (Busywork).** Writing a course by hand is the busywork. `make_course` would remove it by building a course from any diff, but it is not built; the four current stages were written with Devin's help and edited by hand.
 
 ## How Devin was used
 
 The numbers come from `data/devin_evidence.json`; `docs/devin.md` lists every session.
 
 - 9 Devin cloud sessions: 3 read-only scouts, 5 writers, 1 browser QA. 5 pull requests, all merged by a human pressing merge. 5 issues filed by the QA session.
-- What Devin produced: three lists of hostile scenarios (24 in total), the first version of the chaos harness, and the scaffolding for the learn API, the learn UI, Referee Race and the board tabs.
+- What Devin produced: three lists of hostile scenarios (24 in total; the harness adds one control run, so the board shows 25), the first version of the chaos harness, and the scaffolding for the learn API, the learn UI, Referee Race and the board tabs.
 - Rejected or overridden:
   - The chaos writer committed a 2.3 MB results file (`data/chaos_results.json`). It was replaced by a small summary and the large file is now git-ignored.
   - The Learn write grader only blocked imports of project modules, so a learner function could `import os`. It was rewritten by hand (AST check, builtins whitelist, resource limits). A later review found it still escapable through a name visible in the ledger module, and that was fixed by hand too.
@@ -71,12 +72,13 @@ The numbers come from `data/devin_evidence.json`; `docs/devin.md` lists every se
 ```
 phone browser (client/)                        base laptop (server/)
   app.js     ledger, op queue, sync   <--->     app.py        ops log (data/ops.jsonl), sync, board
-  crdt.js    merge, same as Python              learn_api.py  locked code, progress, write checkpoint
+  crdt.js    merge, same as Python              learn_api.py  reveal, progress, write checkpoint
   learn.js   four checkpoints                   race_api.py   Referee Race rounds
   race.js    Referee Race                       board.html    board, attack, proof, race tabs
   sw.js      offline cache                              |
-        predict: graded in the browser              learn/grader.py  plain-code grading + sandbox
-        bug, write, explain: via /api/learn         learn/stages.json  stages (from build_stages.py)
+        predict, bug, write, explain: graded by     learn/grader.py  plain-code grading + sandbox
+        the server via /api/learn (predict also     learn/cases.py   per-learner predict cases
+        offline, provisional)                       learn/stages.json  stages (from build_stages.py)
                                                     stillcounts/crdt.py  the merge (agents may not edit)
                                                     oracle/              the referee (agents may not edit)
                                                     chaos/               hostile-scenario simulation
@@ -97,20 +99,26 @@ The ledger is a set of operations, each with a unique id. State is a pure functi
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m pytest -q
 node --test client/test/
-scripts/run.sh          # serves on port 8000, prints the board link with a join token
+scripts/run.sh          # serves on port 8000, prints the board link with a join token (add STILLCOUNTS_LEARN_WRITE_LAN=1 so phones can use the Write checkpoint; see docs/DEMO.md)
 ```
 
-Open `/static/learn.html` for the course (the Learn link on the phone app and the board). The first visit needs the base; after that the lessons work offline. After editing the course content in `learn/build_stages.py`, regenerate with `.venv/bin/python -m learn.build_stages`. `docs/DEMO.md` is the timed demo script.
+Open `/` for the course (`/static/learn.html` is the same page; the ledger phone app is `/static/ledger.html`). The first visit needs the base; after that the lessons work offline. After editing the course content in `learn/build_stages.py`, regenerate with `.venv/bin/python -m learn.build_stages`. `docs/DEMO.md` is the timed demo script.
 
 Phones need `https://` or `localhost` to install the offline app. `docs/DEMO.md` explains the mkcert setup; it has not been tried on real demo phones yet.
 
+## Front door and tabs
+
+Open `/`: Earn the Code is the front door. The old ledger phone app is the Course 1 live app at `/static/ledger.html`, and `/static/learn.html` is the same front door. Four tabs: **Course** (stages, hints, reveal of the reference code with a diff of your function against it), **Understanding** (every line of the code coloured by what you earned: unseen, predicted, bug spotted, written, explained, plus the pasted-vs-understood gap score), **Results** (before and after quiz, first-try pass rate, hints used, lines unlocked vs lines written, Devin's scaffold lines vs yours) and **Proof** (a shareable card, copied as text or downloaded as SVG). Everything is counted on the phone from your own attempts; the card says it is self-reported, not an exam. The quiz is the lesson's cases with the numbers changed, graded by the real merge in the browser (`client/understand.js`, `client/learn_views.js`). The lessons are cached on the phone after the first visit. Predict is graded by the server, and with no signal the browser grades on the cached cases with the public merge, keeps the pass as provisional and sends the answers again later; find the bug, write and explain go through `/api/learn` and need the base, which holds the reference-solution reveal and your unlock record until predict, find the bug and write are earned.
 ## Honest limitations
 
-- Explanations can be bluffed (the grader is keyword matching). That is why the objective checkpoints (predict, find the bug, write) do the gating and explain is practice with a rubric shown afterwards. Nothing grades free text with a model.
+- Nothing here is secret. The merge is public Python in this repository and `client/crdt.js` is a public JavaScript twin that ships to every phone, so anyone can run it. Predict answers can be computed by anyone who runs the public merge on the cases they are shown; per-learner numbers stop answers being passed between learners, not scripted. Yes/no cases can be guessed one time in two. A pass is practice, not proof of understanding.
+- Explanations can be bluffed (the grader is keyword matching, with a length floor, one sentence per point and a check of your own numbers). That is why the objective checkpoints (predict, find the bug, write) gate the reveal and explain is practice with the points shown afterwards. Nothing grades free text with a model.
+- The find-the-bug lock lives in the server's memory: restarting the server clears it.
+- An offline predict pass counts on the phone straight away but is provisional; if the server disagrees when the signal returns (for example the case was replaced meanwhile), the phone takes the pass back.
 - Passing a quiz is not the same as understanding. A learner can guess predict answers; the case sets are small.
 - Only one course exists, and it is about one small merge function.
-- The write sandbox is defence in depth, not a security boundary. The write endpoint accepts only the base laptop's own browser unless the host sets `STILLCOUNTS_LEARN_WRITE_LAN=1`; a public deployment should run the server in a container as an unprivileged user.
-- The Understanding Map, gap score, fading help, proof card, `make_course` and streaks are in progress (see the table above).
+- The write sandbox is defence in depth, not a security boundary. The 256 MB allocation guard works on macOS and Linux, but a single huge allocation can finish before the in-worker watchdog runs; the parent kills the worker on resident memory as the backstop. RLIMIT_AS only works on Linux. The write endpoint accepts only the base laptop's own browser unless the host sets `STILLCOUNTS_LEARN_WRITE_LAN=1`; a public deployment should run the server in a container as an unprivileged user.
+- Weakest-function targeting, fading help, `make_course` and streaks are not built (see the table above). The proof card and gap score are computed on the phone from your own attempts and are self-reported.
 - Three attack scenarios still fail on some seeds: `life_storage_quota`, `net_retry_same_id_new_content` and `net_restore_old_backup`. The attack tab and `data/chaos_summary.json` show real numbers from a 500-seed run: 671 of 12500 runs failed. These are pinned as strict expected failures in `tests/test_regress_*.py`.
 - The demo quiz is not a study (see Measured results).
 

@@ -27,6 +27,9 @@ td.neg { color: var(--bad); }
 .panel b { font-size:34px; font-variant-numeric: tabular-nums; }
 .panel span { color: var(--muted); font-size:14px; word-break:break-all; }
 @media (max-width:760px){ .panels{grid-template-columns:1fr;} }
+.csv { margin-left:auto; align-self:center; color: var(--muted); font-size:14px; }
+.feed { margin: 8px 0 16px; color: var(--muted); font-size: 16px; min-height: 28px; display:flex; flex-wrap:wrap; gap:8px; }
+.feed span { background: var(--panel); border:1px solid var(--line); border-radius:999px; padding:4px 12px; }
 </style>
 </head>
 <body>
@@ -36,6 +39,7 @@ td.neg { color: var(--bad); }
     <button type="button" id="tab-ledger" aria-pressed="true">Ledger</button>
     <button type="button" id="tab-attack" aria-pressed="false">Attack</button>
     <button type="button" id="seed">Load starting stock (seeded)</button>
+    <a class="csv" href="/api/export.csv" download>Download CSV (paper fallback)</a>
   </div>
   <section id="ledger">
     <div class="panels">
@@ -50,6 +54,7 @@ td.neg { color: var(--bad); }
       <div class="stat"><b id="s-conf">0</b><span>conflicts merged</span></div>
       <div class="stat"><b id="s-phones">0</b><span>phones seen</span></div>
     </div>
+    <div class="feed" id="feed" aria-live="polite"></div>
     <table><thead><tr><th>Item</th><th>Stock</th><th>Note</th></tr></thead><tbody id="rows"></tbody></table>
   </section>
   <section id="attack" class="hidden">

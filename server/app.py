@@ -1,6 +1,7 @@
 """The 'base' sync server. It only stores and relays operations; all merging is the pure CRDT, so it can never lose an update."""
 from __future__ import annotations
 
+import csv
 import io
 import json
 import os
@@ -77,6 +78,7 @@ class SyncIn(BaseModel):
     replica: str = Field(min_length=1, max_length=MAX_ID)
     cursor: int = Field(ge=0, default=0)
     epoch: str | None = Field(default=None, max_length=64)
+    name: str | None = Field(default=None, max_length=200)
     ops: list[Any] = Field(default_factory=list, max_length=MAX_OPS_PER_SYNC)
 
 
@@ -164,6 +166,23 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
                notifier: Callable[[str, str], None] | None = None) -> FastAPI:
     app = FastAPI(title="Still Counts base")
     store = LogStore(Path(store_path))
+    names_path = Path(store_path).with_suffix(Path(store_path).suffix + ".names")
+    try:
+        names: dict[str, str] = json.loads(names_path.read_text())
+    except (OSError, ValueError):
+        names = {}
+
+    def remember_name(replica: str, name: str | None) -> None:
+        if not name or _clean_text(name.strip(), 40) is not None:
+            return
+        names[replica] = name.strip()
+        names_path.write_text(json.dumps(names, ensure_ascii=False))
+
+    def describe(op: Op, state: dict) -> str:
+        label = state.get(op.item, {}).get("name", op.item)
+        if op.kind == "adjust":
+            return f"{'+' if op.value > 0 else ''}{op.value} {label}"
+        return {"create": f"named {op.item} {op.value!r}", "note": f"noted {label}", "delete": ("removed " if op.value else "restored ") + label}[op.kind]
     notified: set[str] = set()
 
     def check_oversell() -> None:
@@ -183,6 +202,7 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
 
     @app.post("/api/sync")
     def sync(body: SyncIn) -> dict:
+        remember_name(body.replica, body.name)
         accepted: list[Op] = []
         rejected: list[dict] = []
         with store.lock:                          # one consistent snapshot: validate, append, then slice the log
@@ -210,8 +230,30 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
     def state() -> dict:
         with store.lock:
             ops = list(store.ops)
-        return {"state": merge(ops), "stats": stats(ops), "log_size": len(ops),
-                "replicas": sorted({o.replica for o in ops})}
+        merged = merge(ops)
+        activity = [{"who": names.get(o.replica, o.replica), "text": describe(o, merged)} for o in ops[-10:]]
+        return {"state": merged, "stats": stats(ops), "log_size": len(ops), "names": dict(names),
+                "replicas": sorted({o.replica for o in ops}), "activity": activity}
+
+    @app.get("/api/export.csv")
+    def export_csv() -> Response:
+        """A paper-fallback export: item, name, quantity, note, status. Cells that could run as spreadsheet formulas are neutralised."""
+        with store.lock:
+            ops = list(store.ops)
+        merged = merge(ops)
+        over = set(stats(ops)["oversold"])
+
+        def safe(value: str) -> str:
+            return "'" + value if value[:1] in ("=", "+", "-", "@", "\t", "\r") else value
+
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(["item", "name", "qty", "note", "status"])
+        for item, s in merged.items():
+            if s["alive"]:
+                writer.writerow([safe(item), safe(s["name"]), s["qty"], safe(s["note"]), "needs a human" if item in over else "ok"])
+        return Response(out.getvalue(), media_type="text/csv",
+                        headers={"Content-Disposition": "attachment; filename=stillcounts-ledger.csv"})
 
     SEED_STOCK = {"blankets": 100, "rice": 200, "water": 500, "paracetamol": 60, "tarpaulin": 40, "baby-food": 80}
     SEED_NAMES = {"blankets": "Blankets", "rice": "Rice (kg)", "water": "Drinking water (L)",

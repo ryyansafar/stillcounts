@@ -16,6 +16,10 @@
     $("s-ops").textContent = String(data.stats.ops);
     $("s-conf").textContent = String(data.stats.conflicts);
     $("s-phones").textContent = String(data.replicas.filter(function (r) { return r !== "seed"; }).length);
+    var feed = $("feed"); feed.replaceChildren();
+    (data.activity || []).filter(function (a) { return a.who !== "seed"; }).slice(-6).forEach(function (a) {
+      feed.appendChild(cell("span", "", a.who + ": " + a.text));
+    });
     var over = data.stats.oversold.length;
     $("headline").textContent = data.stats.ops === 0 ? "Waiting for phones"
       : (over ? over + " item(s) need a human" : "Every phone agrees. Nothing lost.");

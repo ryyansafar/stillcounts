@@ -21,6 +21,7 @@
   var epoch = saved.epoch || null;
   var rejected = saved.rejected || 0;
   var clock = new C.Clock(replica, saved.lamport || 0);
+  var myName = load("sc_name", "");
   var known = {}; ops.forEach(function (o) { known[o.id] = true; });
   var online = false, busy = false, lastSync = null;
 
@@ -48,7 +49,7 @@
     if (busy) return; busy = true;
     var unsent = ops.filter(function (o) { return !synced[o.id]; });
     fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" },
-                         body: JSON.stringify({ replica: replica, cursor: cursor, epoch: epoch, ops: unsent.slice(0, 500) }) })
+                         body: JSON.stringify({ replica: replica, name: myName || null, cursor: cursor, epoch: epoch, ops: unsent.slice(0, 500) }) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (body) {
         unsent.slice(0, 500).forEach(function (o) { synced[o.id] = true; });
@@ -103,6 +104,10 @@
     var id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "item";
     addOp("create", id, name); input.value = "";
   });
+
+  var me = document.getElementById("me");
+  me.value = myName;
+  me.addEventListener("change", function () { myName = me.value.trim(); save("sc_name", myName); sync(); });
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(function () {});
   window.addEventListener("online", sync);

@@ -1,0 +1,17 @@
+.intro { color: var(--muted); font-size: 16px; }
+.ops { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px 16px 10px 40px; margin: 0 0 14px; }
+.op { padding: 6px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; font-size: 16px; }
+.op:last-child { border-bottom: 0; }
+.op-delete { color: var(--warn); }
+.op.trick { color: var(--bad); font-weight: 700; }
+.choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; }
+.choice { font-size: 22px; font-variant-numeric: tabular-nums; }
+.choice[aria-pressed="true"] { background: var(--olive); border-color: var(--text); }
+.lock { width: 100%; margin: 6px 0 14px; background: var(--olive); }
+.lock:disabled { opacity: .45; cursor: default; }
+.card.win { border-color: var(--good); }
+.card.lose { border-color: var(--bad); }
+.card .big { font-size: 34px; font-weight: 800; }
+.why { color: var(--muted); font-size: 15px; margin-top: 6px; }
+.score { margin-top: 8px; font-weight: 700; }
+.payoff { font-size: 22px; font-weight: 800; text-align: center; color: var(--good); margin: 18px 0; }

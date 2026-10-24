@@ -38,6 +38,7 @@ td.neg { color: var(--bad); }
   <div class="tabs">
     <button type="button" id="tab-ledger" aria-pressed="true">Ledger</button>
     <button type="button" id="tab-attack" aria-pressed="false">Attack</button>
+    <button type="button" id="tab-race" aria-pressed="false">Race</button>
     <button type="button" id="seed">Load starting stock (seeded)</button>
     <a class="navlink" href="/static/learn.html">Learn</a>
     <a class="csv" href="/api/export.csv" download>Download CSV (paper fallback)</a>
@@ -61,6 +62,21 @@ td.neg { color: var(--bad); }
   <section id="attack" class="hidden">
     <div class="big" id="attack-head">Attack harness</div>
     <div id="runs"></div>
+  </section>
+  <section id="race" class="hidden">
+    <div class="panels">
+      <div class="panel"><img id="race-qr" alt="QR code to join Referee Race" width="132" height="132"><div><b>Scan to race</b><br><span id="race-url"></span></div></div>
+      <div class="panel"><div><b id="race-round">–</b><br><span>round</span></div></div>
+      <div class="panel"><div><button type="button" id="race-start">Start a round</button></div></div>
+    </div>
+    <div class="big" id="race-head">Start a round, then scan to race</div>
+    <div class="stats">
+      <div class="stat"><b id="r-phones">0</b><span>phones</span></div>
+      <div class="stat"><b id="r-orders">0</b><span>different orders</span></div>
+      <div class="stat"><b id="r-answers">0</b><span>merge answers</span></div>
+      <div class="stat"><b id="r-answered">0</b><span>locked in</span></div>
+    </div>
+    <table><thead><tr><th>#</th><th>Player</th><th>Points</th><th>Correct rounds</th></tr></thead><tbody id="race-rows"></tbody></table>
   </section>
 </main>
 <script src="/static/board.js"></script>

@@ -30,6 +30,7 @@
       $("conn").className = "pill ok"; $("conn").textContent = "live"; renderLedger(d);
     }).catch(function () { $("conn").className = "pill bad"; $("conn").textContent = "board offline"; });
     fetch("/api/chaos").then(function (r) { return r.json(); }).then(renderRuns).catch(function () {});
+    fetch("/api/race/board").then(function (r) { return r.json(); }).then(renderRace).catch(function () {});
   }
 
   function renderRuns(d) {
@@ -47,17 +48,40 @@
     $("s-lost").textContent = String(lost);
   }
 
+  function renderRace(d) {
+    $("race-round").textContent = d.round ? String(d.round) : "–";
+    $("r-phones").textContent = String(d.phones); $("r-orders").textContent = String(d.orders);
+    $("r-answers").textContent = String(d.merge_answers); $("r-answered").textContent = String(d.answered);
+    $("race-head").textContent = !d.round ? "Start a round, then scan to race"
+      : (d.agree ? d.payoff : d.phones + " phones racing · " + d.orders + " different orders");
+    var rows = $("race-rows"); rows.replaceChildren();
+    d.players.forEach(function (p, i) {
+      var tr = document.createElement("tr");
+      tr.appendChild(cell("td", "", String(i + 1))); tr.appendChild(cell("td", "", p.name));
+      tr.appendChild(cell("td", "qty", String(p.points))); tr.appendChild(cell("td", "", String(p.correct)));
+      rows.appendChild(tr);
+    });
+  }
+
+  var TABS = ["ledger", "attack", "race"];
   function tab(name) {
-    $("ledger").className = name === "ledger" ? "" : "hidden"; $("attack").className = name === "attack" ? "" : "hidden";
-    $("tab-ledger").setAttribute("aria-pressed", String(name === "ledger")); $("tab-attack").setAttribute("aria-pressed", String(name === "attack"));
+    TABS.forEach(function (t) {
+      $(t).className = name === t ? "" : "hidden"; $("tab-" + t).setAttribute("aria-pressed", String(name === t));
+    });
   }
   $("tab-ledger").addEventListener("click", function () { tab("ledger"); });
   $("tab-attack").addEventListener("click", function () { tab("attack"); });
+  $("tab-race").addEventListener("click", function () { tab("race"); });
+  $("race-start").addEventListener("click", function () {
+    fetch("/api/race/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).then(poll);
+  });
   $("seed").addEventListener("click", function () { fetch("/api/seed", { method: "POST" }).then(poll); });
   function panels() {
     var origin = location.origin;
     $("qr").src = "/api/qr.svg?text=" + encodeURIComponent(origin + "/");
     $("joinurl").textContent = origin.replace(/^https?:\/\//, "");
+    $("race-qr").src = "/api/qr.svg?text=" + encodeURIComponent(origin + "/race");
+    $("race-url").textContent = origin.replace(/^https?:\/\//, "") + "/race";
     fetch("/api/referee").then(function (r) { return r.json(); }).then(function (d) {
       $("p-referee").textContent = d.killed + " / " + d.total;
     }).catch(function () {});

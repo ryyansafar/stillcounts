@@ -5,12 +5,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - run: pip install -r requirements.txt
-      - run: python -m pytest -q --cov=stillcounts --cov=server --cov=oracle --cov=learn --cov-report=term-missing --cov-fail-under=90
+      - name: Agents must not edit the referee
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'devin/')
+        run: |
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          if echo "$changed" | grep -E '^(oracle/|stillcounts/crdt\.py|tests/test_oracle_|\.github/CODEOWNERS)'; then
+            echo "A devin/* branch changed the referee or the merge. A human must make that change."; exit 1
+          fi
+      - run: python -m pytest -q --cov=stillcounts --cov=server --cov=oracle --cov=learn --cov=chaos --cov-report=term-missing --cov-fail-under=90
       - run: node --test client/test/
       - run: python -m oracle.oracle --seed 0xA3 --ops 240 --perms 200
       - run: python -m oracle.mutation
+  mutation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt mutmut==3.8.0
+      - name: Mutation testing of the merge (at most the 3 documented equivalent mutants may survive)
+        run: |
+          mutmut run
+          mutmut export-cicd-stats
+          python -c "import json; s = json.load(open('mutants/mutmut-cicd-stats.json')); print(s); assert s['survived'] <= 3 and s['total'] >= 166, s"

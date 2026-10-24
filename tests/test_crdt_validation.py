@@ -36,7 +36,7 @@ def test_a_valid_operation_of_every_kind_is_accepted():
 
 
 def test_canonical_is_sorted_compact_and_keeps_non_ascii_characters():
-    assert canonical({"b": {"z": 1, "a": 2}, "a": "അരി"}) == '{"a":"അരി","b":{"a":2,"z":1}}'
+    assert canonical({"b": {"z": 1, "a": 2}, "a": "café"}) == '{"a":"café","b":{"a":2,"z":1}}'
 
 
 def test_a_clock_remembers_whose_it_is():

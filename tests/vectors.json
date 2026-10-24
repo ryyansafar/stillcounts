@@ -7714,7 +7714,7 @@
     "kind": "note",
     "lamport": 1,
     "replica": "a",
-    "value": "അടൂർ ✓"
+    "value": "Café ✓"
    },
    {
     "id": "b:2",
@@ -7729,7 +7729,7 @@
    "x": {
     "alive": true,
     "name": "Camp 🏕",
-    "note": "അടൂർ ✓",
+    "note": "Café ✓",
     "qty": 0
    }
   },

@@ -12,7 +12,7 @@ from stillcounts.crdt import Op, merge, stats
 RUNNER = Path(__file__).resolve().parent.parent / "client" / "diff_runner.js"
 pytestmark = pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")
 
-TEXTS = ["Alpha", "", "അടൂർ", "Camp 🏕", "line break", "a‍b"]
+TEXTS = ["Alpha", "", "Café", "Camp 🏕", "line break", "a‍b"]
 
 
 def random_op(rng, i):

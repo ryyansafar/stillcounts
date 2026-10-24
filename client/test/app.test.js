@@ -101,16 +101,16 @@ test("tap buttons are not torn down by a sync tick when nothing changed", async 
 });
 
 // Regression: itemId() once stripped every non-ASCII letter, so any two non-Latin names collapsed into one row.
-// The strings are just two different non-Latin words; the test is about the slug, not about any language.
+// The strings are just two different non-Latin words (Greek here, chosen arbitrarily); the test is about the slug, not about any language.
 test("distinct non-Latin item names stay distinct items", async () => {
   const tab = boot(makeStorage(), { online: false });
   await settle();
   const input = tab.doc.getElementById("newitem"), add = tab.doc.getElementById("addbtn");
-  input.value = "കമ്പിളി"; add.click();
-  input.value = "അരി"; add.click();
+  input.value = "άλφα"; add.click();
+  input.value = "βήτα"; add.click();
   const names = cardNames(tab.doc);
-  assert.ok(names.includes("കമ്പിളി"), names.join(","));
-  assert.ok(names.includes("അരി"), names.join(","));
+  assert.ok(names.includes("άλφα"), names.join(","));
+  assert.ok(names.includes("βήτα"), names.join(","));
 });
 
 test("two offline tabs of the same phone never erase each other's queued taps", async () => {

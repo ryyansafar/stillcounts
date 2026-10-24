@@ -1,16 +1,20 @@
-// Learn mode, "Earn the Code": the real merge code stays locked until the learner earns a stage.
-// Plain code grades every checkpoint: predict is checked in the browser by the same merge the app uses (crdt.js),
-// so it works with no signal; find-the-bug and write are graded by the server's referee; explain shows which rubric points
-// were covered. The server tells learners apart by an HttpOnly cookie it issues itself; the page sends no id.
+// Learn mode, "Earn the Code". The merge code is public (this repo, and crdt.js on every phone). What the server holds
+// back is the guided path: the reference-solution reveal and the per-learner record that a stage was earned.
+// The server is the grader. Predict cases are generated per learner and a wrong case is replaced by a new one; the page
+// grades predict by itself only when there is no signal, keeps that pass as provisional and sends the answers again
+// when the signal returns, and the pass stands only if the server agrees. Find-the-bug needs the changed line and the
+// cause; write is judged by the server's referee; explain is practice and never unlocks anything.
+// The server tells learners apart by an HttpOnly cookie it issues itself; the page sends no id.
 //
-// API (server/learn_api.py), stage = { id, order, title, summary, unlocked, progress, code (null while locked),
-//   predict: { prompt, cases: [{ id, prompt, question, ops, item, field }] },
-//   bug: { prompt, snippet, options: [{ id, text }] }, write: { function, prompt, stub }, explain: { prompt, min_points } }
+// API (server/learn_api.py), stage = { id, order, title, summary, unlocked, progress, code (null until earned),
+//   predict: { prompt, cases: [{ id, prompt, question, ops, item, field }] },     (this learner's own cases)
+//   bug: { prompt, excerpt: [line], options: [{ id, text }], locked_for }, write: { function, prompt, stub },
+//   explain: { prompt, min_points, min_words, example_case } }
 //   GET  /api/learn/stages                      -> { stages: [stage] }
-//   POST /api/learn/{stage}/predict { answer: { caseId: guess } } -> { passed, progress, unlocked, code }
-//   POST /api/learn/{stage}/bug     { answer: optionId }
+//   POST /api/learn/{stage}/predict { answer: { caseId: guess } } -> result.wrong (case ids), result.new_cases
+//   POST /api/learn/{stage}/bug     { answer: { option, line } }  -> 429 + Retry-After while the options are locked
 //   POST /api/learn/{stage}/write   { source }                    -> result.error / result.counterexample on failure
-//   POST /api/learn/{stage}/explain { text }          -> result.covered / result.missed
+//   POST /api/learn/{stage}/explain { text }          -> result.covered / result.missed / result.reasons
 // Every response carries `progress`, `unlocked` and, once unlocked, `code`.
 (function (root) {
   "use strict";
@@ -170,14 +174,16 @@
     var st = { stages: normalizeStages(saved.stages || []), raw: saved.stages || null, passed: saved.passed || {},
                queue: saved.queue || [], codes: saved.codes || {}, drafts: saved.drafts || {}, selected: saved.selected || null,
                attempts: saved.attempts || {}, hints: saved.hints || {}, quiz: saved.quiz || {}, view: saved.view || "course", name: saved.name || "",
-               online: null, loaded: false };
+               provisional: saved.provisional || {}, locks: {}, online: null, loaded: false };
+    var lockTimer = null;
     var pending = [], view = {};
 
     function persist() {
       try {
         storage.setItem(KEY, JSON.stringify({ stages: st.raw, passed: st.passed, queue: st.queue, codes: st.codes,
                                               drafts: st.drafts, selected: st.selected,
-                                              attempts: st.attempts, hints: st.hints, quiz: st.quiz, view: st.view, name: st.name }));
+                                              attempts: st.attempts, hints: st.hints, quiz: st.quiz, view: st.view, name: st.name,
+                                              provisional: st.provisional }));
       } catch (e) { /* storage full: keep going in memory */ }
     }
     function track(p) { pending.push(p); return p; }
@@ -206,7 +212,11 @@
         var timer = setTimeout(function () { reject(new Error("timeout")); }, TIMEOUT_MS);
         Promise.resolve().then(function () { return fetchFn(url, init); }).then(function (r) {
           clearTimeout(timer); st.online = true;
-          if (!r.ok) { var err = new Error("HTTP " + r.status); err.status = r.status; throw err; }
+          if (!r.ok) {
+            var err = new Error("HTTP " + r.status); err.status = r.status;
+            err.retryAfter = r.headers && r.headers.get ? Number(r.headers.get("Retry-After")) || 0 : 0;
+            throw err;
+          }
           return r.json();
         }).then(resolve, function (err) {
           clearTimeout(timer);
@@ -219,9 +229,14 @@
 
     function stageById(id) { return st.stages.filter(function (s) { return s.id === id; })[0]; }
 
+    // The server's word replaces any provisional pass this phone gave itself while offline.
     function absorb(stage, kind, body, fallback) {
-      var ok = passOf(body, fallback);
-      if (ok) st.passed[key(stage, kind)] = true;
+      var ok = passOf(body, fallback), k = key(stage, kind);
+      if (st.provisional[k]) {
+        delete st.provisional[k];
+        if (!ok && !(body.progress && body.progress[kind] === true)) delete st.passed[k];
+      }
+      if (ok) st.passed[k] = true;
       if (body.progress && typeof body.progress === "object") {
         Object.keys(body.progress).forEach(function (k) { if (body.progress[k] === true) st.passed[key(stage, k)] = true; });
       }
@@ -236,6 +251,8 @@
         st.stages.forEach(function (s) {
           s.order.forEach(function (k) { if (s.checkpoints[k].passed) st.passed[key(s, k)] = true; });
           if (s.code) st.codes[s.id] = s.code;
+          var left = s.checkpoints.bug && Number(s.checkpoints.bug.locked_for);
+          if (left > 0) startLock(s.id, left);
         });
         persist();
       }, function () { /* offline: keep the cached lessons */ }).then(render);
@@ -249,7 +266,12 @@
         if (stage) absorb(stage, item.kind, body, false); else persist();
         return flush();
       }, function (err) {
-        if (err.status) { st.queue.shift(); persist(); return flush(); }   // the server answered: do not retry forever
+        if (err.status) {                                   // the server answered: do not retry forever, and drop the provisional pass
+          var k = key(stage || { id: item.stage }, item.kind);
+          st.queue.shift();
+          if (st.provisional[k]) { delete st.provisional[k]; delete st.passed[k]; }
+          persist(); return flush();
+        }
       }).then(refresh);
     }
 
@@ -269,7 +291,7 @@
           return c.id + ": " + (c.ops || []).length + " operations, " + Object.keys(ids).length + " distinct ids.";
         }).join(" ");
       }
-      if (kind === "bug") return "Compare each line of the snippet with the rule in this stage's summary. One line breaks it.";
+      if (kind === "bug") return "Compare each line of the excerpt with the rule in this stage's summary. One line breaks it.";
       if (kind === "write") return "Follow the docstring literally: it says what to return. The real merge calls your function.";
       return "Say what would go wrong without this code, then why this version fixes it.";
     }
@@ -288,12 +310,27 @@
     }
 
     function offlineText(err) {
+      if (err && err.status === 429) return "Too many attempts. Wait " + (err.retryAfter || 30) + " seconds and try again.";
       if (err && err.status === 403) return "Code is graded on the base laptop only. Ask the host to run it there, or to allow phones on this network.";
       return err && err.status ? "The server could not grade this (HTTP " + err.status + "). Try again later."
         : "Needs a signal: the referee runs on the server. Your answer is kept on this phone.";
     }
 
     // ---- actions ----
+    // The server replaced these cases (a wrong guess re-rolls the numbers): swap them in the page and in the cache.
+    function applyNewCases(stage, fresh) {
+      if (!Array.isArray(fresh) || !fresh.length) return false;
+      var raws = st.raw ? (Array.isArray(st.raw) ? st.raw : st.raw.stages || []) : [];
+      var rawStage = raws.filter(function (r) { return String(r.id) === stage.id; })[0];
+      fresh.forEach(function (c) {
+        var lists = [stage.checkpoints.predict.cases];
+        if (rawStage && rawStage.predict && Array.isArray(rawStage.predict.cases)) lists.push(rawStage.predict.cases);
+        lists.forEach(function (list) { list.forEach(function (old, i) { if (old.id === c.id) list[i] = Object.assign({}, old, c); }); });
+      });
+      persist();
+      return true;
+    }
+
     function doPredict(stage) {
       var cases = stage.checkpoints.predict.cases || [], guesses = {}, local = {}, unanswered = null;
       cases.forEach(function (c) {
@@ -303,29 +340,76 @@
       });
       if (unanswered) { setResult("predict", "warn", "Answer every case (" + hintFor(unanswered) + " for " + unanswered.id + ")."); return Promise.resolve(); }
       var allRight = cases.every(function (c) { return local[c.id]; }), body = { answer: guesses };
-      function show(ok) {
+      function show(ok, text, tone) {
         record(stage, "predict", ok);
-        var wrong = cases.filter(function (c) { return !local[c.id]; });
-        setResult("predict", ok ? "good" : "bad", ok ? "Right. The real merge agrees on every case."
-          : "Not quite. " + wrong.map(function (c) { return c.id + ": the real merge gives " + predictAnswer(c); }).join("; ") + ".");
+        if (applyNewCases(stage, show.fresh)) render();
+        setResult("predict", tone || (ok ? "good" : "bad"), text);
         refresh();
       }
-      return post(stage, "predict", body).then(function (res) { show(absorb(stage, "predict", res, allRight)); }, function (err) {
-        if (!err.status && allRight) { st.queue.push({ stage: stage.id, kind: "predict", body: body }); }
-        if (allRight) st.passed[key(stage, "predict")] = true;
-        persist(); show(allRight);
+      function missText(ids, replaced) {
+        return "Not right: " + ids.join(", ") + ". " + (replaced ? "Each wrong case was replaced with new numbers. Work it out again." : "Work it out again.");
+      }
+      return post(stage, "predict", body).then(function (res) {
+        var ok = absorb(stage, "predict", res, false), r = res.result || res;
+        var ids = Array.isArray(r.wrong) ? r.wrong : cases.filter(function (c) { return r.cases && r.cases[c.id] && r.cases[c.id].passed === false; }).map(function (c) { return c.id; });
+        show.fresh = r.new_cases;
+        show(ok, ok ? "Right. The server ran the real merge on your cases and agrees on every one."
+          : ids.length ? missText(ids, !!(r.new_cases && r.new_cases.length)) : "Not yet. " + (r.error || "Check every answer."));
+      }, function (err) {
+        if (err.status) { setResult("predict", "warn", offlineText(err)); refresh(); return; }
+        var wrong = cases.filter(function (c) { return !local[c.id]; }).map(function (c) { return c.id; });
+        if (!allRight) { show(false, missText(wrong, false) + " (graded on this phone: no signal)"); return; }
+        st.queue.push({ stage: stage.id, kind: "predict", body: body });
+        st.passed[key(stage, "predict")] = true; st.provisional[key(stage, "predict")] = true;
+        persist();
+        show(true, "Right on this phone. No signal, so it counts only when the server agrees once you are back online.", "good");
       });
     }
 
-    function doBug(stage, answer) {
-      answer = String(answer || "").trim();
-      if (!answer) { setResult("bug", "warn", "Say what is wrong first."); return Promise.resolve(); }
-      return post(stage, "bug", { answer: answer }).then(function (res) {
-        var ok = absorb(stage, "bug", res, false);
+    function bugPick() { return view.pick || { line: null, option: null }; }
+
+    function doBug(stage) {
+      var pick = bugPick();
+      if (pick.line === null && pick.option === null && view.inputs.bug) pick = { line: null, option: view.inputs.bug.value };
+      if (pick.line === null || !pick.option) { setResult("bug", "warn", "Click the changed line, pick the cause, then press Check."); return Promise.resolve(); }
+      if (bugLockLeft(stage.id) > 0) { setResult("bug", "warn", "Locked for " + bugLockLeft(stage.id) + " more seconds."); return Promise.resolve(); }
+      return post(stage, "bug", { answer: { option: pick.option, line: pick.line } }).then(function (res) {
+        var ok = absorb(stage, "bug", res, false), r = res.result || res;
         record(stage, "bug", ok);
-        setResult("bug", ok ? "good" : "bad", ok ? "Found it." + (explanationOf(res) ? " " + explanationOf(res) : "") : "Not that one. Look again.");
+        if (ok) { view.pick = { line: null, option: null }; setResult("bug", "good", "Found it." + (explanationOf(res) ? " " + explanationOf(res) : "")); refresh(); return; }
+        if (Array.isArray(r.options)) stage.checkpoints.bug.options = r.options;
+        view.pick = { line: null, option: null };
+        startLock(stage.id, Number(r.locked_for) || 30);
+        render();
+        setResult("bug", "bad", "Not that line and cause together. The options are locked for " + bugLockLeft(stage.id) + " seconds and have been reshuffled.");
         refresh();
-      }, function (err) { setResult("bug", "warn", offlineText(err)); refresh(); });
+      }, function (err) {
+        if (err.status === 429) { startLock(stage.id, err.retryAfter || 30); render(); }
+        setResult("bug", "warn", offlineText(err)); refresh();
+      });
+    }
+
+    // ---- the 30 second lock after a wrong find-the-bug pick ----
+    function bugLockLeft(stageId) {
+      var until = st.locks[stageId];
+      return until ? Math.max(0, Math.ceil((until - Date.now()) / 1000)) : 0;
+    }
+    function startLock(stageId, seconds) {
+      st.locks[stageId] = Date.now() + seconds * 1000;
+      if (!lockTimer && typeof setInterval === "function") {
+        lockTimer = setInterval(tickLocks, 1000);
+        if (lockTimer && lockTimer.unref) lockTimer.unref();
+      }
+    }
+    function tickLocks() {
+      var live = Object.keys(st.locks).filter(function (id) { return bugLockLeft(id) > 0; });
+      if (view.stage && view.results && view.results.bug && st.locks[view.stage.id] !== undefined) {
+        var left = bugLockLeft(view.stage.id);
+        if (left > 0) setResult("bug", "warn", "Options locked for " + left + " s after a wrong pick.");
+        else if (/locked for/i.test(view.results.bug.textContent)) setResult("bug", "", "Ready. The options were reshuffled.");
+      }
+      refresh();
+      if (!live.length && lockTimer) { clearInterval(lockTimer); lockTimer = null; }
     }
 
     function doWrite(stage) {
@@ -344,16 +428,19 @@
     function doExplain(stage) {
       var text = view.inputs.explain.value;
       st.drafts[key(stage, "explain")] = text; persist();
-      if (!text.trim()) { setResult("explain", "warn", "Write a sentence or two first."); return Promise.resolve(); }
+      if (!text.trim()) { setResult("explain", "warn", "Write a few sentences first."); return Promise.resolve(); }
       return post(stage, "explain", { text: text }).then(function (res) {
-        var ok = absorb(stage, "explain", res, true), r = res.result || res, points = [];
+        var ok = absorb(stage, "explain", res, false), r = res.result || res, points = [];
         record(stage, "explain", ok);
         (r.covered || []).forEach(function (p) { points.push("Covered: " + (p.point || p)); });
-        (r.missed || []).forEach(function (p) { points.push("Missed: " + (p.point || p)); });
+        (r.missed || []).forEach(function (p) { points.push("Missed: " + (p.point || p) + (p.needs ? " (" + p.needs + ")" : "")); });
+        (r.reasons || []).forEach(function (why) { points.push("To pass: " + why); });
         (r.rubric || res.rubric || []).forEach(function (p) { points.push(typeof p === "string" ? p : (p.text || p.point || JSON.stringify(p))); });
-        setResult("explain", ok ? "good" : "bad", ok ? "Good. Compare your words with the rubric." : "Not yet. Compare with the rubric and try again.");
+        setResult("explain", ok ? "good" : "bad", (ok ? "Good. Compare your words with the points. " : "Not yet. ") +
+          (r.words !== undefined ? r.words + " words, " + (r.covered || []).length + " points covered. " : "") +
+          "Explain is practice: it never unlocks the reference code.");
         var list = h("ul", { className: "rubric", "data-rubric": "explain" }, points.map(function (t) { return h("li", { text: t }); }));
-        view.rubric.replaceChildren(h("h4", { text: "The rubric" }), list);
+        view.rubric.replaceChildren(h("h4", { text: "Your explanation against the points" }), list);
         refresh();
       }, function (err) { setResult("explain", "warn", offlineText(err)); refresh(); });
     }
@@ -362,7 +449,7 @@
       function show() {
         var code = st.codes[stage.id] || stage.code;
         view.codeBox.replaceChildren.apply(view.codeBox, code ? Views.revealView(ctxOf(), stage, code)
-          : [h("p", { className: "result warn", text: "Connect once to download the real code." })]);
+          : [h("p", { className: "result warn", text: "Connect once to download the reference code." })]);
       }
       if (st.codes[stage.id] || stage.code) { show(); return Promise.resolve(); }
       return load().then(show);
@@ -394,21 +481,31 @@
         });
         kids.push(h("button", { type: "button", className: "wide", "data-action": "predict", text: "Check with the real merge" }));
       } else if (kind === "bug") {
-        var m = cp.mutant || {}, mcode = cp.snippet || cp.mutant_source || (typeof m === "string" ? m : (m.code || m.diff || m.snippet || ""));
-        kids.push(h("p", { text: cp.prompt || "This copy of the real merge has one deliberate mistake. What is wrong?" }));
-        kids.push(h("pre", { className: "code", text: mcode }));
+        var m = cp.mutant || {}, lines = Array.isArray(cp.excerpt) ? cp.excerpt
+          : String(cp.snippet || cp.mutant_source || (typeof m === "string" ? m : (m.code || m.diff || m.snippet || ""))).split("\n");
+        view.pick = { line: null, option: null };
+        kids.push(h("p", { text: cp.prompt || "This copy of the real merge has one deliberate mistake. Which line changed, and why is it wrong?" }));
+        kids.push(h("p", { className: "sub", text: "Step 1: click the line that was changed. Step 2: pick the cause. Then press Check. A wrong pick locks the options for 30 seconds and reshuffles them." }));
+        var excerpt = h("div", { className: "excerpt code", "data-excerpt": stage.id }, lines.map(function (l, i) {
+          var b = h("button", { type: "button", className: "line", "data-line": String(i), "aria-pressed": "false", text: l });
+          b.addEventListener("click", function () { if (guard(stage, "bug")) return; view.pick.line = i; markPick(excerpt, "data-line", String(i)); });
+          return b;
+        }));
+        kids.push(excerpt);
         var options = cp.options || cp.choices;
         if (Array.isArray(options) && options.length) {
-          kids.push(h("div", { className: "choices" }, options.map(function (c) {
+          var choices = h("div", { className: "choices" }, options.map(function (c) {
             var id = typeof c === "string" ? c : c.id, label = typeof c === "string" ? c : (c.text || c.id);
-            var b = h("button", { type: "button", "data-choice": id, text: label });
-            b.addEventListener("click", function () { if (!guard(stage, "bug")) track(doBug(stage, id)); });
+            var b = h("button", { type: "button", "data-choice": id, "aria-pressed": "false", text: label });
+            b.addEventListener("click", function () { if (guard(stage, "bug")) return; view.pick.option = id; markPick(choices, "data-choice", id); });
             return b;
-          })));
+          }));
+          kids.push(choices);
         } else {
           view.inputs.bug = h("input", { type: "text", className: "field", "data-input": "bug", "aria-label": "What is wrong", placeholder: "What is wrong?" });
-          kids.push(h("div", { className: "row" }, [view.inputs.bug, h("button", { type: "button", "data-action": "bug", text: "Check" })]));
+          kids.push(view.inputs.bug);
         }
+        kids.push(h("button", { type: "button", className: "wide", "data-action": "bug", text: "Check" }));
       } else if (kind === "write") {
         kids.push(h("p", { text: cp.prompt || "Complete the function. The referee grades it." }));
         view.inputs.write = h("textarea", { className: "field codein", rows: "8", spellcheck: "false", autocapitalize: "off",
@@ -432,7 +529,7 @@
       var el = h("section", { className: "card cp", "data-checkpoint": kind }, [
         h("h3", {}, [h("span", { className: "lock", "data-lock": kind }), LABELS[kind]])].concat(kids));
       var actions = {
-        predict: function () { return doPredict(stage); }, bug: function () { return doBug(stage, view.inputs.bug.value); },
+        predict: function () { return doPredict(stage); }, bug: function () { return doBug(stage); },
         write: function () { return doWrite(stage); }, explain: function () { return doExplain(stage); },
       };
       all(el, function (n) { return n.getAttribute && n.getAttribute("data-action") === kind; }).forEach(function (b) {
@@ -440,6 +537,14 @@
       });
       view.cards[kind] = el;
       return el;
+    }
+
+    function markPick(box, attr, value) {
+      all(box, function (n) { return n.getAttribute && n.getAttribute(attr) !== null; }).forEach(function (n) {
+        var on = n.getAttribute(attr) === value;
+        n.setAttribute("aria-pressed", String(on));
+        n.className = (n.className || "").replace(/\s*\bsel\b/, "") + (on ? " sel" : "");
+      });
     }
 
     function all(node, pred, out) {
@@ -554,7 +659,8 @@
                   view.bar, view.barText];
       var heroNode = h("section", { className: "hero", "data-hero": "pitch" }, [
                     h("p", { className: "lede", text: "Do not paste code you do not understand." }),
-                    h("p", { className: "sub", text: "In Anthropic's January 2026 randomized trial, people coding with AI scored 50% on a skills quiz against 67% for people coding by hand, and the biggest gap was debugging. Here a real app's code stays locked until you predict it, find its bug and write it yourself. Plain code checks every answer." })]);
+                    h("p", { className: "sub", text: "In Anthropic's January 2026 randomized trial, people coding with AI scored 50% on a skills quiz against 67% for people coding by hand, and the biggest gap was debugging. Here you predict what a real app's merge does, find the line that was changed in a copy of it and write a function yourself before the app reveals its reference solution. Plain code, not a model, checks every answer on the server." }),
+                    h("p", { className: "sub", "data-hero": "honest", text: "Be clear about what is gated: the merge code is public in this repository and crdt.js, its JavaScript twin, runs on every phone, so nothing here is secret. What the server holds back is the guided path, the reference-solution reveal and your unlock record. Anyone who runs the public code can work out a predict answer, so a pass is practice, not proof." })]);
       if (!st.stages.length) {
         kids.splice(1, 0, heroNode);
         kids.push(h("p", { className: "card empty", "data-status": "empty",
@@ -615,13 +721,14 @@
         el.setAttribute("data-locked", String(locked));
         el.className = "card cp" + (locked ? " locked" : "") + (done ? " done" : "");
         all(el, function (n) { return n.getAttribute && n.getAttribute("data-lock") === k; }).forEach(function (l) { setLock(l, locked, done); });
+        var timed = k === "bug" && bugLockLeft(stage.id) > 0;
         all(el, function (n) { return n.tagName === "BUTTON" || n.tagName === "INPUT" || n.tagName === "TEXTAREA"; })
-          .forEach(function (n) { n.disabled = locked; });
+          .forEach(function (n) { n.disabled = locked || (timed && n.getAttribute("data-hint-btn") === null); });
       });
       if (isEarned(stage, st.passed) && !view.reveal.children.length) {
-        var b = h("button", { type: "button", className: "wide unlock", "data-action": "reveal", text: "Reveal the real code" });
+        var b = h("button", { type: "button", className: "wide unlock", "data-action": "reveal", text: "Reveal the reference code" });
         b.addEventListener("click", function () { track(doReveal(stage)); });
-        view.reveal.appendChild(h("p", { className: "result good", text: "Stage earned. The real code is unlocked." }));
+        view.reveal.appendChild(h("p", { className: "result good", text: "Stage earned. The server recorded it, and the reference solution can now be revealed." }));
         view.reveal.appendChild(b);
       }
     }
@@ -631,9 +738,14 @@
     return { ready: ready, idle: idle, flush: function () { return track(flush().then(load)); }, reload: load, state: st };
   }
 
-  var api = { KINDS: KINDS, normalizeStages: normalizeStages, failureText: failureText, explanationOf: explanationOf, predictAnswer: predictAnswer, gradePredict: gradePredict,
+  // The browser global holds no grader: there is no predictAnswer or gradePredict on window.Learn to call from devtools.
+  // Node tests get them (the offline path and the quiz use them inside mount, as closures).
+  var api = { KINDS: KINDS, normalizeStages: normalizeStages, failureText: failureText, explanationOf: explanationOf,
               isEarned: isEarned, isStageLocked: isStageLocked, isCheckpointLocked: isCheckpointLocked, progress: progress, mount: mount };
-  if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = Object.assign({ predictAnswer: predictAnswer, gradePredict: gradePredict }, api);
+    return;
+  }
   root.Learn = api;
   var el = root.document && root.document.getElementById("learn");
   if (!el) return;

@@ -124,3 +124,9 @@ a.navlink[download] { margin-top: 0; }
 .row .navlink { flex: 1 1 200px; justify-content: center; min-height: 52px; }
 .row { margin-bottom: 8px; }
 @media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+
+/* find-the-bug: the changed line is picked by clicking it */
+.excerpt { display: block; margin: 8px 0; }
+.excerpt .line { display: block; width: 100%; text-align: left; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; white-space: pre; overflow-x: auto; margin: 2px 0; }
+.excerpt .line.sel, .choices button.sel { outline: 2px solid currentColor; outline-offset: -2px; font-weight: 600; }
+.cp button:disabled { opacity: 0.5; }

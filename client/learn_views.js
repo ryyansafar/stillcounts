@@ -48,15 +48,15 @@
       h("div", { className: "gapnum", text: g.gap === null ? "no code yet" : g.gap + "%" }),
       h("div", { className: "gaplab", text: "Pasted-vs-understood gap" }),
       h("p", { className: "sub", text: g.gap === null
-        ? "You have not unlocked any code. Earn a stage (predict, find the bug, write) and its real code appears here."
+        ? "No reference code revealed yet. Earn a stage (predict, find the bug, write) and its reference code appears here."
         : "Of the " + g.lines + " lines you have been shown, you understand " + g.understood + "%. Lines count 25% for predicting, 50% for the bug, 75% for writing and 100% for explaining." +
-          (g.locked ? " " + g.locked + " stage" + (g.locked === 1 ? " is" : "s are") + " still locked, so their lines are not counted." : "") })]));
+          (g.locked ? " " + g.locked + " stage" + (g.locked === 1 ? " is" : "s are") + " not revealed yet, so their lines are not counted." : "") })]));
     kids.push(legend(ctx));
     ctx.stages.forEach(function (s) {
       var code = ctx.st.codes[s.id] || s.code, lvl = U.levelOf(s, ctx.st.passed);
       var head = h("h3", {}, [s.title, h("span", { className: "badge lv-" + lvl, text: U.LEVEL_LABEL[lvl] })]);
       var body = code ? codePre(ctx, s, code, { "data-map": s.id })
-        : h("div", { className: "locked-code", "data-map": s.id }, [h("span", { className: "bars" }), h("p", { className: "sub", text: "Locked. Predict, find the bug and write to unlock the real code." })]);
+        : h("div", { className: "locked-code", "data-map": s.id }, [h("span", { className: "bars" }), h("p", { className: "sub", text: "Not revealed yet. Predict, find the bug and write to get the reference code." })]);
       kids.push(h("section", { className: "card mapstage", "data-mapstage": s.id }, [head, body]));
     });
     return kids;
@@ -94,7 +94,7 @@
     kids.push(quizCard(ctx));
     kids.push(h("section", { className: "card", "data-card": "lines" }, [h("h3", { text: "Lines unlocked vs lines written" }),
       meter(h, "All stages", m.unlockedLines, m.writtenLines, "unlocked", "written by you"),
-      h("p", { className: "sub", text: "Unlocked is the real code you earned the right to read. Written is what you typed that the referee passed." })]));
+      h("p", { className: "sub", text: "Unlocked is the reference code revealed to you after you earned the stage. Written is what you typed that the referee passed." })]));
     var fade = [h("h3", { text: "Fading scaffolds: Devin's lines vs yours" }),
       h("p", { className: "sub", text: "Devin gives each stage a signature and a docstring. You write the body. These are the real counts per stage, so you can see whether the help fades." })];
     m.perStage.forEach(function (p) {
@@ -175,11 +175,13 @@
       kids.push(h("pre", { className: "code diff", "data-diff-of": stage.id }, kidsD));
     }
     var b = stage.checkpoints.bug || {};
-    if (b.snippet && b.line && ctx.st.passed[stage.id + "/bug"]) {
-      var bl = String(b.snippet).split("\n"), bk = [];
-      bl.forEach(function (l, i) {
+    var shown = Array.isArray(b.excerpt) ? b.excerpt : (b.snippet ? String(b.snippet).split("\n") : null);
+    if (shown && (typeof b.line_index === "number" || b.line) && ctx.st.passed[stage.id + "/bug"]) {
+      var bk = [];
+      shown.forEach(function (l, i) {
+        var changed = typeof b.line_index === "number" ? i === b.line_index : l.trim() === String(b.line).trim();
         if (i) bk.push("\n");
-        bk.push(h("span", { className: "ln " + (l.trim() === String(b.line).trim() ? "df-del" : ""), "data-m": l.trim() === String(b.line).trim() ? "!" : " ", text: l }));
+        bk.push(h("span", { className: "ln " + (changed ? "df-del" : ""), "data-m": changed ? "!" : " ", text: l }));
       });
       kids.push(h("h4", { text: "The bug you found" }), h("pre", { className: "code diff", "data-bug-line": stage.id }, bk));
     }

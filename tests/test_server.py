@@ -99,14 +99,22 @@ def test_static_app_and_health(tmp_path):
     assert c.get("/health").json() == {"ok": True}
     assert c.get("/").status_code == 200
     assert c.get("/board").status_code == 200
+    home = c.get("/").text
+    assert 'href="/static/learn.html"' in home and 'href="/race"' in home
+    assert 'href="/static/learn.html"' in c.get("/board").text
 
 
 def test_service_worker_is_served_from_the_root_scope(tmp_path):
     c, _ = make(tmp_path)
     r = c.get("/sw.js")
     assert r.status_code == 200 and r.headers["service-worker-allowed"] == "/"
-    assert "stillcounts-v4" in r.text
+    assert 'var CACHE = "stillcounts-v' in r.text
     assert c.get("/static/crdt.js").status_code == 200
+    for name in ("race.js", "race.css"):
+        assert c.get("/static/" + name).status_code == 200 and "/static/" + name in r.text
+    assert '"/race"' in r.text and c.get("/race").status_code == 200
+    for name in ("learn.html", "learn.js", "learn.css"):
+        assert c.get("/static/" + name).status_code == 200 and "/static/" + name in r.text
 
 
 def test_seed_is_idempotent(tmp_path):

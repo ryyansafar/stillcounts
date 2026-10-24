@@ -120,7 +120,7 @@
     function submitKind(b, kind, body, cp) {
       var chat = ctl.active(); if (!chat) return;
       ui.busy[b.n] = true; ui.results[b.n + "/" + kind] = { cls: "", text: "Checking…" }; render();
-      ctl.grade(chat.id, b.n, kind, body).then(function (res) { ui.results[b.n + "/" + kind] = V.outcome(kind, res, cp); }, function (err) {
+      ctl.grade(chat.id, b.n, kind, body).then(function (res) { ui.results[b.n + "/" + kind] = V.outcome(kind, res, cp && cp.hint ? cp : { hint: HINTS[kind] }); }, function (err) {
         var text = err.status === 403 ? "Code is graded on the base laptop only. Ask the host to run it there."
           : /locked/.test(err.message) ? "Locked. Earn the earlier stage first."
           : err.status ? "The server could not grade this (HTTP " + err.status + "). Try again later." : "Needs a signal: grading runs on the server. Your answer is kept here.";

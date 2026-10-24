@@ -83,3 +83,20 @@ MIT.
 ## Heart-rate adaptation (Learn)
 
 A top-bar widget (`client/hr_widget.js`) reads a heart rate from a **simulator** (default, always labelled SIMULATOR) or an optional Web Bluetooth strap (`client/hr.js`, untested without hardware). `client/stress.js` is a pure detector and policy: baseline = median of the first 30 s, abrupt rise (+15 bpm or +20% in 10 s) or sustained x1.25 for 20 s, with hysteresis and cooldown. It maps to difficulty level 3, 2 or 1 and always explains why. Easier never means auto-passed. Heart rate stays on the device and is never sent to the server. Not a medical device. The chat shell integrates through `window.EarnHooks` (`getDifficulty`, `onAdapt`, `reportAttempt`).
+
+
+## Chat shell: live Devin, earned code, heart-rate adaptation
+
+The root page is a chat (sidebar of past chats kept in localStorage, a thread, a composer). Ask Devin to build something small.
+With `DEVIN_TOKEN` and `DEVIN_ORG` on the server (environment or the file named by `STILLCOUNTS_DEVIN_ENV`) the build is a REAL Devin v3
+session, driven by `server/devin_bridge.py` (the browser never sees the token). Devin works one stage and stops (`waiting_for_user`); the
+bridge sends it "continue" only after the learner earned the stage before it, and refuses the message otherwise. The thread shows live
+status, the message stream, pull-request cards with CI and Devin Review counts, ACU against the `max_acu_limit`, and the session link.
+Stage code stays on the server until predict, find-the-bug and write pass (graded by running the stage code in a sandboxed process).
+Without a token, on a quota error, or with the "offline replay" toggle, a replay labelled SIMULATED is used instead, never silently.
+
+The heart-rate widget (simulator by default, optional untested Web Bluetooth strap) drives difficulty 3, 2, 1: level 2 adds hints and smaller
+steps, level 1 adds guided multiple-choice or fill-in Write, a breathing prompt and a slower Devin. Adaptation messages reach Devin; heart rate
+stays on the device; the dashboard (`/static/results.html`, `/api/learn/results`) gets level changes with the numbers removed. Not a medical device.
+
+Screenshots: `docs/screenshots/chat-thread.png`, `chat-locked.png`, `hr-spike.png`, `hr-calm.png` (and `-mobile` variants).

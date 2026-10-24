@@ -20,3 +20,6 @@
 - Buy Me a Coffee: https://buymeacoffee.com/ryyansafar
 - PayPal: https://www.paypal.com/paypalme/ryyansafar
 - Razorpay: https://razorpay.me/@ryyansafar
+
+Chat shell notes: Devin bridge in `server/devin_bridge.py` and `server/live_course.py`, client in `client/devin_live.js`, `chat_*.js`, `hr*.js`, `stress.js`.
+Tests: `.venv/bin/python -m pytest -q` and `node --test client/test/`.

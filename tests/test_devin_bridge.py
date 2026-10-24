@@ -220,3 +220,24 @@ def test_adaptation_events_are_logged_without_any_heart_rate(tmp_path):
     assert ev["level"] == 1 and ev["stage"] == 2 and not any(ch.isdigit() for ch in ev["reason"])
     assert out["summary"]["lowered"] == 1
     assert c.post("/api/learn/adaptations", json={"chat": "c1", "level": 9, "prev": 3}).status_code == 422
+
+
+def test_github_info_reports_ci_and_devin_review_and_degrades_quietly():
+    class Resp:
+        def __init__(self, body, code=200):
+            self.body, self.status_code = body, code
+
+        def json(self):
+            return self.body
+
+    class Http:
+        def get(self, url, headers=None, timeout=None):
+            if url.endswith("/pulls/7"):
+                return Resp({"title": "Stage 2: x", "state": "open", "merged": False, "head": {"sha": "abc"}})
+            if url.endswith("/check-runs"):
+                return Resp({"check_runs": [{"conclusion": "success"}, {"conclusion": "failure"}]})
+            return Resp([{"user": {"login": "devin-ai-integration[bot]"}}, {"user": {"login": "human"}}])
+
+    info = GitHubInfo(http=Http(), token="").lookup("https://github.com/o/r/pull/7")
+    assert info["ci"] == "failing" and info["review"]["comments"] == 2 and info["title"].startswith("Stage 2")
+    assert GitHubInfo(http=Http(), token="").lookup("https://evil.example/pull/7")["ci"] == "none"

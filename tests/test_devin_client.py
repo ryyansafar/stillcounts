@@ -141,3 +141,18 @@ def test_api_devin_prefers_the_committed_evidence_over_a_stale_live_file(tmp_pat
     assert c.get("/api/devin").json()["sessions"] == 9
     (tmp_path / "devin_counts.json").write_text(json.dumps({"sessions": 9, "prs": 5, "acus_reported": 1.5}))
     assert c.get("/api/devin").json()["acus_reported"] == 1.5
+
+
+def test_list_messages_and_terminate_use_the_v3_session_routes():
+    c, http = client([FakeResp(200, {"items": [{"event_id": "e1", "source": "devin", "message": "hi"}]}), FakeResp(200, None)])
+    assert c.list_messages("abc")[0]["message"] == "hi"
+    assert http.calls[0]["method"] == "GET" and "/sessions/abc/messages" in http.calls[0]["url"]
+    c.terminate("abc")
+    assert http.calls[1]["method"] == "DELETE" and http.calls[1]["url"].endswith("/sessions/abc")
+
+
+def test_errors_carry_the_status_without_the_token():
+    c, _ = client([FakeResp(429, "cog_secrettoken limit")])
+    with pytest.raises(DevinError) as e:
+        c.get_session("abc")
+    assert e.value.status == 429 and "cog_secrettoken" not in str(e.value)

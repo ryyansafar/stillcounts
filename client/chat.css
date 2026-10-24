@@ -161,3 +161,6 @@ button.wide { width: 100%; }
 .starters button { min-height: 44px; }
 .hint { color: var(--warn); }
 .hrw { position: static; }
+.hrw-panel { max-height: 34vh; overflow-y: auto; }
+@media (max-width: 760px) { .livebar { padding: 6px 12px; } .livemsg { white-space: normal; } }
+@media (max-width: 760px) { .livebar .livemsg, .livebar [data-live="detail"] { display: none; } .hrw-panel { max-height: 40vh; } }

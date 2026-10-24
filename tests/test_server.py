@@ -126,7 +126,8 @@ def test_seed_is_idempotent(tmp_path):
 
 def test_chaos_results_default_to_empty_and_read_the_file(tmp_path):
     c, _ = make(tmp_path)
-    assert c.get("/api/chaos").json() == {"runs": []}
+    assert c.get("/api/chaos").json()["runs"] == []
+    assert c.get("/api/chaos").json()["summary"]["runs"] > 0      # nothing in tmp_path: the committed summary answers
     (tmp_path / "chaos_results.json").write_text(json.dumps({"runs": [{"seed": 1, "ok": True}]}))
     assert c.get("/api/chaos").json()["runs"][0]["seed"] == 1
 
@@ -135,7 +136,7 @@ def test_chaos_falls_back_to_the_committed_summary(tmp_path):
     c, _ = make(tmp_path)
     (tmp_path / "chaos_summary.json").write_text(json.dumps({"runs": 5, "failed": 1}))
     body = c.get("/api/chaos").json()
-    assert body["runs"] == [] and body["summary"]["failed"] == 1
+    assert body["runs"] == [] and body["summary"]["failed"] == 1       # a newer summary next to the log wins
 
 
 def test_phone_reports_show_who_is_caught_up(tmp_path):
@@ -158,3 +159,11 @@ def test_a_phone_that_never_reports_is_not_listed(tmp_path):
     c = TestClient(create_app(tmp_path / "ops.jsonl"))
     c.post("/api/sync", json={"replica": "old", "cursor": 0, "ops": []})
     assert c.get("/api/state").json()["phones"] == []
+
+
+def test_a_foreign_data_dir_still_serves_the_committed_evidence_and_summary(tmp_path):
+    """STILLCOUNTS_DATA_DIR moves the live log only. The board's Devin and Attack panels read what ships in the repo."""
+    c, _ = make(tmp_path / "elsewhere")
+    assert c.get("/api/devin").json()["sessions"] == 9
+    chaos = c.get("/api/chaos").json()
+    assert chaos["summary"]["runs"] > 0 and len(chaos["summary"]["by_scenario"]) == 25

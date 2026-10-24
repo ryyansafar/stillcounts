@@ -24,9 +24,10 @@ def test_qr_endpoint_refuses_non_http_and_long_text(tmp_path):
 
 def test_devin_counts_endpoint_defaults_and_reads_the_file(tmp_path):
     c = make(tmp_path)
-    assert c.get("/api/devin").json()["sessions"] == 0
-    (tmp_path / "devin_counts.json").write_text(json.dumps({"sessions": 7, "prs": 1}))
-    assert c.get("/api/devin").json()["sessions"] == 7
+    committed = c.get("/api/devin").json()["sessions"]
+    assert committed == 9                    # the committed evidence is read from the repo, not from the data dir
+    (tmp_path / "devin_counts.json").write_text(json.dumps({"sessions": committed + 3, "prs": 1}))
+    assert c.get("/api/devin").json()["sessions"] == committed + 3
 
 
 def test_summarise_counts_sessions_prs_and_outputs():

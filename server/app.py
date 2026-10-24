@@ -303,19 +303,22 @@ def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
             store.append_locked(fresh)
         return {"accepted": len(fresh)}
 
-    @app.get("/api/chaos")
-    def chaos() -> dict:
-        folder = Path(store_path).parent
-        path = folder / "chaos_results.json"
-        if not path.exists():       # full per-run output is git-ignored; fall back to the committed summary
-            try:
-                return {"runs": [], "summary": json.loads((folder / "chaos_summary.json").read_text())}
-            except (OSError, ValueError):
-                return {"runs": []}
+    COMMITTED = ROOT / "data"          # evidence that ships with the repo; never moved by STILLCOUNTS_DATA_DIR
+    folder = Path(store_path).parent   # live files: the log, names, learn progress, a fresh harness run, a Devin snapshot
+
+    def read_json(path: Path, default: Any) -> Any:
         try:
             return json.loads(path.read_text())
-        except ValueError:
-            return {"runs": []}
+        except (OSError, ValueError):
+            return default
+
+    @app.get("/api/chaos")
+    def chaos() -> dict:
+        """`summary` is the per-scenario result of the full committed run (or a newer one next to the log); `runs` is the
+        per-run list of a short local run, if one exists. The board shows the summary first."""
+        summary = read_json(folder / "chaos_summary.json", None) or read_json(COMMITTED / "chaos_summary.json", None)
+        runs = read_json(folder / "chaos_results.json", {}).get("runs", [])
+        return {"runs": runs, "summary": summary} if summary else {"runs": runs}
 
     @app.get("/api/referee")
     def referee() -> dict:
@@ -327,9 +330,8 @@ def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
         """Counts for the board. A live snapshot from ops/devin_counts.py wins when it covers at least as many sessions
         as the committed evidence; otherwise the committed evidence is used."""
         from ops.devin_evidence import counts, load
-        folder = Path(store_path).parent
         try:
-            committed = counts(load(folder / "devin_evidence.json"))
+            committed = counts(load(COMMITTED / "devin_evidence.json"))
         except (OSError, ValueError, KeyError):
             committed = {"sessions": 0, "prs": 0, "issues": 0, "source": "none"}
         try:

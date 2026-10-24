@@ -56,6 +56,26 @@ def js_dumps(value: Any) -> str:
     return json.dumps(value, ensure_ascii=True, separators=(",", ":"))
 
 
+class Lazy:
+    """A localStorage value whose JSON text is produced only when someone reads it (a speed-up, same bytes)."""
+    __slots__ = ("value", "_text")
+
+    def __init__(self, value: Any) -> None:
+        self.value = {k: list(v) if isinstance(v, list) else v for k, v in value.items()} \
+            if isinstance(value, dict) else value
+        self._text: str | None = None
+
+    @property
+    def text(self) -> str:
+        if self._text is None:
+            self._text = js_dumps(self.value)
+        return self._text
+
+
+def text_of(v: "str | Lazy") -> str:
+    return v.text if isinstance(v, Lazy) else v
+
+
 def b36(n: int) -> str:
     out = ""
     while True:
@@ -266,13 +286,13 @@ class Device:
     def now_ms(self) -> int:
         return WALL_EPOCH_MS + self.sim.now + self.skew_ms
 
-    def set_item(self, key: str, text: str) -> None:
+    def set_item(self, key: str, text: "str | Lazy") -> None:
         if self.kill_on_save:
             self.kill_on_save = False
             raise TabKilled(f"{self.name} killed while writing {key}")
         if self.quota is not None:
-            used = sum(len(k) + len(v) for k, v in self.storage.items() if k != key)
-            if used + len(key) + len(text) > self.quota:
+            used = sum(len(k) + len(text_of(v)) for k, v in self.storage.items() if k != key)
+            if used + len(key) + len(text_of(text)) > self.quota:
                 raise QuotaExceeded(key)
         self.storage[key] = text
 
@@ -300,7 +320,7 @@ class Device:
     def wipe(self, keep_replica: str | None = None) -> None:
         """Clear site data or reinstall. Ops that never left the device are destroyed with it."""
         self.close_tabs()
-        state = js_loads(self.storage["sc_state"]) if "sc_state" in self.storage else {}
+        state = js_loads(text_of(self.storage["sc_state"])) if "sc_state" in self.storage else {}
         synced = set(state.get("synced") or [])
         self.sim.destroy([o["id"] for o in state.get("ops") or [] if o["id"] not in synced], self)
         self.storage = {"sc_replica": js_dumps(keep_replica)} if keep_replica else {}
@@ -322,14 +342,14 @@ class Phone:
     # localStorage helpers, as in app.js
     def load(self, key: str, fallback: Any) -> Any:
         try:
-            v = js_loads(self.device.storage[key])
+            v = js_loads(text_of(self.device.storage[key]))
             return fallback if v is None else v
         except (KeyError, ValueError):
             return fallback
 
     def save(self, key: str, value: Any) -> None:
         try:
-            self.device.set_item(key, js_dumps(value))
+            self.device.set_item(key, js_dumps(value) if self.device.quota is not None else Lazy(value))
         except QuotaExceeded:
             self.sim.note(f"{self.name}: localStorage quota exceeded writing {key}")   # app.js keeps running
 
@@ -700,12 +720,16 @@ class Simulation:
         return json.loads(body)["ops"], None
 
     def referee(self, settled: bool) -> dict:
-        skip = self.expected_rejected | self.destroyed
-        created = [o for _, o in self.created if o["id"] not in skip]
         server_ops, server_err = self.server_log()
+        # An injected invalid op only stays out of the expected set if the server really refused it, and a wiped op
+        # only if it never left the phone: whatever reached any replica must reach every replica.
+        refused = self.expected_rejected - {o.get("id") for o in server_ops}
         logs: dict[str, list[dict]] = {"server": server_ops}
         for name, dev in self.devices.items():
-            logs[name] = [o for o in (dev.tab.ops if dev.tab else []) if o["id"] not in self.expected_rejected]
+            logs[name] = [o for o in (dev.tab.ops if dev.tab else []) if o["id"] not in refused]
+        seen = {o.get("id") for log in logs.values() for o in log}
+        skip = refused | (self.destroyed - seen)
+        created = [o for _, o in self.created if o["id"] not in skip]
         errors: list[str] = []
         if server_err:
             errors.append(server_err)
@@ -735,8 +759,8 @@ class Simulation:
                           f"{reason}")
         ok = not errors
         extra = []
-        if self.destroyed:
-            extra.append(f"{len(self.destroyed)} unsynced ops destroyed by a wipe")
+        if self.destroyed - seen:
+            extra.append(f"{len(self.destroyed - seen)} unsynced ops destroyed by a wipe")
         if self.expected_rejected:
             extra.append(f"{len(self.expected_rejected)} invalid ops injected")
         label = "; ".join(self.labels + extra + (["PASS"] if ok else []))

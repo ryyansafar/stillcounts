@@ -81,3 +81,56 @@ def test_the_learner_namespace_holds_only_ledger_symbols(name):
     from learn.grader import _write_worker
     r = _write_worker(STAGE, f"def quantity(ops):\n    return len([{name}])\n")
     assert r["passed"] is False and "NameError" in r["error"]
+
+
+# ---- memory: macOS ignores RLIMIT_AS, so the worker and its parent watch allocation themselves ----
+
+def test_a_one_gigabyte_allocation_is_killed_quickly_on_every_platform():
+    import time
+    for code in ("def quantity(ops):\n    x = [0] * (1 << 27)\n    return 0\n",          # 1 GiB of list pointers
+                 "def quantity(ops):\n    x = 'a' * (1 << 30)\n    return 0\n"):          # 1 GiB string
+        started = time.monotonic()
+        r = grade_write(STAGE, code)
+        # macOS: the guard or the parent's resident-memory kill. Linux: RLIMIT_AS may refuse the allocation first.
+        assert r["passed"] is False and ("memory" in r["error"].lower())
+        assert time.monotonic() - started < 4
+
+
+def test_slow_growth_is_caught_by_the_workers_own_allocation_guard():
+    from learn.grader import MEMORY_ERROR
+    code = "def quantity(ops):\n    x = []\n    while True:\n        x.append([0] * 1000)\n"
+    r = grade_write(STAGE, code, timeout=5)
+    assert r["passed"] is False and r["error"] == MEMORY_ERROR
+
+
+def test_the_memory_guard_emits_a_clean_result_and_exits():
+    """Drive the worker entry point directly with a tiny limit: the guard must print a failed result, not crash."""
+    import json, subprocess, sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parent.parent
+    script = ("import json, sys, time\n"
+              "from learn import grader\n"
+              "grader._start_memory_guard(lambda r: print(json.dumps(r), flush=True), limit=1_000_000)\n"
+              "x = []\n"
+              "for _ in range(10000):\n"
+              "    x.append([0] * 1000)\n"
+              "    time.sleep(0.0005)\n")
+    run = subprocess.run([sys.executable, "-c", script], cwd=root, capture_output=True, text=True, timeout=20,
+                         env={"PYTHONPATH": str(root), "PATH": ""})
+    assert run.returncode == 0
+    assert json.loads(run.stdout.strip().splitlines()[-1])["error"] == "used more than 256 MB of memory"
+
+
+def test_the_default_timeout_is_five_seconds():
+    import inspect
+    from learn.grader import DEFAULT_TIMEOUT, grade_write as gw
+    assert DEFAULT_TIMEOUT == 5.0
+    assert inspect.signature(gw).parameters["timeout"].default == 5.0
+
+
+def test_a_legitimate_solution_is_not_slowed_past_the_timeout_by_the_guard():
+    import time
+    code = 'def quantity(ops):\n    return sum(o.value for o in ops if o.kind == "adjust")\n'
+    started = time.monotonic()
+    assert grade_write(STAGE, code)["passed"] is True
+    assert time.monotonic() - started < 4

@@ -15,6 +15,9 @@ import random
 import re
 import subprocess
 import sys
+import threading
+import time
+import tracemalloc
 import types
 from functools import lru_cache
 from pathlib import Path
@@ -23,13 +26,17 @@ ROOT = Path(__file__).resolve().parent.parent
 STAGES = Path(__file__).resolve().parent / "stages.json"
 SOURCE = ROOT / "stillcounts" / "crdt.py"
 VECTORS = ROOT / "tests" / "vectors.json"
-# The "write" checkpoint runs a stranger's code, so it is boxed in four ways (none is a substitute for running the
+# The "write" checkpoint runs a stranger's code, so it is boxed in five ways (none is a substitute for running the
 # whole server in a container or as an unprivileged user, which the README says to do for a public deployment):
 #   1. the source is checked before it runs: no imports, no names or attributes that start with an underscore
 #      (except the ledger's own helpers like _order), no string-format attribute tricks, no I/O builtins;
 #   2. it runs with a short whitelist of builtins, so `open`, `__import__`, `eval` and friends do not exist;
 #   3. the function runs in a fresh namespace holding only ledger symbols (no imported module is reachable);
-#   4. the worker process has hard limits on CPU time, memory, written file size, open files and new processes.
+#   4. the worker process has hard limits on CPU time, written file size, open files and new processes, and on Linux
+#      RLIMIT_AS caps its address space at 1 GB. macOS ignores RLIMIT_AS, so that cap is Linux-only;
+#   5. on every platform the worker aborts past 256 MB of Python allocations (a tracemalloc watchdog thread) and the
+#      parent kills it if its resident memory passes 448 MB (a single huge allocation can finish before a thread in
+#      the worker gets to run), plus a wall-clock timeout of 5 s.
 SAFE_BUILTINS = ("abs all any bool dict divmod enumerate filter float frozenset int isinstance len list map max min "
                  "next iter print range repr reversed round set slice sorted str sum tuple zip "
                  "ArithmeticError AssertionError Exception IndexError KeyError NotImplementedError "
@@ -41,7 +48,12 @@ FORBIDDEN_ATTRS = frozenset("format format_map mro".split())
 FORBIDDEN_ATTR_PREFIXES = ("_", "gi_", "cr_", "ag_", "f_", "tb_", "co_", "func_")
 # The only ledger names a learner's function can see. No imported module is among them.
 LEARNER_SYMBOLS = ("Op", "merge", "dedupe", "_order", "_total", "_lww", "_validate")
-MEMORY_LIMIT = 1024 * 1024 * 1024
+MEMORY_LIMIT = 1024 * 1024 * 1024          # RLIMIT_AS, Linux only
+ALLOCATION_LIMIT = 256 * 1024 * 1024       # tracemalloc guard inside the worker, every platform
+RSS_LIMIT = 448 * 1024 * 1024              # parent-side kill on resident memory, every platform
+DEFAULT_TIMEOUT = 5.0
+POLL_SECONDS = 0.02
+MEMORY_ERROR = "used more than 256 MB of memory"
 TRUE_WORDS = {"true", "yes", "y", "1"}
 FALSE_WORDS = {"false", "no", "n", "0"}
 _MISSING = object()
@@ -277,30 +289,67 @@ def _limit_resources(seconds: int):
     return apply
 
 
-def grade_write(stage_id: int | str, code: str, timeout: float = 20.0) -> dict:
+def _rss_bytes(pid: int) -> int:
+    """Resident memory of a process, or 0 when it cannot be read (it has exited, or the platform hides it)."""
+    try:
+        with open(f"/proc/{pid}/statm") as fh:
+            return int(fh.read().split()[1]) * os.sysconf("SC_PAGE_SIZE")
+    except (OSError, ValueError, IndexError):
+        pass
+    try:
+        out = subprocess.run(["ps", "-o", "rss=", "-p", str(pid)], capture_output=True, text=True, timeout=2).stdout
+        return int(out.strip() or 0) * 1024
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 0
+
+
+def _run_worker(cmd: list[str], payload: str, timeout: float, env: dict, preexec) -> tuple[str, str, int, str]:
+    """Run the worker and watch it: kill it on a timeout or when its resident memory passes RSS_LIMIT.
+    Returns (stdout, stderr, returncode, status) where status is "ok", "timeout" or "memory"."""
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                            cwd=ROOT, env=env, preexec_fn=preexec)
+    deadline = time.monotonic() + timeout
+    data = payload
+    while True:
+        try:
+            out, err = proc.communicate(data, timeout=POLL_SECONDS)
+            return out, err, proc.returncode, "ok"
+        except subprocess.TimeoutExpired:
+            data = None
+        status = "memory" if _rss_bytes(proc.pid) > RSS_LIMIT else "timeout" if time.monotonic() > deadline else None
+        if status:
+            proc.kill()
+            out, err = proc.communicate()
+            return out or "", err or "", proc.returncode, status
+
+
+def grade_write(stage_id: int | str, code: str, timeout: float = DEFAULT_TIMEOUT) -> dict:
     """Plug the learner's function into the real ledger code and judge it with the referee, in a subprocess."""
     stage = get_stage(stage_id)
     problem = _check_code(code, stage["write"]["function"])
     if problem:
         return {"passed": False, "error": problem, "counterexample": None}
-    try:
-        proc = subprocess.run(
-            [sys.executable, "-m", "learn.grader", "--write-worker", str(get_stage(stage_id)["id"])],
-            input=json.dumps({"code": code}), capture_output=True, text=True, timeout=timeout, cwd=ROOT,
-            env={"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT), "PYTHONDONTWRITEBYTECODE": "1"},
-            preexec_fn=_limit_resources(int(timeout) + 1) if os.name == "posix" else None,
-        )
-    except subprocess.TimeoutExpired:
+    stdout, _, returncode, status = _run_worker(
+        [sys.executable, "-m", "learn.grader", "--write-worker", str(stage["id"])], json.dumps({"code": code}), timeout,
+        {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT), "PYTHONDONTWRITEBYTECODE": "1"},
+        _limit_resources(int(timeout) + 1) if os.name == "posix" else None)
+    if status == "timeout":
         return {"passed": False, "error": f"timed out after {timeout:g} s", "counterexample": None}
-    lines = proc.stdout.strip().splitlines()
+    if status == "memory":
+        return {"passed": False, "error": MEMORY_ERROR, "counterexample": None}
+    lines = stdout.strip().splitlines()
     try:
         return json.loads(lines[-1])
     except (IndexError, json.JSONDecodeError):
-        reason = "the function stopped the grader" if proc.returncode else "no result"
-        return {"passed": False, "error": f"{reason} (exit {proc.returncode})", "counterexample": None}
+        reason = "the function stopped the grader" if returncode else "no result"
+        return {"passed": False, "error": f"{reason} (exit {returncode})", "counterexample": None}
 
 
 # ---- explain ----
+
+MIN_SENTENCE_WORDS = 5          # a sentence this short cannot carry a rubric point
+SENTENCE_BREAK = re.compile(r"[.!?;\n]+")
+
 
 def _normalise(text: str) -> str:
     return " " + " ".join(re.findall(r"[a-z0-9]+", text.lower())) + " "
@@ -328,14 +377,35 @@ def grade_explain(stage_id: int | str, text: str) -> dict:
             "score": round(len(covered) / total, 2) if total else 0.0, "min_points": explain["min_points"]}
 
 
+def _start_memory_guard(emit, limit: int = ALLOCATION_LIMIT) -> threading.Thread:
+    """Abort the worker, with a clean failed result, once Python has allocated more than limit bytes. A thread can only
+    run between bytecodes, so one giant allocation can slip past it: the parent's RSS check is the backstop."""
+    tracemalloc.start()
+
+    def watch() -> None:
+        while True:
+            time.sleep(0.005)
+            if tracemalloc.get_traced_memory()[0] > limit:
+                emit({"passed": False, "error": MEMORY_ERROR, "counterexample": None})
+                os._exit(0)
+
+    thread = threading.Thread(target=watch, daemon=True, name="memory-guard")
+    thread.start()
+    return thread
+
+
 def _main(argv: list[str]) -> None:
     if len(argv) == 2 and argv[0] == "--write-worker":
         code = json.loads(sys.stdin.read())["code"]
         out = sys.stdout
         sys.stdout = sys.stderr                       # the learner's prints must not corrupt the result
-        result = _write_worker(argv[1], code)
-        out.write("\n" + json.dumps(result, default=repr) + "\n")
-        out.flush()
+
+        def emit(result: dict) -> None:
+            out.write("\n" + json.dumps(result, default=repr) + "\n")
+            out.flush()
+
+        _start_memory_guard(emit)
+        emit(_write_worker(argv[1], code))
         return
     print(json.dumps(public_stages(), indent=1))
 

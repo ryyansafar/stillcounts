@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/race.css">
+<title>Still Counts · Referee Race</title>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Referee Race</h1>
+    <span id="status" class="pill" role="status" aria-live="polite">starting</span>
+  </header>
+  <div class="sub">Same ops, a different order on every phone. Fastest correct merge wins.</div>
+  <input id="me" class="note" type="text" maxlength="40" placeholder="Your name for the leaderboard" aria-label="Your name" style="margin:0 0 14px">
+  <p id="intro" class="intro">Loading the round…</p>
+  <ol id="ops" class="ops" aria-label="Operations in the order your phone received them"></ol>
+  <div id="items"></div>
+  <button id="lock" type="button" class="lock" disabled>Lock in my answer</button>
+  <div id="result" class="card hidden" aria-live="polite"></div>
+  <div id="payoff" class="payoff hidden">Every phone saw a different order and the merge gave the same answer.</div>
+</main>
+<script src="/static/crdt.js"></script>
+<script src="/static/race.js"></script>
+</body>
+</html>

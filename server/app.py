@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from server.race_api import race_router
 from stillcounts.crdt import Op, dedupe, merge, stats
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -322,6 +323,7 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
         return FileResponse(client_dir / "sw.js", media_type="application/javascript",
                             headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"})
 
+    app.include_router(race_router(client_dir))
     app.mount("/static", StaticFiles(directory=client_dir), name="static")
     return app
 

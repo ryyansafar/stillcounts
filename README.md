@@ -1,66 +1,121 @@
-# Still Counts
+# Earn the Code
 
-**A field-team ledger that keeps counting with the internet pulled.** Any team that counts stock in a disaster (floods, earthquakes, a clinic after a storm, a food bank) can keep tapping on their phones with no signal. The counts queue on the phone and merge deterministically when the connection returns: every operation has a unique id, so none is applied twice, and the ledger is a function of the set of operations, not of the order they arrived in.
+**Devin builds the app. You earn each piece of its code by showing you understand it.**
 
-Built for Devin Hacks Kochi (24 Oct 2026). Track: *Works anyway* (unreliable internet). A Kochi relief camp is the worked example; nothing in the code is specific to one place.
+Earn the Code is a learning tool for people who paste AI-written code they do not understand. Code arrives locked, one stage at a time. To unlock a stage you predict what it does, find a bug planted in it, write one small piece yourself and explain it in your own words. The first course is the real app in this repository: an offline-first ledger whose merge code is the thing you earn. (The repository and its URL are still called `stillcounts`.)
 
-**How sure are we?** A simulated attack harness (below) runs 24 hostile scenarios. Most pass; two still fail on some seeds and are listed openly. The board's headline is built from what the phones report, never from a claim of "nothing lost".
+Built for Devin Hacks Kochi (24 Oct 2026).
 
-![Board](docs/screenshots/board-ledger.png)
+![Learn tab on a phone](docs/screenshots/phone-learn.png)
+
+## The problem
+
+People now accept code they cannot read. Anthropic ran a randomized trial in January 2026 on people learning a new Python library: the group that used AI assistance scored 50% on a skills quiz, against 67% for the group that coded by hand, and the biggest gap was in debugging. Read the numbers with care: the sample was small and the quiz came right after the task, so it says nothing about long-term skill. It does match what most of us feel: pasted code does not leave understanding behind, and you cannot see the gap until something breaks.
+
+## The four checkpoints
+
+Each stage of the course has the same four, defined in `learn/stages.json` (built by `learn/build_stages.py`, graded by `learn/grader.py`):
+
+| Checkpoint | What you do | Who grades it |
+|---|---|---|
+| **Predict** | Say what a snippet returns for given inputs (for example, what is the stock of an item after these phones merge?). | Plain code. The answer key comes from running the real merge. In the browser it uses the same merge, so it works with no signal. |
+| **Find the bug** | You see a copy of the code changed by one line (a real mutant from `oracle/mutation.py`) and pick which of four statements says what is wrong. | Plain code, against the known mutant. |
+| **Write** | Write one small function. | Plain code. It is checked (no imports, no underscore attributes), run in a subprocess with a builtins whitelist and CPU, memory, file-size and process limits, plugged into the real ledger code and judged by the existing referee. |
+| **Explain** | Say in your own words why the code works. | Plain code, not a model: your text is matched against rubric points by keyword, and the rubric is shown after you answer so you can compare. Practice only: it does not gate the unlock, because keyword matching can be bluffed. |
+
+The real code for a stage stays locked until predict, find the bug and write are passed (`unlocked()` in `server/learn_api.py`). Four stages exist today: duplicate ids, signed adjustment sum, Lamport last-writer-wins, oversell flag.
+
+## What is on main today, and what is not
+
+Be careful with this table when you demo. Rows marked "in progress" are being built on separate branches for this pivot and may not be on `main` yet.
+
+| Piece | Status |
+|---|---|
+| Four stages, four checkpoints, locked code, plain-code grading, sandbox for the write checkpoint | Real, on main |
+| Predict graded in the browser, lessons cached by the service worker | Real, on main |
+| Phone ledger that works with no signal and merges when it returns | Real, on main |
+| Referee Race: phones predict the same merged stock, in the order each phone sees the operations | Real, on main (`/race`) |
+| Attack harness: 24 hostile scenarios, 500 seeds each | Real, on main (`chaos/`) |
+| Understanding Map (every function and line coloured by what you earned), pasted-vs-understood gap score, weakest-function targeting, fading Devin help, shareable proof card, before/after quiz and unlocked-vs-written numbers, streaks | In progress, not on main when this was written |
+| `make_course`: turn a repository diff into a course automatically | In progress, not on main when this was written |
+
+If a row says in progress, check the code before saying it out loud.
+
+## Measured results (the idea, not yet a study)
+
+The measure is meant to be: a short quiz before and after, first-try pass rate per checkpoint, and lines of the app unlocked versus lines you wrote yourself. A demo run with a few volunteers produces numbers, not evidence. It is not a study: no control group, tiny sample, quiz taken right after. Do not quote it as proof that the method works.
+
+## Track fit
+
+- **Primary, Track 2 (Make the invisible visible).** What you understand versus what you merely pasted is invisible. The planned Understanding Map shows it function by function, and the product then acts on it: it locks what you have not earned, aims the next checkpoint at your weakest function, and fades Devin's help as you improve. Today the locking and the per-stage progress are real; the map itself is in progress (see the table).
+- **Secondary, Track 3 (Works anyway).** Predict needs no network and the lessons are cached by `client/sw.js`, so a phone works with the Wi-Fi pulled. The whole `client/` folder is about 250 KB with no build step. Find the bug, write and explain need the base laptop. The ledger itself is the original offline demo.
+- **Tertiary, Track 4 (Play).** Referee Race at `/race`: every phone gets the same operations in its own shuffled order, with duplicates, and races to predict the merge. The answer key is the real merge. Streaks are in progress.
+- **Track 1 (Busywork).** Writing a course by hand is the busywork. `make_course` is meant to remove it by building a course from any diff. In progress; the four current stages were written with Devin's help and edited by hand.
+
+## How Devin was used
+
+The numbers come from `data/devin_evidence.json`; `docs/devin.md` lists every session.
+
+- 9 Devin cloud sessions: 3 read-only scouts, 5 writers, 1 browser QA. 5 pull requests, all merged by a human pressing merge. 5 issues filed by the QA session.
+- What Devin produced: three lists of hostile scenarios (24 in total), the first version of the chaos harness, and the scaffolding for the learn API, the learn UI, Referee Race and the board tabs.
+- Rejected or overridden:
+  - The chaos writer committed a 2.3 MB results file (`data/chaos_results.json`). It was replaced by a small summary and the large file is now git-ignored.
+  - The Learn write grader only blocked imports of project modules, so a learner function could `import os`. It was rewritten by hand (AST check, builtins whitelist, resource limits). A later review found it still escapable through a name visible in the ledger module, and that was fixed by hand too.
+  - The chaos writer found 8 failing scenarios and opened no fix pull requests. Every fix was written by hand. The QA branch `devin/qa-fixes` never became a pull request; two of its three fixes were cherry-picked and changed.
+- Devin never touched the merge function or the referee. Those are protected by `.github/CODEOWNERS`, and CI fails any `devin/*` branch that edits them.
+- Cloud Devin quota is exhausted. Work after that point is labelled "Devin CLI, local" and is not in the cloud session counts above. ACU use was never recorded and is not claimed.
+- Counting sessions overstates Devin's share. A human wrote the merge, the referee, the server, the phone client and every fix the harness provoked.
+
+## Architecture
+
+```
+phone browser (client/)                        base laptop (server/)
+  app.js     ledger, op queue, sync   <--->     app.py        ops log (data/ops.jsonl), sync, board
+  crdt.js    merge, same as Python              learn_api.py  locked code, progress, write checkpoint
+  learn.js   four checkpoints                   race_api.py   Referee Race rounds
+  race.js    Referee Race                       board.html    board, attack, proof, race tabs
+  sw.js      offline cache                              |
+        predict: graded in the browser              learn/grader.py  plain-code grading + sandbox
+        bug, write, explain: via /api/learn         learn/stages.json  stages (from build_stages.py)
+                                                    stillcounts/crdt.py  the merge (agents may not edit)
+                                                    oracle/              the referee (agents may not edit)
+                                                    chaos/               hostile-scenario simulation
+```
 
 ## How the merge works
-The ledger is a set of operations, each with a unique id. The state is a pure function of that set, so any delivery order, any duplicates and any split-and-merge give byte-identical results.
+
+The ledger is a set of operations, each with a unique id. State is a pure function of that set, so any delivery order, any duplicates and any split-and-merge give byte-identical results.
 - Quantities are sums of signed integer adjustments.
 - Names, notes and deletions are last-writer-wins by (Lamport time, replica id), never by the phone's wall clock.
-- Stock that goes negative after a merge (two phones issued the last blankets) is flagged for a human, not hidden.
+- Stock that goes negative after a merge is flagged for a human, not hidden.
 
-## The referee
-`oracle/` replays the same operations in hundreds of random orders, with duplicates, and fails if any result differs. It also catches deliberately broken merges. The agents that attack the product may run the oracle but are never allowed to edit it (`.github/CODEOWNERS`).
+`oracle/` replays the same operations in hundreds of random orders, with duplicates, and fails if any result differs. It also catches 14 deliberately broken merges that we wrote ourselves (a demo set; `docs/mutation.md` has the independent mutmut run).
+
+## Run it
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m pytest -q
 node --test client/test/
-.venv/bin/python -m oracle.oracle --seed 0xA3 --ops 240 --perms 200
-.venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port 8000
+scripts/run.sh          # serves on port 8000, prints the board link with a join token
 ```
 
-## Earn the Code (Learn mode)
-`learn/stages.json` holds four stages (duplicate ids, signed adjust sum, Lamport last-writer-wins, oversell flag). Each has predict cases whose answers come from the real merge, a find-the-bug item built from a real mutant in `oracle/mutation.py`, a small function to write and an explain rubric. `learn/grader.py` grades all four checkpoints with plain code: written functions are checked (no imports, no underscore attributes), run in a subprocess with a builtins whitelist and CPU, memory, file-size and process limits, plugged into the real ledger code and judged by the referee. This is defence in depth, not a security boundary: the write endpoint only accepts a browser on the base laptop unless the host sets `STILLCOUNTS_LEARN_WRITE_LAN=1`, and a public deployment should run the server in a container as an unprivileged user. Edit the content in `learn/build_stages.py`, then regenerate:
+Open `/static/learn.html` for the course (the Learn link on the phone app and the board). The first visit needs the base; after that the lessons work offline. After editing the course content in `learn/build_stages.py`, regenerate with `.venv/bin/python -m learn.build_stages`. `docs/DEMO.md` is the timed demo script.
 
-```bash
-.venv/bin/python -m learn.build_stages
-```
+Phones need `https://` or `localhost` to install the offline app. `docs/DEMO.md` explains the mkcert setup; it has not been tried on real demo phones yet.
 
-Open `/static/learn.html` (the Learn link on the phone app and the board). Predict is graded in the browser with the same merge so it works with no signal, and the lessons are cached on the phone after the first visit; find the bug, write and explain go through `/api/learn` and need the base, which keeps the real merge code locked until predict, find the bug and write are earned.
+## Honest limitations
 
-## Referee Race
-Open `/race` on a phone (the Race link on the phone app, or the QR code on the board's Race tab). Every phone gets the same operations in its own shuffled order with duplicates and races to predict the merged stock. The answer key is the real merge, so the round shows that order does not matter. The host starts rounds from the board.
-
-Screens (refreshed with Playwright against a seeded local run): phone app `docs/screenshots/phone-app.png`, offline with taps queued `phone-offline.png`, board attack tab `board-attack.png`, race `board-race.png`, learn `phone-learn.png`. The attack tab and the Devin panel show real committed data; the two phones in the ledger shot are scripted API calls, not people.
-
-## Run it and the 3-minute demo
-`scripts/run.sh` installs from `requirements.txt` and serves the base on port 8000 (phone app at `/`, board at `/board`). `docs/DEMO.md` is the timed script. Set `STILLCOUNTS_DATA_DIR` to keep the log somewhere other than `data/`. The PWA ships a home-screen icon and works offline after the first load.
-
-## Chaos simulation
-`chaos/` is a deterministic simulation of the 24 scout scenarios (dropped, duplicated and reordered requests, clock jumps, crashes, restores, two tabs on one phone). Run it with `.venv/bin/python -m chaos.run --seeds 0:500 --summary data/chaos_summary.json` (about 18 minutes); the full per-run output goes to `data/chaos_results.json` (git-ignored) and `data/chaos_summary.json` is a small committed summary of a real 500-seed run.
-
-It found real product bugs. Before this round 8 of the 24 scenarios failed (3506 of 12500 runs, 92222 ops lost). Now 3 fail and 671 of 12500 runs (65686 ops lost, almost all one scenario). The committed `data/chaos_summary.json` is a real 500-seed run of the current code and the board's Attack tab shows it per scenario.
-
-Fixed by hand (the Devin writer reported them but opened no fix pull requests):
-- Positional cursor after the base's log shrank, shifted or was wiped: the phone now sends the id of the last entry it read; if the base's epoch, length or that entry disagrees it answers `reset`, and the phone offers back every op the base no longer has.
-- A phone clock or stored Lamport value pushed far ahead: the base rejected real taps as "skew too large" and the phone dropped them. The base now returns its newest Lamport time and the phone re-stamps the refused op after it and sends it again.
-- Two tabs on one phone overwriting each other's queue: a tab takes over any op it has never seen before it writes.
-
-Still open, pinned as strict expected failures in `tests/test_regress_*.py` (these are not fixed):
-- `life_storage_quota` (427 of 500 runs): when browser storage is full the phone now keeps only unsent ops on disk and shows a warning, but if the unsent ops alone exceed a tiny simulated quota (3 to 40 KB; real browsers allow about 5 MB) and the page reloads while offline, they are lost.
-- `net_retry_same_id_new_content` (240 of 500): the harness injects a client that edits a queued op in place or reuses an old id; the base rightly refuses a changed op with the same id, so that edit is lost. The shipped app never does this.
-- `net_restore_old_backup` (4 of 500, one op each): a rare ordering after a restore from an older backup.
-
-## Devin
-Devin sessions propose hostile network scenarios (partitions, reordering, duplicates, clock skew), build a chaos harness, run it against the oracle and open pull requests for anything they break. `docs/devin.md` lists all 9 sessions, the 5 pull requests (a human pressed merge on each) and the work that was overridden or never merged; ACU use is not recorded and the page says so.
+- Explanations can be bluffed (the grader is keyword matching). That is why the objective checkpoints (predict, find the bug, write) do the gating and explain is practice with a rubric shown afterwards. Nothing grades free text with a model.
+- Passing a quiz is not the same as understanding. A learner can guess predict answers; the case sets are small.
+- Only one course exists, and it is about one small merge function.
+- The write sandbox is defence in depth, not a security boundary. The write endpoint accepts only the base laptop's own browser unless the host sets `STILLCOUNTS_LEARN_WRITE_LAN=1`; a public deployment should run the server in a container as an unprivileged user.
+- The Understanding Map, gap score, fading help, proof card, `make_course` and streaks are in progress (see the table above).
+- Three attack scenarios still fail on some seeds: `life_storage_quota`, `net_retry_same_id_new_content` and `net_restore_old_backup`. The attack tab and `data/chaos_summary.json` show real numbers from a 500-seed run: 671 of 12500 runs failed. These are pinned as strict expected failures in `tests/test_regress_*.py`.
+- The demo quiz is not a study (see Measured results).
 
 ## Licence
+
 MIT.
 
 ## Socials & Support

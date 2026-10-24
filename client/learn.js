@@ -236,6 +236,7 @@
     }
 
     function offlineText(err) {
+      if (err && err.status === 403) return "Code is graded on the base laptop only. Ask the host to run it there, or to allow phones on this network.";
       return err && err.status ? "The server could not grade this (HTTP " + err.status + "). Try again later."
         : "Needs a signal: the referee runs on the server. Your answer is kept on this phone.";
     }

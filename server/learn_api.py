@@ -4,6 +4,7 @@ rubric that is shown after the learner submits."""
 from __future__ import annotations
 
 import importlib
+import ipaddress
 import json
 import os
 import threading
@@ -12,7 +13,7 @@ from collections import deque
 from pathlib import Path
 from typing import Annotated, Any, Callable
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -48,6 +49,22 @@ class SourceIn(BaseModel):
 
 class TextIn(BaseModel):
     text: str = Field(min_length=1, max_length=MAX_EXPLAIN)
+
+
+def remote_write_allowed() -> bool:
+    """Learner code runs on the base laptop. By default only a browser on that laptop may submit it; the host opts a
+    LAN in with STILLCOUNTS_LEARN_WRITE_LAN=1 (do that only on a trusted network or inside a container)."""
+    return os.environ.get("STILLCOUNTS_LEARN_WRITE_LAN") == "1"
+
+
+def is_remote(request: Request) -> bool:
+    """True when the caller is a non-loopback IP address. A missing or non-IP client (a unix socket, a test client)
+    counts as local."""
+    host = request.client.host if request.client else ""
+    try:
+        return not ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def load_stages(path: Path) -> dict[str, dict]:
@@ -193,8 +210,11 @@ def learn_router(progress_path: Path, stages_path: Path | None = None, grader: A
         return grade(learner, stage_id, "bug", body.answer)
 
     @router.post("/{stage_id}/write")
-    def write(stage_id: str, body: SourceIn, learner: Learner) -> dict:
+    def write(stage_id: str, body: SourceIn, learner: Learner, request: Request) -> dict:
         find(stage_id)
+        if is_remote(request) and not remote_write_allowed():
+            raise HTTPException(status_code=403, detail="writing code is graded on the base laptop only; "
+                                "the host can allow phones with STILLCOUNTS_LEARN_WRITE_LAN=1")
         if len(body.source.encode("utf-8", errors="replace")) > MAX_SOURCE_BYTES:
             raise HTTPException(status_code=413, detail=f"source larger than {MAX_SOURCE_BYTES} bytes")
         if not limiter.allow(learner):

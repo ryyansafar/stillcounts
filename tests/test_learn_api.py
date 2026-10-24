@@ -275,3 +275,32 @@ def test_real_stages_hide_answers_until_unlocked(tmp_path):
             assert hidden not in s["bug"]
         assert "hook" not in s["write"] and "rubric" not in s["explain"]
         assert src["code"] not in json.dumps(s)
+
+
+# ---- the write endpoint is not open to the LAN by default ----
+
+def _write_from(host, monkeypatch, tmp_path, allow=False):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from server.learn_api import learn_router
+    if allow:
+        monkeypatch.setenv("STILLCOUNTS_LEARN_WRITE_LAN", "1")
+    else:
+        monkeypatch.delenv("STILLCOUNTS_LEARN_WRITE_LAN", raising=False)
+    app = FastAPI()
+    app.include_router(learn_router(tmp_path / "p.json"))
+    c = TestClient(app, client=(host, 5000))
+    return c.post("/api/learn/signed-adjust-sum/write", json={"source": "def quantity(ops):\n    return 0\n"},
+                  headers={"X-Learner-Id": "x"})
+
+
+def test_write_from_a_lan_address_is_refused_by_default(monkeypatch, tmp_path):
+    assert _write_from("192.168.1.20", monkeypatch, tmp_path).status_code == 403
+
+
+def test_write_from_loopback_is_allowed(monkeypatch, tmp_path):
+    assert _write_from("127.0.0.1", monkeypatch, tmp_path).status_code == 200
+
+
+def test_the_host_can_opt_a_lan_in(monkeypatch, tmp_path):
+    assert _write_from("192.168.1.20", monkeypatch, tmp_path, allow=True).status_code == 200

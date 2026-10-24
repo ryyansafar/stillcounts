@@ -23,7 +23,22 @@ ROOT = Path(__file__).resolve().parent.parent
 STAGES = Path(__file__).resolve().parent / "stages.json"
 SOURCE = ROOT / "stillcounts" / "crdt.py"
 VECTORS = ROOT / "tests" / "vectors.json"
-FORBIDDEN_IMPORTS = ("stillcounts", "oracle", "learn")
+# The "write" checkpoint runs a stranger's code, so it is boxed in three ways (none is a substitute for running the
+# whole server in a container or as an unprivileged user, which the README says to do for a public deployment):
+#   1. the source is checked before it runs: no imports, no names or attributes that start with an underscore
+#      (except the ledger's own helpers like _order), no string-format attribute tricks, no I/O builtins;
+#   2. it runs with a short whitelist of builtins, so `open`, `__import__`, `eval` and friends do not exist;
+#   3. the worker process has hard limits on CPU time, memory, written file size, open files and new processes.
+SAFE_BUILTINS = ("abs all any bool dict divmod enumerate filter float frozenset int isinstance len list map max min "
+                 "next iter print range repr reversed round set slice sorted str sum tuple zip "
+                 "ArithmeticError AssertionError Exception IndexError KeyError NotImplementedError "
+                 "StopIteration TypeError ValueError ZeroDivisionError").split()
+FORBIDDEN_NAMES = frozenset("open exec eval compile input breakpoint globals locals vars dir getattr setattr delattr "
+                            "hasattr type object super classmethod staticmethod property memoryview bytearray "
+                            "exit quit help license credits copyright id hash callable".split())
+FORBIDDEN_ATTRS = frozenset("format format_map mro".split())
+FORBIDDEN_ATTR_PREFIXES = ("_", "gi_", "cr_", "ag_", "f_", "tb_", "co_", "func_")
+MEMORY_LIMIT = 1024 * 1024 * 1024
 TRUE_WORDS = {"true", "yes", "y", "1"}
 FALSE_WORDS = {"false", "no", "n", "0"}
 _MISSING = object()
@@ -137,24 +152,31 @@ def grade_bug(stage_id: int | str, choice: str) -> dict:
 
 # ---- write ----
 
+def _unsafe(tree: ast.AST) -> str | None:
+    """Return a reason if the source reaches for anything outside the box, else None."""
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            return "imports are not allowed: the ledger code you need is already loaded"
+        if isinstance(node, (ast.Global, ast.Nonlocal, ast.Await, ast.AsyncFunctionDef, ast.Yield, ast.YieldFrom)):
+            return "global, nonlocal, async and yield are not allowed here"
+        if isinstance(node, ast.Name) and (node.id.startswith("__") or node.id in FORBIDDEN_NAMES):
+            return f"the name {node.id!r} is not allowed here"
+        if isinstance(node, ast.Attribute) and (node.attr in FORBIDDEN_ATTRS or node.attr.startswith(FORBIDDEN_ATTR_PREFIXES)):
+            return f"the attribute {node.attr!r} is not allowed here"
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and "__" in node.value:
+            return "strings that contain a double underscore are not allowed here"
+    return None
+
+
 def _check_code(code: str, function: str) -> str | None:
     try:
         tree = ast.parse(code)
     except SyntaxError as exc:
         return f"SyntaxError: {exc.msg} (line {exc.lineno})"
-    for node in ast.walk(tree):
-        names = []
-        if isinstance(node, ast.Import):
-            names = [a.name for a in node.names]
-        elif isinstance(node, ast.ImportFrom):
-            names = [node.module or ""]
-        if any(n.split(".")[0] in FORBIDDEN_IMPORTS for n in names):
-            return "the function may not import the ledger, the referee or the grader"
-    defs = [n for n in tree.body if isinstance(n, ast.FunctionDef)]
-    if [d.name for d in defs] != [function] or len(tree.body) != len(defs) + sum(
-            isinstance(n, (ast.Import, ast.ImportFrom)) for n in tree.body):
+    if [n.name for n in tree.body if isinstance(n, ast.FunctionDef)] != [function] or len(tree.body) != 1 \
+            or not isinstance(tree.body[0], ast.FunctionDef):
         return f"write exactly one function named {function}"
-    return None
+    return _unsafe(tree)
 
 
 def _module(code: str, hook: dict | None) -> types.ModuleType:
@@ -166,6 +188,8 @@ def _module(code: str, hook: dict | None) -> types.ModuleType:
     module = types.ModuleType("learner_crdt")
     sys.modules["learner_crdt"] = module
     exec(compile(source, "learner_crdt.py", "exec"), module.__dict__)
+    import builtins
+    module.__dict__["__builtins__"] = {name: getattr(builtins, name) for name in SAFE_BUILTINS}
     exec(compile(code, "learner.py", "exec"), module.__dict__)
     return module
 
@@ -223,13 +247,22 @@ def _write_worker(stage_id: int | str, code: str) -> dict:
     return {"passed": failure is None, "error": failure, "counterexample": counterexample}
 
 
-def _limit_cpu(seconds: int):
+def _limit_resources(seconds: int):
+    """Hard limits for the worker process (POSIX only). Each limit is applied on its own: one the OS refuses must not
+    stop the others."""
     def apply() -> None:
         try:
             import resource
-            resource.setrlimit(resource.RLIMIT_CPU, (seconds, seconds + 1))
-        except (ImportError, ValueError, OSError):
-            pass
+        except ImportError:
+            return
+        limits = [("RLIMIT_CPU", (seconds, seconds + 1)), ("RLIMIT_AS", (MEMORY_LIMIT, MEMORY_LIMIT)),
+                  ("RLIMIT_FSIZE", (0, 0)), ("RLIMIT_NPROC", (0, 0)), ("RLIMIT_NOFILE", (32, 32)),
+                  ("RLIMIT_CORE", (0, 0))]
+        for name, value in limits:
+            try:
+                resource.setrlimit(getattr(resource, name), value)
+            except (AttributeError, ValueError, OSError):
+                pass
     return apply
 
 
@@ -243,8 +276,8 @@ def grade_write(stage_id: int | str, code: str, timeout: float = 20.0) -> dict:
         proc = subprocess.run(
             [sys.executable, "-m", "learn.grader", "--write-worker", str(get_stage(stage_id)["id"])],
             input=json.dumps({"code": code}), capture_output=True, text=True, timeout=timeout, cwd=ROOT,
-            env={**os.environ, "PYTHONPATH": str(ROOT)},
-            preexec_fn=_limit_cpu(int(timeout) + 1) if os.name == "posix" else None,
+            env={"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT), "PYTHONDONTWRITEBYTECODE": "1"},
+            preexec_fn=_limit_resources(int(timeout) + 1) if os.name == "posix" else None,
         )
     except subprocess.TimeoutExpired:
         return {"passed": False, "error": f"timed out after {timeout:g} s", "counterexample": None}

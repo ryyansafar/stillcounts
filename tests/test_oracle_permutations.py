@@ -73,3 +73,12 @@ def test_check_delivery_reports_lost_ops():
     with pytest.raises(OracleFailure) as exc:
         check_delivery(ops, {"a": ops, "b": ops[:-3]})
     assert "lost 3" in str(exc.value)
+
+
+def test_command_line_prints_ok_json(capsys, monkeypatch):
+    import json
+    import sys
+    from oracle import oracle as mod
+    monkeypatch.setattr(sys, "argv", ["oracle", "--seed", "5", "--ops", "40", "--perms", "10"])
+    mod.main()
+    assert json.loads(capsys.readouterr().out)["ok"] is True

@@ -170,3 +170,40 @@ test("an op whose Lamport time the base refuses is re-stamped and sent again, no
   assert.ok(!rec.synced.includes(id), "the re-stamped op must stay queued");
   assert.strictEqual(rec.lamport, 41);
 });
+
+const queuedMarks = (doc) => all(doc.getElementById("list"), (e) => e.className === "pending").length;
+const settleMore = async () => { for (let i = 0; i < 6; i++) await settle(); };
+
+test("a card with taps the base has not seen says so, and the mark goes away once the base has them", async () => {
+  const net = { online: false, reply: () => ({ accepted: 1, rejected: [], cursor: 1, epoch: "e", ops: [], reset: false, max_lamport: 1 }) };
+  const tab = boot(makeStorage(), net);
+  await settleMore();
+  button(tab.doc, "Rice (kg) +1").click();
+  await settleMore();
+  assert.strictEqual(queuedMarks(tab.doc), 1);
+  net.online = true; tab.tick(); await settleMore();
+  assert.strictEqual(queuedMarks(tab.doc), 0);
+});
+
+test("undo adds the opposite tap as a new operation, can be repeated, and stops when nothing is left to undo", async () => {
+  const tab = boot(makeStorage(), { online: false });
+  await settleMore();
+  const qty = () => all(tab.doc.getElementById("list"), (e) => e.className.startsWith("qty"))[1].textContent;
+  const before = qty();
+  assert.strictEqual(button(tab.doc, "Rice (kg) undo"), undefined, "nothing to undo yet");
+  button(tab.doc, "Rice (kg) +10").click(); button(tab.doc, "Rice (kg) −1").click();
+  await settleMore();
+  assert.strictEqual(qty(), String(Number(before) + 9));
+  button(tab.doc, "Rice (kg) undo").click(); await settleMore();
+  assert.strictEqual(qty(), String(Number(before) + 10), "the -1 is taken back");
+  button(tab.doc, "Rice (kg) undo").click(); await settleMore();
+  assert.strictEqual(qty(), before, "the +10 is taken back");
+  assert.strictEqual(button(tab.doc, "Rice (kg) undo"), undefined, "an undo is not itself undoable");
+  assert.match(tab.doc.getElementById("foot").textContent, /4 operations/);
+});
+
+test("with no service worker in control the footer says the app is not saved for offline use", async () => {
+  const tab = boot(makeStorage(), { online: false });
+  await settleMore();
+  assert.match(tab.doc.getElementById("foot").textContent, /not saved for offline use/);
+});

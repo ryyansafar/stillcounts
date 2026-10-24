@@ -103,10 +103,11 @@
   });
   $("seed").addEventListener("click", function () { fetch("/api/seed", { method: "POST" }).then(poll); });
   function panels() {
-    var origin = location.origin;
-    $("qr").src = "/api/qr.svg?text=" + encodeURIComponent(origin + "/");
+    var origin = location.origin, tok = typeof window !== "undefined" && window.StillCountsToken ? window.StillCountsToken() : null;
+    var join = tok ? "?t=" + encodeURIComponent(tok) : "";         // the QR carries the join token; the text under it does not
+    $("qr").src = "/api/qr.svg?text=" + encodeURIComponent(origin + "/" + join);
     $("joinurl").textContent = origin.replace(/^https?:\/\//, "");
-    $("race-qr").src = "/api/qr.svg?text=" + encodeURIComponent(origin + "/race");
+    $("race-qr").src = "/api/qr.svg?text=" + encodeURIComponent(origin + "/race" + join);
     $("race-url").textContent = origin.replace(/^https?:\/\//, "") + "/race";
     fetch("/api/referee").then(function (r) { return r.json(); }).then(function (d) {
       $("p-referee").textContent = d.killed + " / " + d.total;

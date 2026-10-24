@@ -5,6 +5,7 @@ import csv
 import io
 import json
 import os
+import secrets
 import threading
 import time
 import uuid
@@ -13,7 +14,7 @@ from typing import Any, Callable
 
 import segno
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -171,9 +172,26 @@ def _referee_score() -> dict:
 
 def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
                notifier: Callable[[str, str], None] | None = None,
+               join_token: str | None = None,
                learn_grader: Any = None, learn_stages: str | Path | None = None,
                learn_clock: Callable[[], float] = time.monotonic, race_game: Any = None) -> FastAPI:
     app = FastAPI(title="Still Counts base")
+    token = join_token if join_token is not None else (os.environ.get("STILLCOUNTS_TOKEN") or None)
+
+    @app.middleware("http")
+    async def require_join_token(request, call_next):
+        """With a join token set, every write under /api/ and the full log need it. Reads of the ledger stay open."""
+        path = request.url.path
+        guarded = path.startswith("/api/") and (request.method == "POST" or path == "/api/log")
+        if token and guarded and not secrets.compare_digest(request.headers.get("x-join-token", "").encode(), token.encode()):
+            return JSONResponse({"detail": "join token required: open the link or QR code shown on the board"}, status_code=401)
+        return await call_next(request)
+
+    @app.get("/api/auth")
+    def auth_mode() -> dict:
+        """Whether writes need a join token, so the page can say so. Never reveals the token."""
+        return {"token_required": bool(token)}
+
     app.include_router(learn_router(Path(store_path).parent / "learn_progress.json", learn_stages, learn_grader, learn_clock))
     store = LogStore(Path(store_path))
     names_path = Path(store_path).with_suffix(Path(store_path).suffix + ".names")

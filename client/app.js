@@ -25,7 +25,8 @@
   var clock = new C.Clock(replica, saved.lamport || 0);
   var myName = load("sc_name", "");
   var known = {}; ops.forEach(function (o) { known[o.id] = true; });
-  var online = false, busy = false, lastSync = null, lastView = null, storageFull = false;
+  var online = false, busy = false, lastSync = null, lastView = null, storageFull = false, denied = false;
+  var undone = {}; (load("sc_undone", []) || []).forEach(function (id) { undone[id] = true; });   // taps this phone has taken back (a convenience, kept per phone)
 
   // Tabs of one phone share this record, so fold in whatever another tab wrote before overwriting it.
   // Only ops this tab has never seen are taken over, together with their sent marks. For ops it already knows, this
@@ -60,13 +61,39 @@
     absorb(load("sc_state", null));
     var op = { id: replica + ":" + uid(), replica: replica, lamport: clock.tick(), kind: kind, item: item, value: value };
     ops.push(op); known[op.id] = true; persist(); render(); sync();
+    return op;
+  }
+
+  // The latest tap on this item that this phone made and has not yet taken back. Undo adds the opposite adjustment as a
+  // new operation: nothing is ever edited or deleted, so the merge and the other phones are unaffected.
+  function lastUndoable(item) {
+    var mine = ops.filter(function (o) { return o.replica === replica && o.kind === "adjust" && o.item === item && !undone[o.id]; });
+    mine.sort(function (a, b) { return a.lamport - b.lamport; });
+    return mine[mine.length - 1] || null;
+  }
+  function undo(item) {
+    var last = lastUndoable(item);
+    if (!last) return;
+    undone[last.id] = true;
+    var inverse = addOp("adjust", item, -last.value);
+    undone[inverse.id] = true;
+    save("sc_undone", Object.keys(undone)); render();
+  }
+
+  function unsentItems() {
+    var by = {}; ops.forEach(function (o) { if (!synced[o.id]) by[o.item] = true; }); return by;
+  }
+
+  function shellCached() {
+    return !!(typeof navigator !== "undefined" && navigator.serviceWorker && navigator.serviceWorker.controller);
   }
 
   function queuedCount() { return ops.filter(function (o) { return !synced[o.id]; }).length; }
 
   function setStatus() {
     var s = document.getElementById("status"), q = queuedCount();
-    if (online && q === 0) { s.className = "pill ok"; s.textContent = "online · synced"; }
+    if (denied) { s.className = "pill bad"; s.textContent = "join link needed: scan the board's QR code"; }
+    else if (online && q === 0) { s.className = "pill ok"; s.textContent = "online · synced"; }
     else if (q > 0) { s.className = "pill queued"; s.textContent = (online ? "syncing · " : "offline · ") + q + " queued"; }
     else { s.className = "pill bad"; s.textContent = "offline · nothing queued"; }
   }
@@ -100,7 +127,7 @@
     fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" },
                          body: JSON.stringify({ replica: replica, name: myName || null, cursor: cursor, epoch: epoch, anchor: anchor,
                                                 held: ops.length, queued: unsent.length, ops: unsent.slice(0, 500) }) })
-      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (r) { denied = r.status === 401; if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (body) {
         // The base's log is not the one this phone last read (restored, wiped, lines dropped): forget what we thought
         // it had. Below, every op the base does return is marked sent again, so only the ones it lost go back out.
@@ -131,18 +158,23 @@
     var state = C.merge(ops), stats = C.stats(ops), list = document.getElementById("list");
     var ids = ITEMS.map(function (x) { return x[0]; });
     Object.keys(state).forEach(function (k) { if (ids.indexOf(k) < 0) ids.push(k); });
-    var view = JSON.stringify(ids.map(function (id) { var s = state[id]; return s ? [id, s.name, s.qty, s.note, s.alive] : [id]; }));
-    if (view !== lastView) { lastView = view; renderList(ids, state, list); }
+    var pending = unsentItems();
+    var view = JSON.stringify(ids.map(function (id) {
+      var s = state[id], u = lastUndoable(id);
+      return (s ? [id, s.name, s.qty, s.note, s.alive] : [id]).concat([!!pending[id], u ? u.id : null]);
+    }));
+    if (view !== lastView) { lastView = view; renderList(ids, state, list, pending); }
     document.getElementById("who").textContent = "This phone: " + replica;
     document.getElementById("foot").textContent = stats.ops + " operations · " + stats.conflicts + " conflicts merged" +
       (lastSync ? " · last sync " + lastSync.toLocaleTimeString() : " · not synced yet") +
       (rejected ? " · " + rejected + " rejected by the server" : "") +
-      (storageFull ? " · PHONE STORAGE FULL: taps not yet sent exist only while this page stays open" : "");
+      (storageFull ? " · PHONE STORAGE FULL: taps not yet sent exist only while this page stays open" : "") +
+      (shellCached() ? "" : " · app not saved for offline use yet (browsers only do that over https or localhost): keep this page open");
     setStatus();
   }
 
   // Rebuilt only when the ledger changes, so a finger mid-tap or a half-typed note is not thrown away.
-  function renderList(ids, state, list) {
+  function renderList(ids, state, list, pending) {
     var active = document.activeElement, focused = active && active.getAttribute && active.getAttribute("data-note");
     var draft = focused ? { value: active.value, start: active.selectionStart, end: active.selectionEnd } : null;
     list.replaceChildren();
@@ -161,6 +193,13 @@
         b.addEventListener("click", function () { addOp("adjust", id, d[0]); }); btns.appendChild(b);
       });
       card.appendChild(btns);
+      var extra = el("div", "extra");
+      if (pending[id]) extra.appendChild(el("span", "pending", "not yet sent to the base"));
+      if (lastUndoable(id)) {
+        var u = el("button", "undo", "Undo my last tap"); u.type = "button"; u.setAttribute("aria-label", label + " undo");
+        u.addEventListener("click", function () { undo(id); }); extra.appendChild(u);
+      }
+      if (extra.children.length) card.appendChild(extra);
       var note = el("input", "note"); note.type = "text"; note.placeholder = "note"; note.value = s.note; note.maxLength = 120;
       note.setAttribute("data-note", id); note.setAttribute("aria-label", label + " note");
       note.addEventListener("change", function () { addOp("note", id, note.value); });
@@ -194,7 +233,33 @@
   me.value = myName;
   me.addEventListener("change", function () { myName = me.value.trim(); save("sc_name", myName); sync(); });
 
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(function () {});
+  // Phone to phone with no base: show my operations as text, or merge text another phone showed. Imported operations count
+  // as not yet sent to the base, so they still reach it when a signal returns.
+  var X = window.StillCountsExchange, box = document.getElementById("p2p-box"), msg = document.getElementById("p2p-msg");
+  if (X && box && msg) {
+    document.getElementById("p2p-out").addEventListener("click", function () {
+      box.value = X.encode(ops); box.select && box.select();
+      var copied = typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(box.value) : null;
+      if (copied && copied.then) copied.then(function () { msg.textContent = "Copied " + ops.length + " operations. Send them to the other phone."; },
+                                             function () { msg.textContent = "Select the text above and copy it (" + ops.length + " operations)."; });
+      else msg.textContent = "Select the text above and copy it (" + ops.length + " operations).";
+    });
+    document.getElementById("p2p-in").addEventListener("click", function () {
+      var got = X.decode(box.value);
+      if (got.error) { msg.textContent = got.error; return; }
+      absorb(load("sc_state", null));
+      var fresh = got.ops.filter(function (o) { return !known[o.id]; });
+      fresh.forEach(function (o) { ops.push(o); known[o.id] = true; clock.observe(o.lamport); });
+      if (fresh.length) { persist(); render(); sync(); }
+      msg.textContent = "Merged " + fresh.length + " new operations" + (got.ops.length - fresh.length ? " (" + (got.ops.length - fresh.length) + " already here)" : "") +
+        (got.skipped ? ", skipped " + got.skipped + " that were not valid" : "") + ".";
+    });
+  }
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
+    navigator.serviceWorker.addEventListener && navigator.serviceWorker.addEventListener("controllerchange", render);
+  }
   window.addEventListener("online", sync);
   window.addEventListener("storage", function (e) { if (e.key === "sc_state" && absorb(load("sc_state", null))) render(); });
   window.addEventListener("offline", function () { online = false; render(); });

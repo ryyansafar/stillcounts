@@ -7,5 +7,13 @@ cd "$(dirname "$0")/.."
 case "${1:-serve}" in
   test)  .venv/bin/python -m pytest -q && node --test client/test/ ;;
   oracle) .venv/bin/python -m oracle.oracle --seed "${2:-0xA3}" --ops "${3:-240}" --perms "${4:-200}" ;;
-  *)     .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port "${PORT:-8000}" ;;
+  *)     # A fresh join token per run: the board's QR code carries it, and writes without it get a 401.
+         # STILLCOUNTS_OPEN=1 turns that off (an isolated network, or a quick look).
+         if [ -z "${STILLCOUNTS_OPEN:-}" ] && [ -z "${STILLCOUNTS_TOKEN:-}" ]; then
+           STILLCOUNTS_TOKEN="$(.venv/bin/python -c 'import secrets; print(secrets.token_urlsafe(9))')"; export STILLCOUNTS_TOKEN
+         fi
+         if [ -n "${STILLCOUNTS_TOKEN:-}" ]; then
+           echo "Open the board on THIS laptop with its token: http://localhost:${PORT:-8000}/board?t=${STILLCOUNTS_TOKEN}"
+         fi
+         .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port "${PORT:-8000}" ;;
 esac

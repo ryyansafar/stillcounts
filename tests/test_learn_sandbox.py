@@ -32,7 +32,7 @@ def test_escape_attempts_are_refused_before_they_run(code, tmp_path):
     assert r["error"]
 
 
-def test_a_file_write_does_not_reach_the_disk():
+def test_a_file_write_is_refused_by_the_source_check():
     from pathlib import Path
     target = Path("/tmp/stillcounts-pwned")
     target.unlink(missing_ok=True)
@@ -57,3 +57,27 @@ def test_memory_bomb_is_a_failed_attempt_not_a_crash():
 def test_the_legitimate_solution_still_passes():
     code = 'def quantity(ops):\n    return sum(o.value for o in ops if o.kind == "adjust")\n'
     assert grade_write(STAGE, code)["passed"] is True
+
+
+def test_the_json_codecs_sys_probe_cannot_reach_os():
+    """Regression: the learner used to run in the ledger module's namespace, where `json` was visible, and
+    json.codecs.sys.modules["os"] passed the source check. It must now fail as an unknown name, touching nothing."""
+    from pathlib import Path
+    from learn.grader import _write_worker
+    marker = Path("/tmp/stillcounts-probe-marker")
+    marker.unlink(missing_ok=True)
+    code = ("def quantity(ops):\n"
+            "    os = json.codecs.sys.modules['os']\n"
+            "    os.close(os.open('/tmp/stillcounts-probe-marker', os.O_CREAT))\n"
+            "    return 0\n")
+    r = _write_worker(STAGE, code)                 # skip the source check: the namespace itself must hold
+    assert r["passed"] is False and "NameError" in r["error"]
+    assert not marker.exists()
+    assert grade_write(STAGE, code, timeout=5)["passed"] is False
+
+
+@pytest.mark.parametrize("name", ["json", "dataclass", "Any", "Iterable", "annotations", "KINDS", "Clock"])
+def test_the_learner_namespace_holds_only_ledger_symbols(name):
+    from learn.grader import _write_worker
+    r = _write_worker(STAGE, f"def quantity(ops):\n    return len([{name}])\n")
+    assert r["passed"] is False and "NameError" in r["error"]

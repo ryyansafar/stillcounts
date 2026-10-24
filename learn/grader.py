@@ -23,12 +23,13 @@ ROOT = Path(__file__).resolve().parent.parent
 STAGES = Path(__file__).resolve().parent / "stages.json"
 SOURCE = ROOT / "stillcounts" / "crdt.py"
 VECTORS = ROOT / "tests" / "vectors.json"
-# The "write" checkpoint runs a stranger's code, so it is boxed in three ways (none is a substitute for running the
+# The "write" checkpoint runs a stranger's code, so it is boxed in four ways (none is a substitute for running the
 # whole server in a container or as an unprivileged user, which the README says to do for a public deployment):
 #   1. the source is checked before it runs: no imports, no names or attributes that start with an underscore
 #      (except the ledger's own helpers like _order), no string-format attribute tricks, no I/O builtins;
 #   2. it runs with a short whitelist of builtins, so `open`, `__import__`, `eval` and friends do not exist;
-#   3. the worker process has hard limits on CPU time, memory, written file size, open files and new processes.
+#   3. the function runs in a fresh namespace holding only ledger symbols (no imported module is reachable);
+#   4. the worker process has hard limits on CPU time, memory, written file size, open files and new processes.
 SAFE_BUILTINS = ("abs all any bool dict divmod enumerate filter float frozenset int isinstance len list map max min "
                  "next iter print range repr reversed round set slice sorted str sum tuple zip "
                  "ArithmeticError AssertionError Exception IndexError KeyError NotImplementedError "
@@ -38,6 +39,8 @@ FORBIDDEN_NAMES = frozenset("open exec eval compile input breakpoint globals loc
                             "exit quit help license credits copyright id hash callable".split())
 FORBIDDEN_ATTRS = frozenset("format format_map mro".split())
 FORBIDDEN_ATTR_PREFIXES = ("_", "gi_", "cr_", "ag_", "f_", "tb_", "co_", "func_")
+# The only ledger names a learner's function can see. No imported module is among them.
+LEARNER_SYMBOLS = ("Op", "merge", "dedupe", "_order", "_total", "_lww", "_validate")
 MEMORY_LIMIT = 1024 * 1024 * 1024
 TRUE_WORDS = {"true", "yes", "y", "1"}
 FALSE_WORDS = {"false", "no", "n", "0"}
@@ -189,8 +192,16 @@ def _module(code: str, hook: dict | None) -> types.ModuleType:
     sys.modules["learner_crdt"] = module
     exec(compile(source, "learner_crdt.py", "exec"), module.__dict__)
     import builtins
-    module.__dict__["__builtins__"] = {name: getattr(builtins, name) for name in SAFE_BUILTINS}
-    exec(compile(code, "learner.py", "exec"), module.__dict__)
+    # The learner's function runs in a FRESH namespace that holds only the ledger symbols it may call. It never sees the
+    # ledger module's own globals (which import json, dataclasses and typing, and through them os and sys), so there is
+    # no module object to walk from. The finished function is then plugged into the ledger module by name.
+    namespace = {"__builtins__": {name: getattr(builtins, name) for name in SAFE_BUILTINS}}
+    for name in LEARNER_SYMBOLS:
+        namespace[name] = module.__dict__[name]
+    exec(compile(code, "learner.py", "exec"), namespace)
+    for name, value in namespace.items():
+        if name != "__builtins__" and module.__dict__.get(name) is not value:
+            module.__dict__[name] = value
     return module
 
 

@@ -1,15 +1,17 @@
-// Learn mode, "Earn the Code": the real merge code stays locked until the learner earns every checkpoint of a stage.
+// Learn mode, "Earn the Code": the real merge code stays locked until the learner earns a stage.
 // Plain code grades every checkpoint: predict is checked in the browser by the same merge the app uses (crdt.js),
-// so it works with no signal; find-the-bug and write are graded by the server's referee; explain shows a rubric after.
+// so it works with no signal; find-the-bug and write are graded by the server's referee; explain shows which rubric points
+// were covered. Every request carries an X-Learner-Id header (a random id kept on this phone).
 //
-// API (served by server/app.py):
-//   GET  /api/learn/stages                     -> { stages: [{ id, title, earned, locked, code?, checkpoints: { predict, bug, write, explain } }] }
-//        predict: { ops, item, question? }      bug: { mutant: { code }, choices? }     write: { prompt, starter }     explain: { prompt }
-//   POST /api/learn/{stage}/predict { guess }  -> { passed, answer? }
-//   POST /api/learn/{stage}/bug     { answer } -> { passed }
-//   POST /api/learn/{stage}/write   { code }   -> { passed, failure? }
-//   POST /api/learn/{stage}/explain { text }   -> { passed?, rubric: [string] }
-//   Any response may carry `code`, the real code, once the stage is earned.
+// API (server/learn_api.py), stage = { id, order, title, summary, unlocked, progress, code (null while locked),
+//   predict: { prompt, cases: [{ id, prompt, question, ops, item, field }] },
+//   bug: { prompt, snippet, options: [{ id, text }] }, write: { function, prompt, stub }, explain: { prompt, min_points } }
+//   GET  /api/learn/stages                      -> { stages: [stage] }
+//   POST /api/learn/{stage}/predict { answer: { caseId: guess } } -> { passed, progress, unlocked, code }
+//   POST /api/learn/{stage}/bug     { answer: optionId }
+//   POST /api/learn/{stage}/write   { source }                    -> result.error / result.counterexample on failure
+//   POST /api/learn/{stage}/explain { text }          -> result.covered / result.missed
+// Every response carries `progress`, `unlocked` and, once unlocked, `code`.
 (function (root) {
   "use strict";
   var C = typeof module !== "undefined" && module.exports ? require("./crdt.js") : root.StillCounts;
@@ -35,34 +37,72 @@
       } else {
         KINDS.forEach(function (k) { if (s[k] && typeof s[k] === "object") cps[k] = payloadOf(s[k]); });
       }
+      if (s.progress && typeof s.progress === "object") {
+        Object.keys(cps).forEach(function (k) { if (s.progress[k] === true) cps[k].passed = true; });
+      }
       return { id: id, title: s.title || s.name || id, summary: s.summary || s.description || "",
-               earned: !!s.earned, locked: s.locked, code: s.code || null, checkpoints: cps,
+               earned: !!(s.earned || s.unlocked), locked: s.locked, code: s.code || null, checkpoints: cps,
                order: KINDS.filter(function (k) { return cps[k]; }) };
     });
   }
 
-  function predictAnswer(cp) {
-    var state = C.merge(cp.ops || []), field = cp.field || "qty";
-    var s = state[cp.item] || { name: cp.item, qty: 0, note: "", alive: true };
+  // one predict case: { id, ops, item, field }
+  function predictAnswer(c) {
+    var ops = c.ops || [], field = c.field || "qty";
+    if (field === "oversold") return C.stats(ops).oversold.indexOf(c.item) >= 0;
+    var state = C.merge(ops), s = state[c.item] || { name: c.item, qty: 0, note: "", alive: true };
     return s[field];
   }
 
+  function wordOf(g) {
+    if (/^(true|yes|y)$/i.test(g)) return true;
+    if (/^(false|no|n)$/i.test(g)) return false;
+    return null;
+  }
+
   // true / false, or null when the guess is not an answer at all
-  function gradePredict(cp, guess) {
-    var answer = predictAnswer(cp), g = String(guess === undefined || guess === null ? "" : guess).trim();
+  function gradePredict(c, guess) {
+    var answer = predictAnswer(c), g = String(guess === undefined || guess === null ? "" : guess).trim();
     if (typeof answer === "number") {
       if (!/^[-−]?\d+$/.test(g)) return null;
       return parseInt(g.replace("−", "-"), 10) === answer;
     }
-    if (typeof answer === "boolean") return g === "" ? null : (/^(true|yes|y)$/i.test(g)) === answer;
+    if (typeof answer === "boolean") { var w = wordOf(g); return w === null ? null : w === answer; }
     return g === "" ? null : g === String(answer);
+  }
+
+  // what is sent to the server for one guess
+  function guessValue(c, guess) {
+    var g = String(guess).trim(), answer = predictAnswer(c);
+    if (typeof answer === "number") return parseInt(g.replace("−", "-"), 10);
+    if (typeof answer === "boolean") return wordOf(g);
+    return g;
+  }
+
+  function hintFor(c) {
+    var a = predictAnswer(c);
+    return typeof a === "number" ? "a whole number" : typeof a === "boolean" ? "yes or no" : "the text";
+  }
+
+  function newLearnerId() {
+    var id = "l-";
+    for (var i = 0; i < 12; i++) id += Math.floor(Math.random() * 36).toString(36);
+    return id;
   }
 
   function key(stage, kind) { return stage.id + "/" + kind; }
 
+  // Explain is practice: the server unlocks the real code after predict, find the bug and write.
+  function required(stage) { return stage.order.filter(function (k) { return k !== "explain"; }); }
+
+  function isDone(stage, kind, passed) {
+    return !!passed[key(stage, kind)] || (!!stage.earned && kind !== "explain");
+  }
+
   function isEarned(stage, passed) {
     if (stage.earned) return true;
-    return stage.order.length > 0 && stage.order.every(function (k) { return passed[key(stage, k)]; });
+    var need = required(stage);
+    return need.length > 0 && need.every(function (k) { return passed[key(stage, k)]; });
   }
 
   function isStageLocked(stages, i, passed) {
@@ -81,7 +121,7 @@
     var done = 0, total = 0;
     stages.forEach(function (s) {
       var earned = isEarned(s, passed);
-      s.order.forEach(function (k) { total += 1; if (earned || passed[key(s, k)]) done += 1; });
+      s.order.forEach(function (k) { total += 1; if ((earned && k !== "explain") || passed[key(s, k)]) done += 1; });
     });
     return { done: done, total: total, pct: total ? Math.round(100 * done / total) : 0 };
   }
@@ -107,12 +147,12 @@
     try { saved = JSON.parse(storage.getItem(KEY)) || {}; } catch (e) { saved = {}; }
     var st = { stages: normalizeStages(saved.stages || []), raw: saved.stages || null, passed: saved.passed || {},
                queue: saved.queue || [], codes: saved.codes || {}, drafts: saved.drafts || {}, selected: saved.selected || null,
-               online: null, loaded: false };
+               online: null, loaded: false, learner: saved.learner || newLearnerId() };
     var pending = [], view = {};
 
     function persist() {
       try {
-        storage.setItem(KEY, JSON.stringify({ stages: st.raw, passed: st.passed, queue: st.queue, codes: st.codes,
+        storage.setItem(KEY, JSON.stringify({ learner: st.learner, stages: st.raw, passed: st.passed, queue: st.queue, codes: st.codes,
                                               drafts: st.drafts, selected: st.selected }));
       } catch (e) { /* storage full: keep going in memory */ }
     }
@@ -136,8 +176,9 @@
     }
 
     function request(url, body) {
-      var init = body === undefined ? { method: "GET" }
-        : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+      var headers = { "X-Learner-Id": st.learner };
+      var init = body === undefined ? { method: "GET", headers: headers }
+        : { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: JSON.stringify(body) };
       return new Promise(function (resolve, reject) {
         var timer = setTimeout(function () { reject(new Error("timeout")); }, TIMEOUT_MS);
         Promise.resolve().then(function () { return fetchFn(url, init); }).then(function (r) {
@@ -158,6 +199,9 @@
     function absorb(stage, kind, body, fallback) {
       var ok = passOf(body, fallback);
       if (ok) st.passed[key(stage, kind)] = true;
+      if (body.progress && typeof body.progress === "object") {
+        Object.keys(body.progress).forEach(function (k) { if (body.progress[k] === true) st.passed[key(stage, k)] = true; });
+      }
       if (body.code) st.codes[stage.id] = body.code;
       persist();
       return ok;
@@ -198,19 +242,24 @@
 
     // ---- actions ----
     function doPredict(stage) {
-      var cp = stage.checkpoints.predict, input = view.inputs.predict, guess = input.value;
-      var local = gradePredict(cp, guess), answer = predictAnswer(cp);
-      if (local === null) { setResult("predict", "warn", "Enter a whole number."); return Promise.resolve(); }
-      var body = { guess: typeof answer === "number" ? parseInt(String(guess).trim().replace("−", "-"), 10) : String(guess).trim() };
+      var cases = stage.checkpoints.predict.cases || [], guesses = {}, local = {}, unanswered = null;
+      cases.forEach(function (c) {
+        var raw = view.inputs["predict:" + c.id].value, g = gradePredict(c, raw);
+        if (g === null) { unanswered = unanswered || c; return; }
+        local[c.id] = g; guesses[c.id] = guessValue(c, raw);
+      });
+      if (unanswered) { setResult("predict", "warn", "Answer every case (" + hintFor(unanswered) + " for " + unanswered.id + ")."); return Promise.resolve(); }
+      var allRight = cases.every(function (c) { return local[c.id]; }), body = { answer: guesses };
       function show(ok) {
-        setResult("predict", ok ? "good" : "bad", ok ? "Right. The real merge gives " + answer + "."
-          : "Not quite. You said " + body.guess + "; the real merge gives " + answer + ".");
+        var wrong = cases.filter(function (c) { return !local[c.id]; });
+        setResult("predict", ok ? "good" : "bad", ok ? "Right. The real merge agrees on every case."
+          : "Not quite. " + wrong.map(function (c) { return c.id + ": the real merge gives " + predictAnswer(c); }).join("; ") + ".");
         refresh();
       }
-      return post(stage, "predict", body).then(function (res) { show(absorb(stage, "predict", res, local)); }, function (err) {
-        if (!err.status && local) { st.queue.push({ stage: stage.id, kind: "predict", body: body }); }
-        if (local) st.passed[key(stage, "predict")] = true;
-        persist(); show(local);
+      return post(stage, "predict", body).then(function (res) { show(absorb(stage, "predict", res, allRight)); }, function (err) {
+        if (!err.status && allRight) { st.queue.push({ stage: stage.id, kind: "predict", body: body }); }
+        if (allRight) st.passed[key(stage, "predict")] = true;
+        persist(); show(allRight);
       });
     }
 
@@ -224,15 +273,21 @@
       }, function (err) { setResult("bug", "warn", offlineText(err)); refresh(); });
     }
 
+    function failureText(r) {
+      if (r.error) return r.error;
+      var c = r.counterexample;
+      if (c) return "on " + (c.ops || []).length + " operations the real merge gives " + JSON.stringify(c.expected) + " and yours gives " + JSON.stringify(c.got) + ".";
+      return r.failure || r.message || r.detail || "the referee found a difference.";
+    }
+
     function doWrite(stage) {
       var code = view.inputs.write.value;
       st.drafts[key(stage, "write")] = code; persist();
       if (!code.trim()) { setResult("write", "warn", "Write the function first."); return Promise.resolve(); }
       setResult("write", "", "Running the referee…");
-      return post(stage, "write", { code: code }).then(function (res) {
+      return post(stage, "write", { source: code }).then(function (res) {
         var ok = absorb(stage, "write", res, false);
-        setResult("write", ok ? "good" : "bad", ok ? "Passed the referee." :
-          "Not yet: " + (res.failure || res.message || res.detail || "the referee found a difference."));
+        setResult("write", ok ? "good" : "bad", ok ? "Passed the referee." : "Not yet: " + failureText(res.result || res));
         refresh();
       }, function (err) { setResult("write", "warn", offlineText(err)); refresh(); });
     }
@@ -242,11 +297,12 @@
       st.drafts[key(stage, "explain")] = text; persist();
       if (!text.trim()) { setResult("explain", "warn", "Write a sentence or two first."); return Promise.resolve(); }
       return post(stage, "explain", { text: text }).then(function (res) {
-        var ok = absorb(stage, "explain", res, true), rubric = res.rubric || [];
-        setResult("explain", ok ? "good" : "bad", ok ? "Saved. Compare your words with the rubric." : "Not yet. Compare with the rubric and try again.");
-        var list = h("ul", { className: "rubric", "data-rubric": "explain" }, rubric.map(function (r) {
-          return h("li", { text: typeof r === "string" ? r : (r.text || r.point || JSON.stringify(r)) });
-        }));
+        var ok = absorb(stage, "explain", res, true), r = res.result || res, points = [];
+        (r.covered || []).forEach(function (p) { points.push("Covered: " + (p.point || p)); });
+        (r.missed || []).forEach(function (p) { points.push("Missed: " + (p.point || p)); });
+        (r.rubric || res.rubric || []).forEach(function (p) { points.push(typeof p === "string" ? p : (p.text || p.point || JSON.stringify(p))); });
+        setResult("explain", ok ? "good" : "bad", ok ? "Good. Compare your words with the rubric." : "Not yet. Compare with the rubric and try again.");
+        var list = h("ul", { className: "rubric", "data-rubric": "explain" }, points.map(function (t) { return h("li", { text: t }); }));
         view.rubric.replaceChildren(h("h4", { text: "The rubric" }), list);
         refresh();
       }, function (err) { setResult("explain", "warn", offlineText(err)); refresh(); });
@@ -274,21 +330,29 @@
       view.results[kind] = h("p", { className: "result", "data-result": kind, "aria-live": "polite" });
       var draft = st.drafts[key(stage, kind)];
       if (kind === "predict") {
-        var seen = {};
-        kids.push(h("p", { text: cp.question || ("What is the " + (cp.field || "quantity") + " of " + cp.item + " after these phones merge?") }));
-        kids.push(h("ol", { className: "ops" }, (cp.ops || []).map(function (op) { return h("li", { text: describeOp(op, seen) }); })));
-        view.inputs.predict = h("input", { type: "number", inputmode: "numeric", step: "1", className: "field", "data-input": "predict",
-                                           "aria-label": "Your predicted merged result", placeholder: "Your answer" });
-        kids.push(h("div", { className: "row" }, [view.inputs.predict,
-          h("button", { type: "button", "data-action": "predict", text: "Check with the real merge" })]));
+        kids.push(h("p", { text: cp.prompt || "Predict what the real merge gives for each case." }));
+        (cp.cases || []).forEach(function (c) {
+          var seen = {}, input = h("input", { type: typeof predictAnswer(c) === "number" ? "number" : "text", className: "field",
+            "data-input": "predict:" + c.id, "aria-label": "Your prediction for " + c.id, placeholder: hintFor(c) });
+          if (typeof predictAnswer(c) === "number") input.setAttribute("inputmode", "numeric");
+          view.inputs["predict:" + c.id] = input;
+          kids.push(h("div", { className: "case", "data-case": c.id }, [
+            h("p", { text: c.prompt || "" }),
+            h("p", { text: c.question || ("What is the " + (c.field || "quantity") + " of " + c.item + " after these phones merge?") }),
+            h("ol", { className: "ops" }, (c.ops || []).map(function (op) { return h("li", { text: describeOp(op, seen) }); })),
+            input]));
+        });
+        kids.push(h("button", { type: "button", className: "wide", "data-action": "predict", text: "Check with the real merge" }));
       } else if (kind === "bug") {
-        var m = cp.mutant || {}, mcode = typeof m === "string" ? m : (m.code || m.diff || m.snippet || "");
+        var m = cp.mutant || {}, mcode = cp.snippet || cp.mutant_source || (typeof m === "string" ? m : (m.code || m.diff || m.snippet || ""));
         kids.push(h("p", { text: cp.prompt || "This copy of the real merge has one deliberate mistake. What is wrong?" }));
         kids.push(h("pre", { className: "code", text: mcode }));
-        if (Array.isArray(cp.choices) && cp.choices.length) {
-          kids.push(h("div", { className: "choices" }, cp.choices.map(function (c) {
-            var b = h("button", { type: "button", "data-choice": c, text: c });
-            b.addEventListener("click", function () { if (!guard(stage, "bug")) track(doBug(stage, c)); });
+        var options = cp.options || cp.choices;
+        if (Array.isArray(options) && options.length) {
+          kids.push(h("div", { className: "choices" }, options.map(function (c) {
+            var id = typeof c === "string" ? c : c.id, label = typeof c === "string" ? c : (c.text || c.id);
+            var b = h("button", { type: "button", "data-choice": id, text: label });
+            b.addEventListener("click", function () { if (!guard(stage, "bug")) track(doBug(stage, id)); });
             return b;
           })));
         } else {
@@ -298,7 +362,7 @@
       } else if (kind === "write") {
         kids.push(h("p", { text: cp.prompt || "Complete the function. The referee grades it." }));
         view.inputs.write = h("textarea", { className: "field codein", rows: "8", spellcheck: "false", autocapitalize: "off",
-                                            "data-input": "write", "aria-label": "Your code", wrap: "off", value: draft !== undefined ? draft : (cp.starter || "") });
+                                            "data-input": "write", "aria-label": "Your code", wrap: "off", value: draft !== undefined ? draft : (cp.stub || cp.starter || "") });
         kids.push(view.inputs.write);
         kids.push(h("button", { type: "button", className: "wide", "data-action": "write", text: "Run the referee" }));
       } else {
@@ -407,13 +471,13 @@
         it.button.disabled = locked;
         it.button.setAttribute("aria-label", s.title + (earned ? ", earned" : locked ? ", locked" : ""));
         setLock(it.button.children[0], locked, earned);
-        var n = s.order.filter(function (k) { return earned || st.passed[key(s, k)]; }).length;
+        var n = s.order.filter(function (k) { return isDone(s, k, st.passed) || (earned && k !== "explain"); }).length;
         it.button.children[2].textContent = n + "/" + s.order.length;
       });
       var stage = view.stage; if (!stage) return;
       stage.order.forEach(function (k) {
         var el = view.cards[k]; if (!el) return;
-        var locked = isCheckpointLocked(stage, k, st.passed), done = !!st.passed[key(stage, k)] || stage.earned;
+        var locked = isCheckpointLocked(stage, k, st.passed), done = isDone(stage, k, st.passed);
         el.setAttribute("data-locked", String(locked));
         el.className = "card cp" + (locked ? " locked" : "") + (done ? " done" : "");
         all(el, function (n) { return n.getAttribute && n.getAttribute("data-lock") === k; }).forEach(function (l) { setLock(l, locked, done); });

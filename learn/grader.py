@@ -325,7 +325,8 @@ def _rss_bytes(pid: int) -> int:
         return 0
 
 
-def _run_worker(cmd: list[str], payload: str, timeout: float, env: dict, preexec) -> tuple[str, str, int, str]:
+def _run_worker(cmd: list[str], payload: str, timeout: float, env: dict, preexec,
+                rss_limit: int = RSS_LIMIT) -> tuple[str, str, int, str]:
     """Run the worker and watch it: kill it on a timeout or when its resident memory passes RSS_LIMIT.
     Returns (stdout, stderr, returncode, status) where status is "ok", "timeout" or "memory"."""
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -338,7 +339,7 @@ def _run_worker(cmd: list[str], payload: str, timeout: float, env: dict, preexec
             return out, err, proc.returncode, "ok"
         except subprocess.TimeoutExpired:
             data = None
-        status = "memory" if _rss_bytes(proc.pid) > RSS_LIMIT else "timeout" if time.monotonic() > deadline else None
+        status = "memory" if _rss_bytes(proc.pid) > rss_limit else "timeout" if time.monotonic() > deadline else None
         if status:
             proc.kill()
             out, err = proc.communicate()

@@ -105,13 +105,13 @@ def test_service_worker_is_served_from_the_root_scope(tmp_path):
     c, _ = make(tmp_path)
     r = c.get("/sw.js")
     assert r.status_code == 200 and r.headers["service-worker-allowed"] == "/"
-    assert "stillcounts-v2" in r.text
+    assert "stillcounts-v3" in r.text
     assert c.get("/static/crdt.js").status_code == 200
 
 
 def test_seed_is_idempotent(tmp_path):
     c, _ = make(tmp_path)
-    assert c.post("/api/seed").json()["accepted"] == 6
+    assert c.post("/api/seed").json()["accepted"] == 12
     assert c.post("/api/seed").json()["accepted"] == 0
     assert c.get("/api/state").json()["state"]["rice"]["qty"] == 200
 

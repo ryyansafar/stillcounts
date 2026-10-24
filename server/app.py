@@ -200,12 +200,16 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
                 "replicas": sorted({o.replica for o in ops})}
 
     SEED_STOCK = {"blankets": 100, "rice": 200, "water": 500, "paracetamol": 60, "tarpaulin": 40, "baby-food": 80}
+    SEED_NAMES = {"blankets": "Blankets", "rice": "Rice (kg)", "water": "Drinking water (L)",
+                  "paracetamol": "Paracetamol (strips)", "tarpaulin": "Tarpaulins", "baby-food": "Baby food (tins)"}
 
     @app.post("/api/seed")
     def seed() -> dict:
         """Starting stock for the demo. Fixed ids make it idempotent: pressing it twice adds nothing."""
         ops = [Op(id=f"seed:{i}", replica="seed", lamport=1, kind="adjust", item=item, value=qty)
                for i, (item, qty) in enumerate(SEED_STOCK.items(), start=1)]
+        ops += [Op(id=f"seed:{i}", replica="seed", lamport=1, kind="create", item=item, value=name)
+                for i, (item, name) in enumerate(SEED_NAMES.items(), start=len(SEED_STOCK) + 1)]
         with store.lock:
             fresh = [o for o in ops if store.classify(o) == "new"]
             store.append_locked(fresh)

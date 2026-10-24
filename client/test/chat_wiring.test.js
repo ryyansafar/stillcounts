@@ -65,22 +65,24 @@ test("calm after a spike restores gradually and tells Devin the next stage can b
   assert.match(calls.filter((c) => c.meta.reason === "adapt").pop().text, /normal/i);
 });
 
+const earned1 = Object.assign(view(1), { progress: { predict: true, bug: true, write: true, explain: false }, unlocked: true, code: "c" });
+
 test("at level 1 the continue message is held back (slow pace); at level 3 it goes at once", async () => {
-  const slow = setup({ snap: snap("waiting_for_user", [view(1)]) });
+  const slow = setup({ snap: snap("waiting_for_user", [earned1]) });
   await slow.ctl.submit("x");
   slow.fire(1, "HR 150 vs baseline 72: x");
   await slow.ctl.pollNow("c1");
   assert.strictEqual(slow.calls.filter((c) => c.meta.reason === "continue").length, 0, "held back");
   assert.ok(slow.timers.some((t) => t.ms >= 10000), "scheduled after a pause");
   assert.ok(slow.ctl.active().thread.some((t) => t.kind === "bridge" && /Slower pace/.test(t.text)));
-  const fast = setup({ snap: snap("waiting_for_user", [view(1)]) });
+  const fast = setup({ snap: snap("waiting_for_user", [earned1]) });
   await fast.ctl.submit("x");
   await fast.ctl.pollNow("c1");
   assert.strictEqual(fast.calls.filter((c) => c.meta.reason === "continue").length, 1);
 });
 
 test("a slow continue is not sent if the learner stopped the build while it waited", async () => {
-  const s = setup({ snap: snap("waiting_for_user", [view(1)]) });
+  const s = setup({ snap: snap("waiting_for_user", [earned1]) });
   await s.ctl.submit("x");
   s.fire(1, "HR 150 vs baseline 72: x");
   await s.ctl.pollNow("c1");

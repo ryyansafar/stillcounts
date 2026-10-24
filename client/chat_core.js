@@ -2,8 +2,8 @@
 //
 // The rule it enforces, for a REAL Devin session and for the labelled replay alike:
 //   * the code of a stage is never kept until the learner earned the stage (predict, find the bug and write all passed);
-//   * Devin may be at most LOOKAHEAD stages past the last stage the learner earned. That is the pipelining: while Devin
-//     builds stage N+1 the learner works the checkpoint of stage N, and stage N+2 is not started until N is earned;
+//   * Devin may be at most LOOKAHEAD stages past the last stage the learner earned. LOOKAHEAD is 0: Devin builds a stage, stops,
+//     and stage N+1 is not started until stage N is earned;
 //   * the bridge sends Devin "continue" only from nextEffects(), only when Devin is waiting_for_user and the rule above allows it.
 //
 // reduce(chat, event) returns { chat, effects }. It never mutates its input. Effects are plain data for the controller:
@@ -14,7 +14,7 @@
   "use strict";
 
   var REQUIRED = ["predict", "bug", "write"];
-  var LOOKAHEAD = 1;
+  var LOOKAHEAD = 0;   // strict: Devin builds one stage, stops, and goes on only after the learner earns it
   var MAX_CHATS = 30, MAX_THREAD = 300, MAX_SEEN = 600;
   var LIMIT_DETAILS = ["usage_limit_exceeded", "out_of_credits", "out_of_quota", "no_quota_allocation", "payment_declined", "org_usage_limit_exceeded"];
 
@@ -113,7 +113,7 @@
     if (p === "finished") return { kind: "finished", text: "Devin is finished" + (earned < built ? "; earn the remaining stages to unlock the code." : ".") };
     if (p === "working" || p === "starting") {
       if (earned >= built) return { kind: "waiting_for_devin", text: "Waiting for Devin: stage " + (built + 1) + " is being built." };
-      return { kind: "pipelining", text: "Devin is building stage " + (built + 1) + " while you earn stage " + (earned + 1) + "." };
+      return { kind: "pipelining", text: "Devin is building stage " + (built + 1) + " while you earn stage " + (earned + 1) + "." };   // only with a lookahead above 0
     }
     if (earned < built) return { kind: "waiting_for_learner", text: "Devin has stopped. Earn stage " + (earned + 1) + " to let it go on." };
     return { kind: "continuing", text: "Stage earned. Asking Devin to continue." };

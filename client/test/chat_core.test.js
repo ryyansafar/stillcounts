@@ -51,47 +51,41 @@ test("a built stage shows Devin's summary and a tutor checkpoint, and the code s
   assert.ok(!JSON.stringify(c).includes("SECRET"), "locked code must not appear anywhere in the saved chat");
 });
 
-test("lookahead: Devin may build one stage past what is earned and no further", () => {
+test("no lookahead: Devin may build stage n only once stage n-1 is earned", () => {
   let c = step(fresh(), { type: "snapshot", snap: snap("working", []), now: 3 }).chat;
+  assert.strictEqual(K.LOOKAHEAD, 0);
   assert.strictEqual(K.devinMayBuild(c, 1), true);
-  assert.strictEqual(K.devinMayBuild(c, 2), true);
-  assert.strictEqual(K.devinMayBuild(c, 3), false);
-  assert.strictEqual(K.devinMayBuild(c, 3, 2), true, "an explicit larger lookahead is honoured");
-  assert.strictEqual(K.devinMayBuild(c, 2, 0), false, "lookahead 0 is the strict mode");
+  assert.strictEqual(K.devinMayBuild(c, 2), false);
+  assert.strictEqual(K.devinMayBuild(c, 2, 1), true, "an explicit larger lookahead is honoured");
 });
 
-test("Devin is sent a continue for stage 2 while stage 1 is still unearned (pipelining), but not for stage 3", () => {
+test("Devin is not sent a continue while the built stage is unearned: it builds one stage, stops and waits", () => {
   let r = step(fresh(), { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 3 });
-  assert.deepStrictEqual(r.effects.map((e) => [e.type, e.reason, e.n]), [["send", "continue", 2]]);
-  assert.match(r.effects[0].text, /stage 2/i);
-  r = step(r.chat, { type: "continue_sent", n: 2, now: 4 });
-  r = step(r.chat, { type: "snapshot", snap: snap("working", [view(1)]), now: 5 });
   assert.deepStrictEqual(r.effects, []);
-  r = step(r.chat, { type: "snapshot", snap: snap("waiting_for_user", [view(1), view(2)]), now: 6 });
-  assert.deepStrictEqual(r.effects, [], "stage 3 is not allowed: stage 1 is not earned");
   assert.strictEqual(K.gateState(r.chat).kind, "waiting_for_learner");
 });
 
+const earn1 = (c) => step(c, { type: "checkpoint", n: 1, kind: "write", passed: true, progress: { predict: true, bug: true, write: true, explain: false }, code: "a = 1", now: 2 }).chat;
+
 test("continue is sent once, not on every poll", () => {
-  let r = step(fresh(), { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 3 });
-  r = step(r.chat, { type: "continue_sent", n: 2, now: 4 });
-  r = step(r.chat, { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 5 });
+  let c = step(fresh(), { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 3 }).chat;
+  let r = step(earn1(c), { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 4 });
+  assert.deepStrictEqual(r.effects.map((e) => e.n), [2]);
+  r = step(r.chat, { type: "continue_sent", n: 2, now: 5 });
+  r = step(r.chat, { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 6 });
   assert.deepStrictEqual(r.effects, []);
-  r = step(r.chat, { type: "continue_failed", n: 2, now: 6 });
-  r = step(r.chat, { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 7 });
+  r = step(r.chat, { type: "continue_failed", n: 2, now: 7 });
+  r = step(r.chat, { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 8 });
   assert.strictEqual(r.effects.length, 1, "a failed send is retried");
 });
 
-test("earning stage 1 unlocks its code with a diff and lets Devin go on to stage 3", () => {
-  let c = step(fresh(), { type: "snapshot", snap: snap("waiting_for_user", [view(1), view(2)]), now: 3 }).chat;
-  c = step(c, { type: "continue_sent", n: 2, now: 3 }).chat;
-  const r = step(c, { type: "checkpoint", n: 1, kind: "write", passed: true, progress: { predict: true, bug: true, write: true, explain: false },
-                      code: "a = 1\nb = 2", now: 8 });
+test("earning stage 1 unlocks its code with a diff and only then lets Devin go on to stage 2", () => {
+  const c = step(fresh(), { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 3 }).chat;
+  const r = step(c, { type: "checkpoint", n: 1, kind: "write", passed: true, progress: { predict: true, bug: true, write: true, explain: false }, code: "a = 1", now: 8 });
   assert.strictEqual(K.isEarned(r.chat.stages[0]), true);
-  assert.strictEqual(r.chat.stages[0].code, "a = 1\nb = 2");
-  const unlock = r.chat.thread.find((t) => t.kind === "unlock");
-  assert.strictEqual(unlock.n, 1);
-  assert.deepStrictEqual(r.effects.map((e) => e.n), [3], "stage 2 is built and Devin waits, so stage 3 may start now");
+  assert.strictEqual(r.chat.stages[0].code, "a = 1");
+  assert.ok(r.chat.thread.find((t) => t.kind === "unlock" && t.n === 1));
+  assert.deepStrictEqual(r.effects.map((e) => e.n), [2], "stage 1 is earned, so stage 2 may start now");
 });
 
 test("a failed checkpoint changes nothing and nothing proceeds", () => {
@@ -174,6 +168,7 @@ test("a stressed learner makes the bridge message Devin; a recovered learner rel
 
 test("continue text carries the difficulty so Devin builds a smaller stage for a stressed learner", () => {
   let c = step(fresh(), { type: "adapt", level: 1, previous: 2, now: 3 }).chat;
+  c = earn1(step(c, { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 3 }).chat);
   const r = step(c, { type: "snapshot", snap: snap("waiting_for_user", [view(1)]), now: 4 });
   assert.match(r.effects[0].text, /small/i);
 });

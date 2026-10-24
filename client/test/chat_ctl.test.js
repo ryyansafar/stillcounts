@@ -65,20 +65,18 @@ test("a prompt starts a real session, plans, and then Devin's build log fills th
   assert.strictEqual(K.session(now).acuLimit, 3);
 });
 
-test("Devin stops after each stage; continue is sent once for the allowed lookahead and not beyond", async () => {
-  const bridge = fakeBridge([snap("waiting_for_user", [view(1)]), snap("waiting_for_user", [view(1)]), snap("waiting_for_user", [view(1), view(2)]), snap("waiting_for_user", [view(1), view(2)])]);
+test("Devin stops after each stage and is sent nothing until the learner earns it", async () => {
+  const bridge = fakeBridge([snap("waiting_for_user", [view(1)]), snap("waiting_for_user", [view(1)])]);
   const { ctl } = setup({ bridge });
   await ctl.submit("x");
   const id = ctl.active().id;
   await ctl.pollNow(id); await ctl.pollNow(id);
-  assert.deepStrictEqual(sent(bridge, "continue").map((c) => c[3].n), [2], "once, even after two polls");
-  await ctl.pollNow(id); await ctl.pollNow(id);
-  assert.deepStrictEqual(sent(bridge, "continue").map((c) => c[3].n), [2], "stage 3 waits until stage 1 is earned");
+  assert.deepStrictEqual(sent(bridge, "continue"), [], "stage 2 waits until stage 1 is earned");
   assert.strictEqual(K.gateState(ctl.active()).kind, "waiting_for_learner");
 });
 
-test("earning stage 1 reveals its code and Devin is told to go on to stage 3", async () => {
-  const bridge = fakeBridge([snap("waiting_for_user", [view(1), view(2)])]);
+test("earning stage 1 reveals its code and Devin is told to go on to stage 2", async () => {
+  const bridge = fakeBridge([snap("waiting_for_user", [view(1)])]);
   const { ctl, grades } = setup({ bridge });
   await ctl.submit("x");
   const id = ctl.active().id;
@@ -88,7 +86,7 @@ test("earning stage 1 reveals its code and Devin is told to go on to stage 3", a
   const c = ctl.active();
   assert.strictEqual(K.isEarned(K.stageOf(c, 1)), true);
   assert.strictEqual(K.stageOf(c, 1).code, "CODE");
-  assert.ok(sent(bridge, "continue").some((m) => m[3].n === 3));
+  assert.ok(sent(bridge, "continue").some((m) => m[3].n === 2));
 });
 
 test("a wrong answer keeps Devin stopped: nothing is sent, nothing unlocks", async () => {
@@ -220,23 +218,20 @@ test("stop suspends the Devin session and stops all polling", async () => {
   assert.strictEqual(sch.pending(), 0);
 });
 
-test("the replay obeys the same gate end to end: stage 3 only after stage 1 is earned", async () => {
+test("the replay obeys the same gate end to end: stage 2 only after stage 1 is earned", async () => {
   const { ctl, clock, grades } = setup();
   ctl.setOffline(true);
   await ctl.submit("x");
   const id = ctl.active().id;
   clock.t += 5000; await ctl.pollNow(id);
   assert.strictEqual(K.builtCount(ctl.active()), 1);
-  clock.t += 5000; await ctl.pollNow(id);
-  assert.strictEqual(K.builtCount(ctl.active()), 2, "stage 2 is built ahead while stage 1 is unearned");
   clock.t += 60000; await ctl.pollNow(id); await ctl.pollNow(id);
-  assert.strictEqual(K.builtCount(ctl.active()), 2, "but stage 3 never starts by itself");
+  assert.strictEqual(K.builtCount(ctl.active()), 1, "stage 2 never starts by itself");
   assert.strictEqual(K.gateState(ctl.active()).kind, "waiting_for_learner");
   await ctl.grade(id, 1, "write", { source: "x" });
   assert.match(grades[0].url, /^\/api\/learn\/demo1\/write$/);
-  assert.match(grades[0].learner, /^chat-/);
   clock.t += 5000; await ctl.pollNow(id);
-  assert.strictEqual(K.builtCount(ctl.active()), 3);
+  assert.strictEqual(K.builtCount(ctl.active()), 2);
 });
 
 test("chats persist, never store locked code, and a reload resumes polling a live session", async () => {

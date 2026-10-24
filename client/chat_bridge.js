@@ -56,7 +56,7 @@
 
   function call(fetchFn, timeoutMs, method, url, body, learner) {
     var headers = {};
-    if (learner) headers["X-Learner-Id"] = learner;
+    // no learner id here: the server tells browsers apart by the HttpOnly cookie it issues itself
     var init = { method: method, headers: headers };
     if (body !== undefined) { init.headers = Object.assign({ "Content-Type": "application/json" }, headers); init.body = JSON.stringify(body); }
     return new Promise(function (resolve, reject) {

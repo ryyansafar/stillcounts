@@ -75,15 +75,15 @@ test("the course loader asks the existing Learn API and falls back to the saved 
   const f = fakeFetch({ "GET /api/learn/stages": { body: { stages: [{ id: "a", title: "A" }, { id: "b", title: "B" }] } } });
   const views = await B.loadCourse({ fetch: f, storage: store, learner: "chat-c1" });
   assert.deepStrictEqual(views.map((v) => [v.n, v.id]), [[1, "a"], [2, "b"]]);
-  assert.strictEqual(f.calls[0].init.headers["X-Learner-Id"], "chat-c1");
+  assert.strictEqual(f.calls[0].init.headers["X-Learner-Id"], undefined, "the page sends no learner id, the server cookie identifies it");
   const offline = await B.loadCourse({ fetch: fakeFetch({ "GET /api/learn/stages": new Error("down") }), storage: store, learner: "chat-c1" });
   assert.strictEqual(offline.length, 2);
   await assert.rejects(() => B.loadCourse({ fetch: fakeFetch({ "GET /api/learn/stages": new Error("down") }), storage: { getItem: () => null, setItem() {} }, learner: "x" }));
 });
 
-test("grade posts to the given url with the learner header", async () => {
+test("grade posts to the given url without a client-chosen learner id", async () => {
   const f = fakeFetch({ "POST /api/learn/a/bug": { body: { passed: true, progress: { bug: true } } } });
   const r = await B.grade({ fetch: f, url: "/api/learn/a/bug", body: { answer: "b" }, learner: "chat-c1" });
   assert.strictEqual(r.passed, true);
-  assert.strictEqual(f.calls[0].init.headers["X-Learner-Id"], "chat-c1");
+  assert.strictEqual(f.calls[0].init.headers["X-Learner-Id"], undefined, "the page sends no learner id, the server cookie identifies it");
 });

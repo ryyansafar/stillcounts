@@ -176,12 +176,14 @@ def test_devin_is_only_told_to_continue_after_the_learner_earned_the_stage(env):
     sid = begin(c)
     d.built(CODE1)
     ok = c.post(f"/api/devin/sessions/{sid}/message", json={"text": "continue 2", "reason": "continue", "n": 2})
-    assert ok.status_code == 200                       # one stage of lookahead (pipelining)
-    refused = c.post(f"/api/devin/sessions/{sid}/message", json={"text": "continue 3", "reason": "continue", "n": 3})
-    assert refused.status_code == 403 and refused.json()["code"] == "not_earned"
-    assert d.sent == ["continue 2"]
-    d.built(CODE1, CODE2)
+    assert ok.status_code == 403 and ok.json()["code"] == "not_earned"      # no lookahead: stage 1 is not earned
+    assert d.sent == []
     earn(c, sid, 1)
+    assert c.post(f"/api/devin/sessions/{sid}/message", json={"text": "continue 2", "reason": "continue", "n": 2}).status_code == 200
+    d.built(CODE1, CODE2)
+    refused = c.post(f"/api/devin/sessions/{sid}/message", json={"text": "continue 3", "reason": "continue", "n": 3})
+    assert refused.status_code == 403
+    earn(c, sid, 2)
     assert c.post(f"/api/devin/sessions/{sid}/message", json={"text": "continue 3", "reason": "continue", "n": 3}).status_code == 200
     assert d.sent[-1] == "continue 3"
 
@@ -241,3 +243,15 @@ def test_github_info_reports_ci_and_devin_review_and_degrades_quietly():
     info = GitHubInfo(http=Http(), token="").lookup("https://github.com/o/r/pull/7")
     assert info["ci"] == "failing" and info["review"]["comments"] == 2 and info["title"].startswith("Stage 2")
     assert GitHubInfo(http=Http(), token="").lookup("https://evil.example/pull/7")["ci"] == "none"
+
+
+def test_a_session_belongs_to_the_browser_that_started_it(env):
+    """Identity is the server-issued HttpOnly cookie. Another browser, or a forged X-Learner-Id header, cannot grade it."""
+    c, d = env
+    sid = begin(c)
+    d.built(CODE1)
+    assert "httponly" in c.get("/api/learn/stages").headers.get("set-cookie", "").lower() or c.cookies.get("sc_learner")
+    stranger = TestClient(c.app)
+    r = stranger.post(f"/api/devin/sessions/{sid}/stages/1/predict", json={"answer": {"c1": 7, "c2": 0}}, headers={"X-Learner-Id": "me"})
+    assert r.status_code == 403 and r.json()["code"] == "not_yours"
+    assert post(c, sid, 1, "predict", {"answer": {"c1": 7, "c2": 0}}).status_code == 200

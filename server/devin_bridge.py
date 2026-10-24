@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 from ops.devin_client import DevinClient, DevinError, load_env
 from server import live_course as lc
 from server.learn_api import (LEARNER_PATTERN, MAX_ANSWER, MAX_EXPLAIN, MAX_SOURCE_BYTES, WRITE_WINDOW, AnswerIn, RateLimiter,
-                              SourceIn, TextIn, is_remote, remote_write_allowed)
+                              Learner, SourceIn, TextIn, is_remote, remote_write_allowed)
 
 PR_URL = re.compile(r"^https://github\.com/([\w.-]+)/([\w.-]+)/pull/(\d+)$")
 LIMIT_DETAILS = {"usage_limit_exceeded", "out_of_credits", "out_of_quota", "no_quota_allocation", "payment_declined", "org_usage_limit_exceeded"}
@@ -36,6 +36,15 @@ def reply(status: int, detail: str, code: str | None = None) -> JSONResponse:
     if code:
         body["code"] = code
     return JSONResponse(body, status_code=status)
+
+
+def not_yours() -> JSONResponse:
+    return reply(403, "this session belongs to another browser", "not_yours")
+
+
+def mine(rec: dict, learner: str) -> bool:
+    """A session is graded only by the browser that started it (the server-issued cookie). Old records without an owner stay open."""
+    return not rec.get("learner") or rec["learner"] == learner
 
 
 def devin_from_env() -> DevinClient | None:
@@ -235,16 +244,13 @@ def devin_router(data_dir: Path, client: DevinClient | None = None, client_facto
         return next((s for s in stages if s["n"] == n), None)
 
     @router.post("/sessions")
-    def start(body: SessionBody, request: Request):
+    def start(body: SessionBody, learner: Learner):
         d = devin()
         if d is None:
             return reply(503, "this server has no Devin token configured (set DEVIN_TOKEN and DEVIN_ORG)", "no_token")
         user = (body.user_prompt or body.prompt).strip()
         if not user:
             return reply(422, "say what to build")
-        learner = request.headers.get("x-learner-id")
-        if learner is not None and not re.match(LEARNER_PATTERN, learner):
-            return reply(422, "bad learner id")
         try:
             pb = ensure_playbook(d)
             s = d.create_session(lc.build_prompt(user), title="Earn the Code: " + user[:60], tags=["stillcounts", "earn-the-code"],
@@ -268,16 +274,18 @@ def devin_router(data_dir: Path, client: DevinClient | None = None, client_facto
             return failure(exc)
 
     @router.post("/sessions/{sid}/message")
-    def message(sid: str, body: MessageBody):
+    def message(sid: str, body: MessageBody, learner: Learner):
         rec = known(sid)
         if rec is None:
             return reply(410, "unknown session")
+        if not mine(rec, learner):
+            return not_yours()
         if body.reason not in MESSAGE_REASONS:
             return reply(422, "reason must be continue, adapt or user")
         if body.reason == "continue":
             if not isinstance(body.n, int) or body.n < 2:
                 return reply(422, "continue needs the stage number")
-            if store.earned_count(sid) < body.n - 2:         # Devin may be one stage ahead of the learner, never two
+            if store.earned_count(sid) < body.n - 1:         # no lookahead: stage n is built only after stage n-1 is earned
                 return reply(403, "stage " + str(body.n - 1) + " is not earned yet, so Devin is not told to continue", "not_earned")
         if body.reason == "adapt":
             store.set_difficulty(sid, 1 if "stressed" in body.text.lower() else 3)
@@ -289,9 +297,12 @@ def devin_router(data_dir: Path, client: DevinClient | None = None, client_facto
         return {"sent": True, "reason": body.reason, "n": body.n}
 
     @router.post("/sessions/{sid}/stop")
-    def stop(sid: str):
-        if known(sid) is None:
+    def stop(sid: str, learner: Learner):
+        rec = known(sid)
+        if rec is None:
             return reply(410, "unknown session")
+        if not mine(rec, learner):
+            return not_yours()
         try:
             devin().terminate(sid)
         except DevinError as exc:
@@ -299,9 +310,12 @@ def devin_router(data_dir: Path, client: DevinClient | None = None, client_facto
         snaps.pop(sid, None)
         return {"stopped": True}
 
-    def reported(sid: str, n: int) -> tuple[dict | None, JSONResponse | None]:
-        if known(sid) is None:
+    def reported(sid: str, n: int, learner: str) -> tuple[dict | None, JSONResponse | None]:
+        rec = known(sid)
+        if rec is None:
             return None, reply(410, "unknown session")
+        if not mine(rec, learner):
+            return None, not_yours()
         try:
             st = stage_raw(sid, n)
         except DevinError as exc:
@@ -322,13 +336,13 @@ def devin_router(data_dir: Path, client: DevinClient | None = None, client_facto
                 "code": st["code"] if is_open else None}
 
     @router.get("/sessions/{sid}/stages/{n}")
-    def one_stage(sid: str, n: int):
-        st, err = reported(sid, n)
+    def one_stage(sid: str, n: int, learner: Learner):
+        st, err = reported(sid, n, learner)
         return err or lc.public_view(st, store.progress(sid, n), f"s{n}") | {"n": n}
 
     @router.post("/sessions/{sid}/stages/{n}/predict")
-    def predict(sid: str, n: int, body: AnswerIn):
-        st, err = reported(sid, n)
+    def predict(sid: str, n: int, body: AnswerIn, learner: Learner):
+        st, err = reported(sid, n, learner)
         if err:
             return err
         if len(json.dumps(body.answer)) > MAX_ANSWER:
@@ -336,15 +350,15 @@ def devin_router(data_dir: Path, client: DevinClient | None = None, client_facto
         return graded(sid, st, "predict", lc.grade_predict(st, body.answer))
 
     @router.post("/sessions/{sid}/stages/{n}/bug")
-    def bug(sid: str, n: int, body: AnswerIn):
-        st, err = reported(sid, n)
+    def bug(sid: str, n: int, body: AnswerIn, learner: Learner):
+        st, err = reported(sid, n, learner)
         return err or graded(sid, st, "bug", lc.grade_bug(st, body.answer))
 
     @router.post("/sessions/{sid}/stages/{n}/write")
-    def write(sid: str, n: int, body: SourceIn, request: Request):
+    def write(sid: str, n: int, body: SourceIn, request: Request, learner: Learner):
         if is_remote(request) and not remote_write_allowed():
             return reply(403, "writing code is graded on the base laptop only; the host can allow phones with STILLCOUNTS_LEARN_WRITE_LAN=1")
-        st, err = reported(sid, n)
+        st, err = reported(sid, n, learner)
         if err:
             return err
         if len(body.source.encode("utf-8", errors="replace")) > MAX_SOURCE_BYTES:
@@ -354,8 +368,8 @@ def devin_router(data_dir: Path, client: DevinClient | None = None, client_facto
         return graded(sid, st, "write", lc.grade_write(st, body.source))
 
     @router.post("/sessions/{sid}/stages/{n}/explain")
-    def explain(sid: str, n: int, body: TextIn):
-        st, err = reported(sid, n)
+    def explain(sid: str, n: int, body: TextIn, learner: Learner):
+        st, err = reported(sid, n, learner)
         if err:
             return err
         result = lc.grade_explain(st, body.text[:MAX_EXPLAIN])

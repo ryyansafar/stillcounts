@@ -8,6 +8,7 @@ import ast
 import json
 from pathlib import Path
 
+from learn import guided
 from oracle.mutation import MUTANTS, _load
 from stillcounts.crdt import Op, merge, stats
 
@@ -400,6 +401,7 @@ def build() -> list[dict]:
         s["predict"] = {"prompt": PREDICT_PROMPT, "cases": cases}
         s["bug"] = _bug(s, source)
         s["code"] = _function_source(source, stage["code"])
+        s["write"]["guided"] = guided.for_stage(s["id"])
         out.append(s)
     return json.loads(json.dumps(out))
 

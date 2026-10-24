@@ -12,7 +12,9 @@ TERMINAL = {"exit", "error", "suspended"}
 
 
 class DevinError(RuntimeError):
-    pass
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
 
 
 def load_env(path: str | Path) -> dict[str, str]:
@@ -41,8 +43,11 @@ class DevinClient:
         resp = self._http.request(method, url, headers=headers, json=body, timeout=30)
         if resp.status_code >= 400:
             detail = str(resp.text)[:300].replace(self._token, "***")
-            raise DevinError(f"{method} {path} failed with HTTP {resp.status_code}: {detail}")
-        return resp.json()
+            raise DevinError(f"{method} {path} failed with HTTP {resp.status_code}: {detail}", resp.status_code)
+        try:
+            return resp.json()
+        except ValueError:                      # DELETE and some POSTs reply with an empty body
+            return {}
 
     def create_session(self, prompt: str, *, title: str | None = None, tags: list[str] | None = None,
                        max_acu_limit: int = 3, playbook_id: str | None = None,
@@ -59,6 +64,16 @@ class DevinClient:
 
     def message(self, session_id: str, text: str) -> dict:
         return self._call("POST", f"/sessions/{session_id}/messages", {"message": text})
+
+    def list_messages(self, session_id: str, limit: int = 200) -> list[dict]:
+        """The session's message stream (Devin's and the learner's), oldest first. Each: {event_id, source, message}."""
+        data = self._call("GET", f"/sessions/{session_id}/messages?first={limit}")
+        items = data.get("items", []) if isinstance(data, dict) else data
+        return [i for i in items if isinstance(i, dict)]
+
+    def terminate(self, session_id: str) -> dict:
+        """Stop the session for good (DELETE). The bridge uses it for the learner's Stop button."""
+        return self._call("DELETE", f"/sessions/{session_id}")
 
     def create_playbook(self, title: str, body: str, macro: str, schema: dict | None = None) -> dict:
         payload: dict[str, Any] = {"title": title, "body": body, "macro": macro}

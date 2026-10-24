@@ -147,6 +147,27 @@
     "unlocked": false,
     "write": {
      "function": "dedupe",
+     "guided": {
+      "choices": [
+       {
+        "body": "    best = {}\n    for op in ops:\n        _validate(op)\n        best.setdefault(op.id, op)\n    return [best[k] for k in sorted(best)]\n",
+        "id": "a"
+       },
+       {
+        "body": "    best = {}\n    for op in ops:\n        _validate(op)\n        cur = best.get(op.id)\n        if cur is None or _total(op) > _total(cur):\n            best[op.id] = op\n    return [best[k] for k in sorted(best)]\n",
+        "id": "b"
+       },
+       {
+        "body": "    best = {}\n    for op in ops:\n        cur = best.get(op.id)\n        if cur is None or _total(op) > _total(cur):\n            best[op.id] = op\n    return [best[k] for k in sorted(best)]\n",
+        "id": "c"
+       },
+       {
+        "body": "    return sorted(ops, key=lambda op: op.id)\n",
+        "id": "d"
+       }
+      ],
+      "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer."
+     },
      "prompt": "Write dedupe(ops): keep one operation per id.",
      "stub": "def dedupe(ops):\n    \"\"\"Return each operation exactly once, sorted by id.\n\n    ops is an iterable of Op(id, replica, lamport, kind, item, value). The same id can\n    arrive many times. Keep one op per id. If two ops share an id but differ in content,\n    keep the one with the larger _total(op), so every phone picks the same copy.\n    Call _validate(op) on every op first: it raises ValueError for a malformed op.\n    \"\"\"\n    raise NotImplementedError\n"
     }
@@ -313,6 +334,27 @@
     "unlocked": false,
     "write": {
      "function": "quantity",
+     "guided": {
+      "choices": [
+       {
+        "body": "    return sum(abs(o.value) for o in ops if o.kind == \"adjust\")\n",
+        "id": "a"
+       },
+       {
+        "body": "    return sum(o.value for o in ops if o.kind == \"adjust\")\n",
+        "id": "b"
+       },
+       {
+        "body": "    return sum(o.value for o in ops if o.kind == \"adjust\" and o.value > 0)\n",
+        "id": "c"
+       },
+       {
+        "body": "    return len([o for o in ops if o.kind == \"adjust\"])\n",
+        "id": "d"
+       }
+      ],
+      "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer."
+     },
      "prompt": "Write quantity(ops): the quantity of one item.",
      "stub": "def quantity(ops):\n    \"\"\"Return the quantity of one item as an int.\n\n    ops is every operation of one item, of any kind (\"adjust\", \"create\", \"note\",\n    \"delete\"). Only \"adjust\" operations change the quantity: their value is a signed,\n    non-zero int (+ received, - issued). Return the sum of those values.\n    \"\"\"\n    raise NotImplementedError\n"
     }
@@ -472,6 +514,27 @@
     "unlocked": false,
     "write": {
      "function": "_lww",
+     "guided": {
+      "choices": [
+       {
+        "body": "    return min(ops, key=_order).value if ops else default\n",
+        "id": "a"
+       },
+       {
+        "body": "    return max(ops, key=lambda o: o.lamport).value if ops else default\n",
+        "id": "b"
+       },
+       {
+        "body": "    return max(ops, key=_order).value if ops else default\n",
+        "id": "c"
+       },
+       {
+        "body": "    return ops[-1].value if ops else default\n",
+        "id": "d"
+       }
+      ],
+      "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer."
+     },
      "prompt": "Write _lww(ops, default): the last-writer-wins value.",
      "stub": "def _lww(ops, default):\n    \"\"\"Return the value of the winning write, or default if ops is empty.\n\n    ops is a list of writes to one register (all names, all notes or all deletes of one\n    item). The winner has the highest _order(op), which is (op.lamport, op.replica):\n    the highest Lamport time, and on a tie the highest replica id.\n    \"\"\"\n    raise NotImplementedError\n"
     }
@@ -614,6 +677,27 @@
     "unlocked": false,
     "write": {
      "function": "oversold_items",
+     "guided": {
+      "choices": [
+       {
+        "body": "    return [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]\n",
+        "id": "a"
+       },
+       {
+        "body": "    return [i for i, s in state.items() if s[\"qty\"] < 0]\n",
+        "id": "b"
+       },
+       {
+        "body": "    return [i for i, s in state.items() if s[\"qty\"] < 0 and s[\"alive\"]]\n",
+        "id": "c"
+       },
+       {
+        "body": "    return [i for i, s in state.items() if s[\"qty\"] < 0 and s[\"alive\"]][:1]\n",
+        "id": "d"
+       }
+      ],
+      "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer."
+     },
      "prompt": "Write oversold_items(state): which items need a human.",
      "stub": "def oversold_items(state):\n    \"\"\"Return the list of oversold item keys, in the order they appear in state.\n\n    state is the merged ledger: {item: {\"name\": str, \"qty\": int, \"note\": str,\n    \"alive\": bool}}. An item is oversold when its quantity is below zero and it has\n    not been deleted (alive is True).\n    \"\"\"\n    raise NotImplementedError\n"
     }

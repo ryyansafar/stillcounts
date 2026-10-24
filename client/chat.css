@@ -140,3 +140,24 @@ button.wide { width: 100%; }
   .avatar { width: 28px; height: 28px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .thread { scroll-behavior: auto; } .side { transition: none; } }
+
+/* live Devin status bar, level notes and the easier checkpoint variants */
+.livebar { margin: 0; padding: 8px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 6px; background: #0c0c0c; }
+.livebar.sim { background: rgba(230, 180, 34, .05); }
+.liverow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.liverow .chip { font-size: 13px; }
+.chip.wait { border-color: var(--warn); color: var(--warn); }
+.chip.live { border-color: var(--good); color: var(--good); }
+.livemsg { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.levelnote { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 6px 0 10px; }
+.levelnote .breath { font-size: 14px; color: var(--good); }
+.steps { margin: 6px 0 10px; padding-left: 22px; display: grid; gap: 6px; }
+.steps li { font-size: 15px; }
+.choices.guided { display: grid; gap: 8px; margin: 8px 0; }
+.gchoice { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; min-height: 52px; }
+.gchoice input { width: 24px; height: 24px; margin-top: 8px; flex: none; accent-color: var(--good); }
+.gchoice pre { margin: 0; flex: 1; min-width: 0; overflow-x: auto; font-size: 13px; }
+.starters { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.starters button { min-height: 44px; }
+.hint { color: var(--warn); }
+.hrw { position: static; }

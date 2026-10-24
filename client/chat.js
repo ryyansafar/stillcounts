@@ -8,6 +8,13 @@
   var V = isNode ? require("./chat_view.js") : root.ChatView;
   var Ctl = isNode ? require("./chat_ctl.js") : root.ChatCtl;
   var B = isNode ? require("./chat_bridge.js") : root.ChatBridge;
+  var P = isNode ? require("./devin_live.js") : root.DevinLive;
+  var HINTS = {
+    predict: "Apply the operations one at a time, in order, and keep a running value in your head.",
+    bug: "Compare each line with what the stage summary says it should do. Bugs hide at boundaries and in signs.",
+    write: "Start with the empty case, then the plain case. The steps above follow the docstring.",
+    explain: "Say what the code does, then what would go wrong without the key line.",
+  };
   var LABELS = { predict: "Predict", bug: "Find the bug", write: "Write", explain: "Explain (practice)" };
   var IDEAS = ["a tip calculator", "a todo list for the terminal", "a dice roller with history", "a unit converter"];
   var LINKS = [["Portfolio", "https://ryyansafar.site"], ["GitHub", "https://github.com/ryyansafar"], ["Buy me a coffee", "https://buymeacoffee.com/ryyansafar"],
@@ -122,16 +129,26 @@
     }
 
     function kindBody(b, kind, cp) {
-      var inputs = {}, kids = [], result = b.results[kind];
+      var inputs = {}, kids = [], result = b.results[kind], prof = P.levelProfile(b.level);
       if (kind === "predict") {
         kids.push(h("p", { text: cp.prompt || "Predict what the code gives for each case." }));
-        (cp.cases || []).forEach(function (c) {
+        var caseEls = [], total = (cp.cases || []).length;
+        (cp.cases || []).forEach(function (c, ci) {
           var ak = answerKind(c), input = field(b, kind, c.id, h("input", { type: ak === "number" ? "number" : "text", className: "field", "data-input": "predict:" + c.id,
             "aria-label": "Your prediction for " + c.id, placeholder: ak === "number" ? "a whole number" : ak === "bool" ? "yes or no" : "your answer", value: draft(b, kind, c.id) }));
           inputs[c.id] = { el: input, kind: ak };
-          kids.push(h("div", { className: "case", "data-case": c.id }, [h("p", { text: c.prompt || "" }), c.question ? h("p", { text: c.question }) : null,
-            Array.isArray(c.ops) ? h("ol", { className: "ops" }, c.ops.map(function (op) { return h("li", { text: describeOp(op) }); })) : null, input]));
+          var caseEl = h("div", { className: "case", "data-case": c.id }, [prof.oneCaseAtATime ? h("div", { className: "eyebrow", text: "Case " + (ci + 1) + " of " + total }) : null,
+            h("p", { text: c.prompt || "" }), c.question ? h("p", { text: c.question }) : null,
+            Array.isArray(c.ops) ? h("ol", { className: "ops" }, c.ops.map(function (op) { return h("li", { text: describeOp(op) }); })) : null, input]);
+          caseEls.push(caseEl); kids.push(caseEl);
         });
+        // smaller steps: one case at a time, the next appears once the one before has an answer
+        function syncCases() {
+          if (!prof.oneCaseAtATime) return;
+          (cp.cases || []).forEach(function (c, i) { caseEls[i].hidden = i > 0 && !inputs[cp.cases[i - 1].id].el.value.trim(); });
+        }
+        (cp.cases || []).forEach(function (c) { on(inputs[c.id].el, "input", syncCases); });
+        syncCases();
         kids.push(on(h("button", { type: "button", className: "wide", "data-action": "predict", text: "Check my prediction" }), "click", function () {
           var guesses = {}, bad = null;
           (cp.cases || []).forEach(function (c) { var g = guessValue(inputs[c.id].kind, inputs[c.id].el.value); if (g === null) bad = bad || c; else guesses[c.id] = g; });
@@ -152,18 +169,42 @@
             if (bi.value.trim()) submitKind(b, "bug", { answer: bi.value.trim() }, cp); })]));
         }
       } else if (kind === "write") {
-        var ta = field(b, kind, "src", h("textarea", { className: "field codein", rows: "8", spellcheck: "false", autocapitalize: "off", wrap: "off", "data-input": "write",
-          "aria-label": "Your code", value: draft(b, kind, "src", cp.stub || cp.starter || "") }));
-        kids.push(h("p", { text: cp.prompt || "Complete the function. Plain code runs it and grades it." }), ta,
-          on(h("button", { type: "button", className: "wide", "data-action": "write", text: "Run it" }), "click", function () {
+        var steps = prof.steps ? P.stepsFromStub(cp.stub || cp.starter || "") : [];
+        kids.push(h("p", { text: cp.prompt || "Complete the function. Plain code runs it and grades it." }));
+        if (steps.length) kids.push(h("p", { className: "sub", text: "Smaller steps, taken from the task itself:" }), h("ol", { className: "steps", "data-steps": "write" }, steps.map(function (t) { return h("li", { text: t }); })));
+        if (prof.writeMode === "guided" && cp.guided && Array.isArray(cp.guided.choices) && cp.guided.choices.length) {
+          var gkey = b.n + "/write/pick", picked = ui.drafts[gkey] || "";
+          kids.push(h("p", { className: "sub", text: "Guided (difficulty 1): " + (cp.guided.prompt || "pick the body that fits.") }));
+          kids.push(h("div", { className: "choices guided", "data-guided": "write" }, cp.guided.choices.map(function (g) {
+            var radio = h("input", { type: "radio", name: "g" + b.n, value: g.id, "aria-label": "Option " + g.id });
+            if (picked === g.id) radio.checked = true;
+            on(radio, "change", function () { ui.drafts[gkey] = g.id; });
+            return h("label", { className: "gchoice", "data-gchoice": g.id }, [radio, h("pre", { className: "code", text: g.body })]);
+          })));
+          kids.push(on(h("button", { type: "button", className: "wide", "data-action": "write-guided", text: "Run the chosen one" }), "click", function () {
+            var g = cp.guided.choices.filter(function (c) { return c.id === (ui.drafts[gkey] || ""); })[0];
+            if (!g) { ui.results[b.n + "/write"] = { cls: "warn", text: "Pick one of the options first." }; render(); return; }
+            submitKind(b, "write", { source: P.assembleChoice(cp.stub || cp.starter || "", g.body) }, cp);
+          }));
+        } else {
+          var init = cp.stub || cp.starter || "";
+          if (prof.writeMode === "guided") { init = P.guidedSkeleton(init, steps.length ? steps : P.stepsFromStub(init)); kids.push(h("p", { className: "sub", text: "Guided fill-in (difficulty 1): write the code under each step." })); }
+          var ta = field(b, kind, "src", h("textarea", { className: "field codein", rows: "8", spellcheck: "false", autocapitalize: "off", wrap: "off", "data-input": "write",
+            "aria-label": "Your code", value: draft(b, kind, "src", init) }));
+          kids.push(ta, on(h("button", { type: "button", className: "wide", "data-action": "write", text: "Run it" }), "click", function () {
             if (ta.value.trim()) submitKind(b, "write", { source: ta.value }, cp); }));
+        }
       } else {
         var ex = field(b, kind, "text", h("textarea", { className: "field", rows: "4", "data-input": "explain", "aria-label": "Your explanation", value: draft(b, kind, "text") }));
-        kids.push(h("p", { text: cp.prompt || "Explain in your own words why it works." }), ex,
+        kids.push(h("p", { text: cp.prompt || "Explain in your own words why it works." }));
+        if (prof.starters) kids.push(h("div", { className: "starters", "data-starters": "explain" }, P.STARTERS.map(function (t) {
+          return on(h("button", { type: "button", text: t }), "click", function () { ex.value = (ex.value ? ex.value + " " : "") + t; ui.drafts[b.n + "/explain/text"] = ex.value; });
+        })));
+        kids.push(ex,
           on(h("button", { type: "button", className: "wide", "data-action": "explain", text: "Submit and see the points" }), "click", function () {
             if (ex.value.trim()) submitKind(b, "explain", { text: ex.value }, cp); }));
       }
-      if (b.easy && cp.hint) kids.push(h("p", { className: "hint", text: "Hint: " + cp.hint }));
+      if (prof.hint) kids.push(h("p", { className: "hint", "data-hint": kind, text: "Hint: " + (cp.hint || HINTS[kind]) }));
       if (result) {
         kids.push(h("p", { className: "result " + result.cls, "data-result": kind, role: "status", text: result.text }));
         if (result.points && result.points.length) kids.push(h("ul", { className: "rubric" }, result.points.map(function (t) { return h("li", { text: t }); })));
@@ -189,6 +230,11 @@
         else det.appendChild(h("p", { className: "sub", text: "Locked. Earn the previous checkpoint first." }));
         kids.push(det);
       });
+      var prof = P.levelProfile(b.level);
+      if (prof.level < 3 && !earned) {
+        kids.splice(1, 0, h("div", { className: "levelnote", "data-level": prof.level }, [chip("Difficulty " + prof.level + ": " + prof.label, prof.level === 1 ? "bad" : "warn"),
+          prof.breathing ? h("span", { className: "breath", text: "Breathe in for 4, out for 6. Nothing here is timed and nothing is skipped." }) : null]));
+      }
       return tutor(kids, earned ? "earned" : "");
     }
 
@@ -257,6 +303,19 @@
       } else ban.className = "banner hidden";
     }
 
+    function renderLive(chat) {
+      var bar = $("livebar"), v = P.statusView(chat);
+      if (!v) { bar.className = "livebar hidden"; bar.replaceChildren(); return; }
+      bar.className = "livebar " + (v.live ? "live" : "sim");
+      var kids = [h("span", { className: "chip " + v.cls, "data-live": "phase", text: v.text }), h("span", { className: "chip", "data-live": "detail", title: "status_detail from the Devin session", text: v.detail || "no status yet" })];
+      if (v.acu) kids.push(h("span", { className: "chip", "data-live": "acu", text: (v.live ? "ACU " : "Simulated ACU ") + v.acu.used + " of " + v.acu.cap }));
+      kids.push(h("span", { className: "chip", "data-live": "prs", text: v.prs.total ? v.prs.total + " PR" + (v.prs.total === 1 ? "" : "s") + " · CI " + v.prs.passing + " passing, " + v.prs.failing + " failing, " + v.prs.pending + " running" + (v.prs.reviewComments ? " · Devin Review " + v.prs.reviewComments : "") : "no pull requests yet" }));
+      if (v.slow) kids.push(h("span", { className: "chip warn", "data-live": "pace", text: "Slow pace: Devin is held back at difficulty 1" }));
+      if (v.link) kids.push(h("a", { className: "navlink", href: v.link, target: "_blank", rel: "noopener noreferrer", text: "Session link" }));
+      var line = h("div", { className: "livemsg", text: v.last ? "Devin: " + v.last : v.gate.text });
+      bar.replaceChildren.apply(bar, [h("div", { className: "liverow" }, kids), line]);
+    }
+
     function renderGate(chat) {
       var g = $("gate");
       if (!chat) { g.className = "gate hidden"; return; }
@@ -287,7 +346,7 @@
 
     function render() {
       var chat = ctl.active();
-      renderSide(); renderTop(chat); renderWelcome(chat); renderThread(chat); renderGate(chat); renderComposer(chat);
+      renderSide(); renderTop(chat); renderLive(chat); renderWelcome(chat); renderThread(chat); renderGate(chat); renderComposer(chat);
     }
 
     function send(text, opts) {
@@ -325,7 +384,7 @@
   var view;
   var ctl = Ctl.createController({
     storage: store, fetch: root.fetch.bind(root), now: Date.now, schedule: function (fn, ms) { return root.setTimeout(fn, ms); }, cancel: function (h) { root.clearTimeout(h); },
-    hooks: Ctl.lateHooks(root), liveBridge: B.createLiveBridge({ fetch: root.fetch.bind(root) }),
+    hooks: Ctl.lateHooks(root), liveBridge: P.create({ fetch: root.fetch.bind(root) }),
     newId: function () { return "c" + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); },
     onChange: function () { if (view) view.render(); },
   });

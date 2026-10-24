@@ -53,7 +53,7 @@
     var now = o.now || 0;
     return { v: 1, id: o.id, title: titleFrom(o.prompt), prompt: o.prompt, createdAt: now, updatedAt: now,
              source: o.source || "live", course: o.course || null, replayWhy: o.source === "replay" ? (o.replayWhy || "demo") : null,
-             difficulty: o.difficulty || 2, session: null, plan: [], stages: [], thread: [{ id: 0, kind: "user", text: o.prompt, ts: now }],
+             difficulty: o.difficulty || 3, session: null, plan: [], stages: [], thread: [{ id: 0, kind: "user", text: o.prompt, ts: now }],
              seq: 1, seen: {}, prs: {}, continued: [], stopped: false };
   }
 
@@ -91,7 +91,7 @@
     var total = chat.plan.length, item = chat.plan[n - 1] || {};
     var text = "Continue with stage " + n + " of " + total + (item.title ? ": " + item.title : "") +
       ". Keep it small, then stop again and wait for my next message. Do not start stage " + (n + 1) + " yet.";
-    return chat.difficulty <= 1 ? text + " The learner is stressed: make this stage smaller and add comments." : text;
+    return chat.difficulty <= 2 ? text + " The learner is stressed: make this stage smaller and add comments." : text;
   }
 
   function nextEffects(chat) {
@@ -278,7 +278,8 @@
         break;
       case "continue_sent":
         if (c.continued.indexOf(ev.n) < 0) c.continued.push(ev.n);
-        push(c, { kind: "bridge", text: "Bridge told Devin to continue with stage " + ev.n + "." }, now);
+        push(c, { kind: "bridge", text: ev.delayMs > 0 ? "Slower pace (difficulty 1): Devin will be told to continue with stage " + ev.n + " in " + Math.round(ev.delayMs / 1000) + " s."
+                                                      : "Bridge told Devin to continue with stage " + ev.n + "." }, now);
         break;
       case "continue_failed":
         c.continued = c.continued.filter(function (n) { return n !== ev.n; });
@@ -287,10 +288,13 @@
         if (ev.level === c.difficulty) break;
         var lower = ev.level < c.difficulty, prevLevel = c.difficulty;
         c.difficulty = ev.level;
-        push(c, { kind: "bridge", text: lower ? "Stress engine lowered difficulty to " + ev.level + " (was " + prevLevel + "): telling Devin to make the next stage smaller and add comments."
-                                              : "Difficulty back up to " + ev.level + " (was " + prevLevel + "): telling Devin the next stage can be normal size." }, now);
+        // The reason (for example "HR 112 vs baseline 72: switching to easier steps") is shown HERE, on this device. What goes to Devin
+        // is the plain request below: no heart rate ever leaves the page.
+        push(c, { kind: "bridge", text: (ev.reason ? ev.reason + ". " : "Stress engine: ") + "Difficulty " + (lower ? "lowered" : "restored") + " to " + ev.level + " (was " + prevLevel + ")." +
+          (lower ? " Telling Devin to make the next stage smaller and add comments." : " Telling Devin the next stage can be normal size.") }, now);
         if (c.session && !c.stopped && ["working", "waiting", "starting"].indexOf(c.session.phase) >= 0) {
-          effects.push({ type: "send", reason: "adapt", text: lower ? STRESSED_TEXT : RELAXED_TEXT });
+          effects.push({ type: "send", reason: "adapt", level: ev.level,
+                         text: lower ? STRESSED_TEXT + (ev.level <= 1 ? " Go slowly and keep it as short as you can." : "") : RELAXED_TEXT });
         }
         break;
       case "user":

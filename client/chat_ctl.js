@@ -5,19 +5,20 @@
   var K = typeof module !== "undefined" && module.exports ? require("./chat_core.js") : root.ChatCore;
   var B = typeof module !== "undefined" && module.exports ? require("./chat_bridge.js") : root.ChatBridge;
   var R = typeof module !== "undefined" && module.exports ? require("./chat_replay.js") : root.ChatReplay;
+  var P = typeof module !== "undefined" && module.exports ? require("./devin_live.js") : root.DevinLive;
   var CHATS_KEY = "sc_chats", PREFS_KEY = "sc_chat_prefs";
   var TERMINAL = ["finished", "suspended", "limit", "error"];
   var FAIL_LIMIT = 3;
 
   // window.EarnHooks is the small seam the stress engine (client/hr.js) plugs into:
-  //   getDifficulty()  -> 1 (easiest) .. 3, default 2
+  //   getDifficulty()  -> 1 (easiest) .. 3 (normal), default 3
   //   onAdapt(cb)      -> cb({ level, previous }) whenever the engine changes the difficulty
   //   setDifficulty(level, info) -> the engine reports a new level (this notifies every onAdapt listener)
   // installEarnHooks makes a working object when none exists; lateHooks always talks to whatever window.EarnHooks is at
   // the time, so a real engine that loads after this page still takes over.
   function installEarnHooks(host) {
     if (host.EarnHooks) return host.EarnHooks;
-    var level = 2, cbs = [];
+    var level = 3, cbs = [];
     host.EarnHooks = {
       getDifficulty: function () { return level; },
       onAdapt: function (cb) { cbs.push(cb); },
@@ -40,10 +41,12 @@
       bind: bind,
       getDifficulty: function () {
         bind();
-        var r = host && host.EarnHooks, d = r && typeof r.getDifficulty === "function" ? Number(r.getDifficulty()) : 2;
-        return d >= 1 && d <= 3 ? d : 2;
+        var r = host && host.EarnHooks, d = r && typeof r.getDifficulty === "function" ? Number(r.getDifficulty()) : 3;
+        return d >= 1 && d <= 3 ? d : 3;
       },
       onAdapt: function (cb) { cbs.push(cb); bind(); },
+      // the shell tells the engine how each checkpoint went, so repeated misses can lower the difficulty as well as a racing heart
+      reportAttempt: function (passed) { bind(); var r = host && host.EarnHooks; if (r && typeof r.reportAttempt === "function") r.reportAttempt(passed === true); },
     };
   }
 
@@ -99,13 +102,23 @@
         });
       }
       if (eff.type !== "send") return Promise.resolve();
-      var head = eff.reason === "continue" ? dispatch(id, { type: "continue_sent", n: eff.n }) : Promise.resolve();
-      var meta = { reason: eff.reason, n: eff.n };
-      var sending = isLive ? Promise.resolve().then(function () { return live.message(chat.session.id, eff.text, meta); })
-                           : engineFor(chat).then(function (e) { e.message(eff.text, meta); saveReplay(id, e); });
-      return head.then(function () { return sending; }).catch(function (err) {
-        if (eff.reason === "continue") return dispatch(id, { type: "continue_failed", n: eff.n });
-        return notice(id, "Devin did not receive the message (" + (err && err.message) + ").");
+      var delay = eff.reason === "continue" ? P.levelProfile(chat.difficulty).paceMs : 0;
+      var head = eff.reason === "continue" ? dispatch(id, { type: "continue_sent", n: eff.n, delayMs: delay }) : Promise.resolve();
+      var meta = { reason: eff.reason, n: eff.n, slow: delay > 0 };
+      function deliver() {
+        var cur = get(id);
+        if (!cur || cur.stopped) return Promise.resolve();
+        var sending = isLive ? Promise.resolve().then(function () { return live.message(cur.session.id, eff.text, meta); })
+                             : engineFor(cur).then(function (e) { e.message(eff.text, meta); saveReplay(id, e); });
+        return sending.catch(function (err) {
+          if (eff.reason === "continue") return dispatch(id, { type: "continue_failed", n: eff.n });
+          return notice(id, "Devin did not receive the message (" + (err && err.message) + ").");
+        });
+      }
+      // Level 1 slows Devin down: the continue is held back, so the next stage is not built while the learner is under stress.
+      return head.then(function () {
+        if (delay <= 0) return deliver();
+        timers[id + ":pace"] = schedule(function () { delete timers[id + ":pace"]; deliver(); }, delay);
       });
     }
 
@@ -147,7 +160,9 @@
     }
 
     // ---- polling ----
-    function cancelTimer(id) { if (timers[id] !== undefined) { cancel(timers[id]); delete timers[id]; } }
+    function cancelTimer(id) {
+      [id, id + ":pace"].forEach(function (k) { if (timers[k] !== undefined) { cancel(timers[k]); delete timers[k]; } });
+    }
     function schedulePoll(id) {
       cancelTimer(id);
       var c = get(id);
@@ -197,7 +212,10 @@
       var chat = get(id), st = chat && K.stageOf(chat, n);
       if (!chat || !st || !K.canWork(chat, n)) return Promise.reject(new Error("locked: earn the earlier stage first"));
       return B.grade({ fetch: o.fetch, url: K.gradeUrl(chat, st, kind), body: body, learner: K.learnerId(chat) }).then(function (res) {
-        return dispatch(id, { type: "checkpoint", n: n, kind: kind, passed: res.passed === true, progress: res.progress, code: res.code }).then(function () { return res; });
+        return dispatch(id, { type: "checkpoint", n: n, kind: kind, passed: res.passed === true, progress: res.progress, code: res.code }).then(function () {
+          if (kind !== "explain" && typeof hooks.reportAttempt === "function") hooks.reportAttempt(res.passed === true);
+          return res;
+        });
       });
     }
 
@@ -227,9 +245,19 @@
       chats.forEach(function (c) { if (c.session && !c.stopped && TERMINAL.indexOf(c.session.phase) < 0) schedulePoll(c.id); });
     }
 
+    var logAdaptation = o.logAdaptation || function (payload) {
+      if (!o.fetch) return;
+      try {
+        Promise.resolve(o.fetch("/api/learn/adaptations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })).catch(function () {});
+      } catch (e) { /* the dashboard is best effort */ }
+    };
+
     hooks.onAdapt(function (ev) {
       var cur = active();
-      if (cur && cur.session) dispatch(cur.id, { type: "adapt", level: ev.level, previous: ev.previous });
+      if (!cur) return;
+      var event = { level: ev.level, previous: ev.prevLevel !== undefined ? ev.prevLevel : ev.previous, reason: ev.reason };
+      dispatch(cur.id, Object.assign({ type: "adapt" }, event));
+      logAdaptation(P.adaptPayload(event, cur));
     });
 
     return {

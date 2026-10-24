@@ -279,13 +279,13 @@ test("a message typed during a live build goes to Devin with the do-not-skip-ahe
 test("EarnHooks: installed when missing, adopted when a real engine appears later, difficulty clamped", () => {
   const host = {};
   const late = Ctl.lateHooks(host);
-  assert.strictEqual(late.getDifficulty(), 2, "no engine yet: default");
+  assert.strictEqual(late.getDifficulty(), 3, "no engine yet: normal");
   const got = []; late.onAdapt((e) => got.push(e));
   Ctl.installEarnHooks(host);
   late.bind();
   assert.strictEqual(typeof host.EarnHooks.getDifficulty, "function");
   host.EarnHooks.setDifficulty(1, { reason: "hr" });
-  assert.deepStrictEqual(got.map((e) => [e.level, e.previous]), [[1, 2]]);
+  assert.deepStrictEqual(got.map((e) => [e.level, e.previous]), [[1, 3]]);
   assert.strictEqual(late.getDifficulty(), 1);
   let real;
   host.EarnHooks = { getDifficulty: () => 3, onAdapt: (cb) => { real = cb; } };
@@ -294,7 +294,7 @@ test("EarnHooks: installed when missing, adopted when a real engine appears late
   real({ level: 2, previous: 3 });
   assert.strictEqual(got.length, 2);
   host.EarnHooks = { getDifficulty: () => 99, onAdapt() {} };
-  assert.strictEqual(late.getDifficulty(), 2, "nonsense is ignored");
+  assert.strictEqual(late.getDifficulty(), 3, "nonsense is ignored");
   const keep = { EarnHooks: { getDifficulty: () => 1, onAdapt() {} } };
   assert.strictEqual(Ctl.installEarnHooks(keep), keep.EarnHooks, "an existing engine is never replaced");
 });

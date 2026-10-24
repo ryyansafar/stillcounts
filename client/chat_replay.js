@@ -34,10 +34,10 @@
 
     function advance() {
       if (s.phase !== "building") return;
-      var lines = linesFor(views[s.building - 1], s.small), elapsed = now() - s.buildStart;
-      var due = Math.min(lines.length, Math.floor(elapsed / stepMs) + 1);
+      var step = stepMs * (s.slow ? 2 : 1), lines = linesFor(views[s.building - 1], s.small), elapsed = now() - s.buildStart;
+      var due = Math.min(lines.length, Math.floor(elapsed / step) + 1);
       while (s.emitted < due) say(lines[s.emitted++]);
-      if (elapsed >= lines.length * stepMs) finishStage();
+      if (elapsed >= lines.length * step) finishStage();
     }
 
     function beginStage(n) { s.building = n; s.buildStart = now(); s.emitted = 0; s.phase = "building"; }
@@ -76,6 +76,7 @@
       message: function (text, meta) {
         var reason = meta && meta.reason;
         if (s.phase === "stopped" || s.phase === "done" || s.phase === "idle") return;
+        if (meta && meta.slow !== undefined) s.slow = meta.slow === true;
         if (reason === "continue") {
           if (s.phase === "waiting") { say("(simulated) got 'continue', starting stage " + (s.built + 1) + "."); beginStage(s.built + 1); }
         } else if (reason === "adapt") {

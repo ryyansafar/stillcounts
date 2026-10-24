@@ -18,7 +18,9 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from server.devin_bridge import devin_router
 from server.learn_api import learn_router
+from server.results_api import results_router
 from server.race_api import race_router
 from stillcounts.crdt import Op, dedupe, merge, stats
 
@@ -178,7 +180,8 @@ def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
                notifier: Callable[[str, str], None] | None = None,
                join_token: str | None = None,
                learn_grader: Any = None, learn_stages: str | Path | None = None,
-               learn_clock: Callable[[], float] = time.monotonic, race_game: Any = None) -> FastAPI:
+               learn_clock: Callable[[], float] = time.monotonic, race_game: Any = None,
+               devin_client: Any = None, github_info: Any = None) -> FastAPI:
     app = FastAPI(title="Still Counts base")
     token = join_token if join_token is not None else (os.environ.get("STILLCOUNTS_TOKEN") or None)
 
@@ -197,6 +200,9 @@ def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
         return {"token_required": bool(token)}
 
     app.include_router(learn_router(Path(store_path).parent / "learn_progress.json", learn_stages, learn_grader, learn_clock))
+    data_dir = Path(store_path).parent
+    app.include_router(results_router(data_dir / "learn_progress.json", data_dir / "learn_adaptations.jsonl"))
+    app.include_router(devin_router(data_dir, devin_client, github=github_info))
     store = LogStore(Path(store_path))
     names_path = Path(store_path).with_suffix(Path(store_path).suffix + ".names")
     try:

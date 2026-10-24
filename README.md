@@ -14,8 +14,9 @@ The ledger is a set of operations, each with a unique id. The state is a pure fu
 `oracle/` replays the same operations in hundreds of random orders, with duplicates, and fails if any result differs. It also catches deliberately broken merges. The agents that attack the product may run the oracle but are never allowed to edit it (`.github/CODEOWNERS`).
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install pytest hypothesis fastapi uvicorn requests httpx jsonschema
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m pytest -q
+node --test client/test/
 .venv/bin/python -m oracle.oracle --seed 0xA3 --ops 240 --perms 200
 .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port 8000
 ```
@@ -26,6 +27,16 @@ python3 -m venv .venv && .venv/bin/pip install pytest hypothesis fastapi uvicorn
 ```bash
 .venv/bin/python -m learn.build_stages
 ```
+
+Open `/static/learn.html` (the Learn link on the phone app and the board). Predict is graded in the browser with the same merge so it works with no signal; find the bug, write and explain go through `/api/learn`, which keeps the real merge code locked until predict, find the bug and write are earned.
+
+## Referee Race
+Open `/race` on a phone (the Race link on the phone app, or the QR code on the board's Race tab). Every phone gets the same operations in its own shuffled order with duplicates and races to predict the merged stock. The answer key is the real merge, so the round shows that order does not matter. The host starts rounds from the board.
+
+## Chaos simulation
+`chaos/` is a deterministic simulation of the 24 scout scenarios (dropped, duplicated and reordered requests, clock jumps, crashes, restores, two tabs on one phone). Run it with `.venv/bin/python -m chaos.run --seeds 0:500`; the full per-run output goes to `data/chaos_results.json` (git-ignored) and `data/chaos_summary.json` is a small committed summary of a real 500-seed run.
+
+It found real product bugs: 8 of the 24 scenarios fail on some seeds (3506 of 12500 runs in the committed summary). Each one is pinned by `tests/test_regress_*.py`, marked as an expected failure until the product is fixed, so the suite stays green without hiding them. These are open bugs, not fixed ones.
 
 ## Devin
 Devin sessions propose hostile network scenarios (partitions, reordering, duplicates, clock skew), build a chaos harness, run it against the oracle and open pull requests for anything they break. The sessions and pull requests are listed in `docs/devin.md`. A human presses merge.

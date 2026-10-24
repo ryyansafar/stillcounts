@@ -13,3 +13,5 @@ data/*.jsonl
 data/chaos_results.json
 data/learn_progress.json
 data/learn_progress.json.tmp
+.sessions*.json
+data/devin_counts.json

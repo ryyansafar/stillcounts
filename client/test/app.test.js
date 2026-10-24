@@ -100,6 +100,8 @@ test("tap buttons are not torn down by a sync tick when nothing changed", async 
   assert.ok(plus.isConnected(), "the +1 button a finger is on was replaced mid-tap");
 });
 
+// Regression: itemId() once stripped every non-ASCII letter, so any two non-Latin names collapsed into one row.
+// The strings are just two different non-Latin words; the test is about the slug, not about any language.
 test("distinct non-Latin item names stay distinct items", async () => {
   const tab = boot(makeStorage(), { online: false });
   await settle();

@@ -22,6 +22,10 @@ def build() -> list[dict]:
         case("unicode-text", [o(1, "a", 1, "note", "x", "അടൂർ ✓"), o(2, "b", 2, "create", "x", "Camp 🏕")]),
         case("restore-after-delete", [o(1, "a", 1, "delete", "x", True), o(2, "b", 2, "delete", "x", False)]),
         case("oversell", [o(1, "a", 1, "adjust", "b", 10), o(1, "b", 2, "adjust", "b", -7), o(2, "c", 3, "adjust", "b", -6)]),
+        case("same-id-different-value", [o(1, "a", 1, "adjust", "rice", 5), Op("a:1", "a", 1, "adjust", "rice", -30)]),
+        case("same-id-different-value-reversed", [Op("a:1", "a", 1, "adjust", "rice", -30), o(1, "a", 1, "adjust", "rice", 5)]),
+        case("same-id-different-lamport", [o(1, "a", 1, "note", "x", "early"), Op("a:1", "a", 9, "note", "x", "late")]),
+        case("same-id-different-lamport-reversed", [Op("a:1", "a", 9, "note", "x", "late"), o(1, "a", 1, "note", "x", "early")]),
         case("empty", []),
     ]
     return cases

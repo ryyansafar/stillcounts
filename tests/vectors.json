@@ -7821,6 +7821,146 @@
   }
  },
  {
+  "name": "same-id-different-value",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": 5
+   },
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": -30
+   }
+  ],
+  "state": {
+   "rice": {
+    "alive": true,
+    "name": "rice",
+    "note": "",
+    "qty": 5
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 1,
+   "ops": 1,
+   "oversold": []
+  }
+ },
+ {
+  "name": "same-id-different-value-reversed",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": -30
+   },
+   {
+    "id": "a:1",
+    "item": "rice",
+    "kind": "adjust",
+    "lamport": 1,
+    "replica": "a",
+    "value": 5
+   }
+  ],
+  "state": {
+   "rice": {
+    "alive": true,
+    "name": "rice",
+    "note": "",
+    "qty": 5
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 1,
+   "ops": 1,
+   "oversold": []
+  }
+ },
+ {
+  "name": "same-id-different-lamport",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "x",
+    "kind": "note",
+    "lamport": 1,
+    "replica": "a",
+    "value": "early"
+   },
+   {
+    "id": "a:1",
+    "item": "x",
+    "kind": "note",
+    "lamport": 9,
+    "replica": "a",
+    "value": "late"
+   }
+  ],
+  "state": {
+   "x": {
+    "alive": true,
+    "name": "x",
+    "note": "late",
+    "qty": 0
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 1,
+   "ops": 1,
+   "oversold": []
+  }
+ },
+ {
+  "name": "same-id-different-lamport-reversed",
+  "ops": [
+   {
+    "id": "a:1",
+    "item": "x",
+    "kind": "note",
+    "lamport": 9,
+    "replica": "a",
+    "value": "late"
+   },
+   {
+    "id": "a:1",
+    "item": "x",
+    "kind": "note",
+    "lamport": 1,
+    "replica": "a",
+    "value": "early"
+   }
+  ],
+  "state": {
+   "x": {
+    "alive": true,
+    "name": "x",
+    "note": "late",
+    "qty": 0
+   }
+  },
+  "stats": {
+   "conflicts": 0,
+   "items": 1,
+   "ops": 1,
+   "oversold": []
+  }
+ },
+ {
   "name": "empty",
   "ops": [],
   "state": {},

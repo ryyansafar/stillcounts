@@ -74,12 +74,14 @@ def _truth(c, seed):
 
 
 def test_fastest_correct_answer_scores_most_and_wrong_scores_nothing(tmp_path):
-    c = client(tmp_path)
+    now = [100.0]                                   # a fake clock: the real one made the ranks depend on machine speed
+    c = TestClient(create_app(tmp_path / "ops.jsonl", race_game=RaceGame(clock=lambda: now[0])))
     c.post("/api/race/start", json={"seed": 21})
     truth = _truth(c, 21)
     wrong = {k: (v + 1 if isinstance(v, int) else 0) for k, v in truth.items()}
     for p in ("slow", "fast", "bad"):
         c.get("/api/race/round", params={"player": p})
+    now[0] += 60.0
     submit = lambda p, ans, ms: c.post("/api/race/answer", json={"player": p, "name": p.title(), "round": 1,
                                                                   "answers": ans, "merged": truth, "elapsed_ms": ms}).json()
     assert submit("slow", truth, 9000)["correct"] is True

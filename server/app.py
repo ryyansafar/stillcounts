@@ -168,7 +168,7 @@ def _referee_score() -> dict:
 def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
                notifier: Callable[[str, str], None] | None = None,
                learn_grader: Any = None, learn_stages: str | Path | None = None,
-               learn_clock: Callable[[], float] = time.monotonic) -> FastAPI:
+               learn_clock: Callable[[], float] = time.monotonic, race_game: Any = None) -> FastAPI:
     app = FastAPI(title="Still Counts base")
     app.include_router(learn_router(Path(store_path).parent / "learn_progress.json", learn_stages, learn_grader, learn_clock))
     store = LogStore(Path(store_path))
@@ -332,7 +332,7 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
         return FileResponse(client_dir / "sw.js", media_type="application/javascript",
                             headers={"Service-Worker-Allowed": "/", "Cache-Control": "no-cache"})
 
-    app.include_router(race_router(client_dir))
+    app.include_router(race_router(client_dir, race_game))
     app.mount("/static", StaticFiles(directory=client_dir), name="static")
     return app
 

@@ -52,20 +52,20 @@ def test_state_and_stats_report_conflicts_and_oversells(tmp_path):
     assert s["stats"]["oversold"] == ["blankets"] and s["stats"]["conflicts"] == 1
 
 
-def test_invalid_ops_are_rejected_and_nothing_is_stored(tmp_path):
+def test_invalid_ops_are_rejected_individually_and_valid_ones_kept(tmp_path):
     c, _ = make(tmp_path)
     bad = op(1, kind="explode")
     r = c.post("/api/sync", json={"replica": "ph-a", "cursor": 0, "ops": [op(2), bad]})
-    assert r.status_code == 422
-    assert c.get("/api/state").json()["stats"]["ops"] == 0
+    assert r.status_code == 200 and r.json()["accepted"] == 1 and len(r.json()["rejected"]) == 1
+    assert c.get("/api/state").json()["stats"]["ops"] == 1
 
 
 def test_limits_are_enforced(tmp_path):
     c, _ = make(tmp_path)
     too_many = [op(i) for i in range(501)]
     assert c.post("/api/sync", json={"replica": "ph-a", "cursor": 0, "ops": too_many}).status_code == 422
-    assert c.post("/api/sync", json={"replica": "ph-a", "cursor": 0, "ops": [op(1, item="x" * 300)]}).status_code == 422
-    assert c.post("/api/sync", json={"replica": "ph-a", "cursor": 0, "ops": [op(1, kind="note", item="rice", value="y" * 500)]}).status_code == 422
+    assert c.post("/api/sync", json={"replica": "ph-a", "cursor": 0, "ops": [op(1, item="x" * 300)]}).json()["rejected"]
+    assert c.post("/api/sync", json={"replica": "ph-a", "cursor": 0, "ops": [op(1, kind="note", item="rice", value="y" * 500)]}).json()["rejected"]
 
 
 def test_log_survives_a_restart(tmp_path):
@@ -105,7 +105,7 @@ def test_service_worker_is_served_from_the_root_scope(tmp_path):
     c, _ = make(tmp_path)
     r = c.get("/sw.js")
     assert r.status_code == 200 and r.headers["service-worker-allowed"] == "/"
-    assert "stillcounts-v1" in r.text
+    assert "stillcounts-v2" in r.text
     assert c.get("/static/crdt.js").status_code == 200
 
 

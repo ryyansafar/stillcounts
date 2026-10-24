@@ -1,5 +1,5 @@
 // Caches the app shell so the ledger opens and works with no network at all.
-var CACHE = "stillcounts-v1";
+var CACHE = "stillcounts-v2";
 var SHELL = ["/", "/static/crdt.js", "/static/app.js", "/static/style.css", "/static/manifest.webmanifest"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));

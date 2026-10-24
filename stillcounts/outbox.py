@@ -42,5 +42,6 @@ class Outbox:
             except Exception:
                 break
             sent += 1
-        self._write(items[sent:])
-        return sent, len(items) - sent
+        current = self._read()          # re-read: anything enqueued during the sends must be kept
+        self._write(current[sent:])
+        return sent, len(current) - sent

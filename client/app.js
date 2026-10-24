@@ -13,22 +13,25 @@
 
   var replica = load("sc_replica", null);
   if (!replica) { replica = "ph-" + Math.random().toString(36).slice(2, 7); save("sc_replica", replica); }
-  var ops = load("sc_ops", []);
-  var synced = {}; load("sc_synced", []).forEach(function (id) { synced[id] = true; });
-  var cursor = load("sc_cursor", 0);
-  var counter = load("sc_counter", 0);
-  var clock = new C.Clock(replica, load("sc_lamport", 0));
+  // Everything lives in ONE record written in one call, so a kill between two writes can never leave the log and the cursor disagreeing.
+  var saved = load("sc_state", {});
+  var ops = saved.ops || [];
+  var synced = {}; (saved.synced || []).forEach(function (id) { synced[id] = true; });
+  var cursor = saved.cursor || 0;
+  var epoch = saved.epoch || null;
+  var rejected = saved.rejected || 0;
+  var clock = new C.Clock(replica, saved.lamport || 0);
   var known = {}; ops.forEach(function (o) { known[o.id] = true; });
   var online = false, busy = false, lastSync = null;
 
   function persist() {
-    save("sc_ops", ops); save("sc_synced", Object.keys(synced)); save("sc_cursor", cursor);
-    save("sc_counter", counter); save("sc_lamport", clock.time);
+    save("sc_state", { ops: ops, synced: Object.keys(synced), cursor: cursor, epoch: epoch, rejected: rejected, lamport: clock.time });
   }
 
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
   function addOp(kind, item, value) {
-    counter += 1;
-    var op = { id: replica + ":" + counter, replica: replica, lamport: clock.tick(), kind: kind, item: item, value: value };
+    var op = { id: replica + ":" + uid(), replica: replica, lamport: clock.tick(), kind: kind, item: item, value: value };
     ops.push(op); known[op.id] = true; persist(); render(); sync();
   }
 
@@ -45,7 +48,7 @@
     if (busy) return; busy = true;
     var unsent = ops.filter(function (o) { return !synced[o.id]; });
     fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" },
-                         body: JSON.stringify({ replica: replica, cursor: cursor, ops: unsent.slice(0, 500) }) })
+                         body: JSON.stringify({ replica: replica, cursor: cursor, epoch: epoch, ops: unsent.slice(0, 500) }) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (body) {
         unsent.slice(0, 500).forEach(function (o) { synced[o.id] = true; });
@@ -53,7 +56,8 @@
           if (!known[o.id]) { ops.push(o); known[o.id] = true; }
           synced[o.id] = true; clock.observe(o.lamport);
         });
-        cursor = body.cursor; online = true; lastSync = new Date(); persist();
+        (body.rejected || []).forEach(function (r) { if (r.id) { synced[r.id] = true; rejected += 1; } });
+        cursor = body.cursor; epoch = body.epoch; online = true; lastSync = new Date(); persist();
       })
       .catch(function () { online = false; })
       .then(function () { busy = false; render(); });
@@ -88,7 +92,8 @@
     });
     document.getElementById("who").textContent = "This phone: " + replica;
     document.getElementById("foot").textContent = stats.ops + " operations · " + stats.conflicts + " conflicts merged" +
-      (lastSync ? " · last sync " + lastSync.toLocaleTimeString() : " · not synced yet");
+      (lastSync ? " · last sync " + lastSync.toLocaleTimeString() : " · not synced yet") +
+      (rejected ? " · " + rejected + " rejected by the server" : "");
     setStatus();
   }
 

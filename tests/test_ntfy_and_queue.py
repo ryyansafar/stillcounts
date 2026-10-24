@@ -120,3 +120,14 @@ def test_outbox_ignores_a_corrupt_line(tmp_path):
     p = tmp_path / "o.jsonl"
     p.write_text('{"ok": 1}\nnot json\n')
     assert Outbox(p).pending() == 1
+
+
+def test_outbox_keeps_an_item_enqueued_while_a_flush_is_in_flight(tmp_path):
+    box = Outbox(tmp_path / "o.jsonl")
+    box.enqueue({"n": 1})
+
+    def slow_send(item):
+        box.enqueue({"n": 99})          # a new message arrives while the send is in progress
+
+    assert box.flush(slow_send) == (1, 0)
+    assert box.pending() == 1           # the new one must survive

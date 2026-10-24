@@ -46,12 +46,14 @@ def _limits(seconds: int):
 def run_worker(req: dict, repo: Path, timeout: float, guard: bool = True) -> dict:
     """Run learn/course_runner.py on req. The result is a dict; a timeout or a memory kill is a failed result."""
     repo = Path(repo).resolve()
-    payload = json.dumps({**req, "repo": str(repo), "guard": ALLOCATION_GUARD if guard else 0})
-    env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": os.pathsep.join([str(ROOT), str(repo)]),
-           "PYTHONDONTWRITEBYTECODE": "1", "TMPDIR": os.environ.get("TMPDIR") or tempfile.gettempdir(),
-           "HOME": tempfile.gettempdir()}
-    stdout, _, code, status = grader._run_worker([sys.executable, "-m", "learn.course_runner"], payload, timeout, env,
-                                                 _limits(int(timeout) + 2) if os.name == "posix" else None, RSS_LIMIT)
+    with tempfile.TemporaryDirectory(prefix="course-run-") as scratch:       # the app under test writes its data here
+        request = Path(scratch) / "request.json"                              # big requests go by file: a full stdin pipe stalls the poll loop
+        request.write_text(json.dumps({**req, "repo": str(repo), "guard": ALLOCATION_GUARD if guard else 0}), encoding="utf-8")
+        payload = json.dumps({"file": str(request)})
+        env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": os.pathsep.join([str(ROOT), str(repo)]),
+               "PYTHONDONTWRITEBYTECODE": "1", "TMPDIR": scratch, "HOME": scratch, "STILLCOUNTS_DATA_DIR": scratch}
+        stdout, _, code, status = grader._run_worker([sys.executable, "-m", "learn.course_runner"], payload, timeout, env,
+                                                     _limits(int(timeout) + 2) if os.name == "posix" else None, RSS_LIMIT)
     if status == "timeout":
         return {"passed": False, "error": f"timed out after {timeout:g} s", "failed": []}
     if status == "memory":

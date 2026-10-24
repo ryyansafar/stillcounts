@@ -121,6 +121,9 @@ def run_tests(req: dict) -> dict:
 
 def main() -> None:
     req = json.loads(sys.stdin.read())
+    if "file" in req:
+        with open(req["file"], encoding="utf-8") as fh:
+            req = json.load(fh)
     out = sys.stdout
     sys.stdout = sys.stderr                      # nothing the code under test prints may corrupt the result line
 

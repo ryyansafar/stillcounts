@@ -1,4 +1,4 @@
-"""Bug: after the server is restored from an older backup, ops newer than the backup are lost.
+"""Fixed (was found by the chaos harness): after the server is restored from an older backup, ops newer than the backup are lost.
 
 The restore brings back the old epoch file together with the old log, so phones see an unchanged epoch and keep
 their (now too large) cursor; and their ops written after the backup are marked `synced`, so they are never sent
@@ -8,10 +8,8 @@ import pytest
 from chaos.scenarios import run_one
 from chaos.sim import Simulation
 
-pytestmark = pytest.mark.xfail(strict=True, reason="known product bug found by the chaos harness; remove this mark when the product is fixed")
-
 SCENARIO = "net_restore_old_backup"
-FAILING_SEEDS = [0, 1, 2]   # first failing seeds of `python -m chaos.run --scenario net_restore_old_backup`
+FAILING_SEEDS = [0, 1, 2]   # seeds that failed before the fix, from `python -m chaos.run --scenario net_restore_old_backup`
 
 
 @pytest.mark.parametrize("seed", FAILING_SEEDS)

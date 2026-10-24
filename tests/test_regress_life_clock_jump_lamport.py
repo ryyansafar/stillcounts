@@ -1,4 +1,4 @@
-"""Bug: a Lamport jump (phone clock in 2099, or an older client that seeded Lamport from Date.now()) makes the
+"""Fixed (was found by the chaos harness): a Lamport jump (phone clock in 2099, or an older client that seeded Lamport from Date.now()) makes the
 server refuse all further ops of that phone as `lamport skew too large`; the phone never repairs its clock, so the ops
 stay on that phone only."""
 import pytest
@@ -6,10 +6,8 @@ import pytest
 from chaos.scenarios import run_one
 from chaos.sim import Simulation
 
-pytestmark = pytest.mark.xfail(strict=True, reason="known product bug found by the chaos harness; remove this mark when the product is fixed")
-
 SCENARIO = "life_clock_jump_lamport"
-FAILING_SEEDS = [0, 1, 2]   # first failing seeds of `python -m chaos.run --scenario life_clock_jump_lamport`
+FAILING_SEEDS = [0, 1, 2]   # seeds that failed before the fix, from `python -m chaos.run --scenario life_clock_jump_lamport`
 
 
 @pytest.mark.parametrize("seed", FAILING_SEEDS)

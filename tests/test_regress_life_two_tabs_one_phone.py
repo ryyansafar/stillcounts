@@ -1,4 +1,4 @@
-"""Bug: two tabs on one phone overwrite each other's `sc_state`.
+"""Fixed (was found by the chaos harness): two tabs on one phone overwrite each other's `sc_state`.
 
 Both tabs share localStorage. Each keeps its own in-memory op list and persists the whole list, so while offline
 the last tab to write wins and the other tab's ops disappear from storage; once that tab is closed they are gone."""
@@ -7,10 +7,8 @@ import pytest
 from chaos.scenarios import run_one
 from chaos.sim import Simulation
 
-pytestmark = pytest.mark.xfail(strict=True, reason="known product bug found by the chaos harness; remove this mark when the product is fixed")
-
 SCENARIO = "life_two_tabs_one_phone"
-FAILING_SEEDS = [0, 2, 3]   # first failing seeds of `python -m chaos.run --scenario life_two_tabs_one_phone`
+FAILING_SEEDS = [0, 2, 3]   # seeds that failed before the fix, from `python -m chaos.run --scenario life_two_tabs_one_phone`
 
 
 @pytest.mark.parametrize("seed", FAILING_SEEDS)

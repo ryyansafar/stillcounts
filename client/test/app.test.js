@@ -125,3 +125,48 @@ test("two offline tabs of the same phone never erase each other's queued taps", 
   assert.strictEqual(qty, "5");
   assert.match(reloaded.doc.getElementById("status").textContent, /5 queued/);
 });
+
+test("names typed in different Unicode forms are one item, and symbol-only names still get distinct ids", async () => {
+  const tab = boot(makeStorage(), { online: false });
+  await settle();
+  const input = tab.doc.getElementById("newitem"), add = tab.doc.getElementById("addbtn");
+  input.value = "café"; add.click();            // precomposed
+  input.value = "café"; add.click();           // e + combining accent: the same word
+  input.value = "!!!"; add.click();
+  input.value = "???"; add.click();
+  const names = cardNames(tab.doc);
+  assert.strictEqual(names.filter((n) => n.normalize("NFC") === "café").length, 1, names.join(","));
+  assert.ok(names.includes("!!!") && names.includes("???"), names.join(","));
+});
+
+test("when the base says its log changed (reset), the phone offers back every op the base no longer has", async () => {
+  const storage = makeStorage();
+  const net = { online: true, reply: () => ({ ops: [], rejected: [], cursor: 0, epoch: "e1", reset: false, max_lamport: 0 }) };
+  const tab = boot(storage, net);
+  await settle();
+  for (let i = 0; i < 3; i++) button(tab.doc, "Blankets +1").click();
+  await settle();
+  tab.tick(); await settle();
+  // The base lost everything and says so. Its new log is empty, so all three ops must go out again.
+  net.reply = () => ({ ops: [], rejected: [], cursor: 0, epoch: "e2", reset: true, max_lamport: 0 });
+  tab.tick(); await settle(); await settle();
+  assert.match(tab.doc.getElementById("status").textContent, /3 queued|syncing · 3/);
+});
+
+test("an op whose Lamport time the base refuses is re-stamped and sent again, not dropped", async () => {
+  const storage = makeStorage();
+  const net = { online: false, reply: () => ({}) };
+  const tab = boot(storage, net);
+  await settle();
+  button(tab.doc, "Blankets +1").click();
+  await settle();
+  net.online = true;
+  const id = JSON.parse(storage.api({ win: null }).getItem("sc_state")).ops[0].id;
+  net.reply = () => ({ ops: [], rejected: [{ id, reason: "lamport skew too large (more than 100000 ahead of the log)" }],
+                       cursor: 0, epoch: "e", reset: false, max_lamport: 40 });
+  tab.tick(); await settle(); await settle();
+  const rec = JSON.parse(storage.api({ win: null }).getItem("sc_state"));
+  assert.strictEqual(rec.ops[0].lamport, 41);
+  assert.ok(!rec.synced.includes(id), "the re-stamped op must stay queued");
+  assert.strictEqual(rec.lamport, 41);
+});

@@ -286,7 +286,7 @@ class Device:
     def now_ms(self) -> int:
         return WALL_EPOCH_MS + self.sim.now + self.skew_ms
 
-    def set_item(self, key: str, text: "str | Lazy") -> None:
+    def set_item(self, key: str, text: "str | Lazy", writer: "Phone | None" = None) -> None:
         if self.kill_on_save:
             self.kill_on_save = False
             raise TabKilled(f"{self.name} killed while writing {key}")
@@ -295,6 +295,9 @@ class Device:
             if used + len(key) + len(text_of(text)) > self.quota:
                 raise QuotaExceeded(key)
         self.storage[key] = text
+        for tab in list(self.tabs):                      # the `storage` event fires in every OTHER tab of this origin
+            if tab is not writer and tab.alive and key == "sc_state":
+                tab.on_storage()
 
     @property
     def tab(self) -> "Phone | None":
@@ -347,11 +350,13 @@ class Phone:
         except (KeyError, ValueError):
             return fallback
 
-    def save(self, key: str, value: Any) -> None:
+    def save(self, key: str, value: Any) -> bool:
         try:
-            self.device.set_item(key, js_dumps(value) if self.device.quota is not None else Lazy(value))
+            self.device.set_item(key, js_dumps(value) if self.device.quota is not None else Lazy(value), self)
+            return True
         except QuotaExceeded:
-            self.sim.note(f"{self.name}: localStorage quota exceeded writing {key}")   # app.js keeps running
+            self.sim.note(f"{self.name}: localStorage quota exceeded writing {key}")
+            return False
 
     def boot(self) -> None:
         self.replica = self.load("sc_replica", None)
@@ -363,6 +368,8 @@ class Phone:
         self.synced: dict[str, bool] = {i: True for i in saved.get("synced") or []}
         self.cursor = saved.get("cursor") or 0
         self.epoch = saved.get("epoch") or None
+        self.anchor = saved.get("anchor") or None
+        self.storage_full = False
         self.rejected = saved.get("rejected") or 0
         self.clock = saved.get("lamport") or 0
         self.known = {o["id"]: True for o in self.ops}
@@ -384,14 +391,43 @@ class Phone:
         if isinstance(remote, (int, float)) and not isinstance(remote, bool):
             self.clock = max(self.clock, remote)
 
+    def absorb(self, stored: Any) -> bool:
+        """app.js absorb(): fold in whatever another tab of this phone wrote to the shared sc_state record."""
+        if not isinstance(stored, dict) or "ops" not in stored:
+            return False
+        added = False
+        marks = set(stored.get("synced") or [])
+        for o in stored.get("ops") or []:
+            if not self.known.get(o["id"]):
+                self.ops.append(o)
+                self.known[o["id"]] = True
+                added = True
+                if o["id"] in marks:
+                    self.synced[o["id"]] = True
+        self.observe(stored.get("lamport") or 0)
+        self.rejected = max(self.rejected, stored.get("rejected") or 0)
+        return added
+
+    def on_storage(self) -> None:
+        self.absorb(self.load("sc_state", None))
+
     def persist(self) -> None:
-        self.save("sc_state", {"ops": self.ops, "synced": list(self.synced), "cursor": self.cursor,
-                               "epoch": self.epoch, "rejected": self.rejected, "lamport": self.clock})
+        self.absorb(self.load("sc_state", None))
+        rec = {"ops": self.ops, "synced": list(self.synced), "cursor": self.cursor, "epoch": self.epoch,
+               "anchor": self.anchor, "rejected": self.rejected, "lamport": self.clock}
+        if self.save("sc_state", rec):
+            self.storage_full = False
+            return
+        # Storage is full: keep only the unsent ops on disk and forget the cursor (app.js persist()).
+        unsent = [o for o in self.ops if not self.synced.get(o["id"])]
+        self.storage_full = not self.save("sc_state", {"ops": unsent, "synced": [], "cursor": 0, "epoch": None,
+                                                       "anchor": None, "rejected": self.rejected, "lamport": self.clock})
 
     def uid(self) -> str:
         return b36(self.device.now_ms()) + "".join(self.sim.rng.choice(B36) for _ in range(6))
 
     def add_op(self, kind: str, item: str, value: Any, **override: Any) -> dict:
+        self.absorb(self.load("sc_state", None))
         op = {"id": self.replica + ":" + self.uid(), "replica": self.replica, "lamport": self.tick(),
               "kind": kind, "item": item, "value": value}
         op.update(override)
@@ -413,9 +449,22 @@ class Phone:
             return
         self.busy = True
         batch = self.unsent()[:BATCH]
-        body = js_dumps({"replica": self.replica, "cursor": self.cursor, "epoch": self.epoch, "ops": batch})
+        body = js_dumps({"replica": self.replica, "cursor": self.cursor, "epoch": self.epoch, "anchor": self.anchor,
+                         "ops": batch})
         self.sim.net.request(self.name, "POST", "/api/sync", body.encode(),
                              lambda status, data: self.sim.on_device(self.device, lambda: self._reply(batch, status, data), self))
+
+    def restamp(self, r: dict, newest: Any) -> bool:
+        """app.js restamp(): an op whose Lamport time the base refused gets a new one after everything the base holds."""
+        if not r.get("id") or not isinstance(newest, int) or not str(r.get("reason") or "").startswith("lamport"):
+            return False
+        for o in self.ops:
+            if o["id"] == r["id"]:
+                o["lamport"] = newest + 1
+                self.clock = newest + 1
+                self.sim.supersede(o["id"], o)       # the volunteer's tap is unchanged; only its Lamport time moved
+                return True
+        return False
 
     def _reply(self, batch: list[dict], status: int | None, data: bytes) -> None:
         if not self.alive:
@@ -424,8 +473,20 @@ class Phone:
             if status is None or not 200 <= status < 300:
                 raise ConnectionError(f"HTTP {status}")
             body = js_loads(data)
+            if body.get("reset"):
+                self.synced = {}
+            again: set[str] = set()
+            newest = body.get("max_lamport")
+            for r in body.get("rejected") or []:
+                if self.restamp(r, newest):
+                    again.add(r["id"])
+                    newest += 1
+                elif r.get("id"):
+                    self.rejected += 1
+                    self.sim.server_rejected(self.device, r)
             for o in batch:
-                self.synced[o["id"]] = True
+                if o["id"] not in again:
+                    self.synced[o["id"]] = True
             for o in body["ops"]:
                 if not self.known.get(o["id"]):
                     self.ops.append(o)
@@ -433,10 +494,12 @@ class Phone:
                 self.synced[o["id"]] = True
                 self.observe(o["lamport"])
             for r in body.get("rejected") or []:
-                if r.get("id"):
+                if r.get("id") and r["id"] not in again:
                     self.synced[r["id"]] = True
-                    self.rejected += 1
-                    self.sim.server_rejected(self.device, r)
+            if body["ops"]:
+                self.anchor = body["ops"][-1]["id"]
+            elif body["cursor"] == 0:
+                self.anchor = None
             self.cursor = body["cursor"]
             self.epoch = body.get("epoch")
             self.online = True

@@ -81,6 +81,7 @@ class SyncIn(BaseModel):
     replica: str = Field(min_length=1, max_length=MAX_ID)
     cursor: int = Field(ge=0, default=0)
     epoch: str | None = Field(default=None, max_length=64)
+    anchor: str | None = Field(default=None, max_length=MAX_ID)   # id of the log entry just before `cursor`
     name: str | None = Field(default=None, max_length=200)
     ops: list[Any] = Field(default_factory=list, max_length=MAX_OPS_PER_SYNC)
 
@@ -225,12 +226,19 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
                     accepted.append(op)
                     seen_max = max(seen_max, op.lamport)
             store.append_locked(accepted)
-            fresh_log = body.epoch in (None, store.epoch) and body.cursor <= len(store.ops)
+            # A phone's cursor is only meaningful if the log is still the log it read: same epoch, long enough, and the
+            # entry at its cursor is the one it remembers. Anything else (lines dropped at restart, a restored backup,
+            # a wiped disk) means the phone must start over AND re-offer what it holds: `reset` tells it to.
+            epoch_ok = body.epoch in (None, store.epoch)
+            anchor_ok = body.cursor == 0 or (body.cursor <= len(store.ops) and
+                                              (body.anchor is None or store.ops[body.cursor - 1].id == body.anchor))
+            fresh_log = epoch_ok and anchor_ok
             start = body.cursor if fresh_log else 0
             out = [_to_dict(o) for o in store.ops[start:]]
-            cursor, epoch = len(store.ops), store.epoch
+            cursor, epoch, newest = len(store.ops), store.epoch, store.max_lamport
         check_oversell()
-        return {"accepted": len(accepted), "rejected": rejected, "cursor": cursor, "epoch": epoch, "ops": out}
+        return {"accepted": len(accepted), "rejected": rejected, "cursor": cursor, "epoch": epoch, "ops": out,
+                "reset": not fresh_log, "max_lamport": newest}
 
     @app.get("/api/state")
     def state() -> dict:

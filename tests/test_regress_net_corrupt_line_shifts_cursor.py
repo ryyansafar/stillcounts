@@ -1,4 +1,4 @@
-"""Bug: a log line lost on server restart is never re-uploaded.
+"""Fixed (was found by the chaos harness): a log line lost on server restart is never re-uploaded.
 
 When `LogStore` drops an unreadable line at restart (disk fault, partial write of an older line), that op vanishes
 from the server. Every phone already marked it `synced`, the epoch did not change, so no phone sends it again and
@@ -8,10 +8,8 @@ import pytest
 from chaos.scenarios import run_one
 from chaos.sim import Simulation
 
-pytestmark = pytest.mark.xfail(strict=True, reason="known product bug found by the chaos harness; remove this mark when the product is fixed")
-
 SCENARIO = "net_corrupt_line_shifts_cursor"
-FAILING_SEEDS = [0, 1, 2]   # first failing seeds of `python -m chaos.run --scenario net_corrupt_line_shifts_cursor`
+FAILING_SEEDS = [0, 1, 2]   # seeds that failed before the fix, from `python -m chaos.run --scenario net_corrupt_line_shifts_cursor`
 
 
 @pytest.mark.parametrize("seed", FAILING_SEEDS)

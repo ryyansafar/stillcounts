@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/chat.css">
+<title>Still Counts · Earn the Code</title>
+</head>
+<body class="chatpage">
+<div id="app" class="shell">
+  <aside id="side" class="side" aria-label="Chats">
+    <div class="brand"><img src="/static/icons/logo.svg" alt="" width="28" height="28"><span>Still Counts</span></div>
+    <button id="newchat" type="button" class="primary newchat">+ New chat</button>
+    <div id="chatlist" class="chatlist" role="list"></div>
+    <label class="toggle"><input id="offline" type="checkbox"><span>Offline replay<small>Never call Devin. A simulated build, labelled as such.</small></span></label>
+    <nav class="pages" aria-label="Other pages">
+      <a class="navlink" href="/ledger">Ledger</a><a class="navlink" href="/board">Board</a>
+      <a class="navlink" href="/static/learn.html">Learn</a><a class="navlink" href="/race">Race</a>
+    </nav>
+    <div id="socials" class="socials" aria-label="Links and support"></div>
+  </aside>
+  <div id="scrim" class="scrim"></div>
+  <section class="mainpane">
+    <div id="topbar" class="topbar"></div>
+    <div id="banner" class="banner hidden" role="status"></div>
+    <div id="welcome" class="welcome"></div>
+    <div id="thread" class="thread" aria-live="polite" aria-label="Conversation"></div>
+    <div id="gate" class="gate hidden" role="status"></div>
+    <div class="composer">
+      <textarea id="prompt" rows="2" aria-label="Message" placeholder="Ask Devin to build something small…"></textarea>
+      <button id="send" type="button" class="primary send" aria-label="Send">Send</button>
+    </div>
+  </section>
+</div>
+<script src="/static/auth.js"></script>
+<script src="/static/crdt.js"></script>
+<script src="/static/learn.js"></script>
+<script src="/static/chat_core.js"></script>
+<script src="/static/chat_view.js"></script>
+<script src="/static/chat_bridge.js"></script>
+<script src="/static/chat_replay.js"></script>
+<script src="/static/chat_ctl.js"></script>
+<script src="/static/chat.js"></script>
+</body>
+</html>

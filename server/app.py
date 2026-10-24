@@ -394,6 +394,10 @@ def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
 
     @app.get("/")
     def index():
+        return FileResponse(client_dir / "chat.html")      # the product: Devin builds, the learner earns the code
+
+    @app.get("/ledger")
+    def ledger():
         return FileResponse(client_dir / "index.html")
 
     @app.get("/board")

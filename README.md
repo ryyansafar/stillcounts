@@ -25,6 +25,16 @@ node --test client/test/
 .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port 8000
 ```
 
+## The chat shell (the front door)
+
+The root page (`/`) looks like a desktop agent app: a sidebar with a New chat button and your past chats (kept in localStorage), a thread of bubbles and a composer. You ask Devin to build something small. Devin builds it one stage at a time and stops after each stage. The code stays **locked** until you earn the stage in a tutor checkpoint card inside the thread (predict, find the bug, write; explain is practice). Pass and the code unlocks with the new lines highlighted; fail and you get a hint and a retry while Devin stays stopped.
+
+- **Live Devin.** A server bridge (`/api/devin/*`, contract in `client/chat_bridge.js`) runs a real Devin v3 session. The token never reaches the browser. Devin stops with `waiting_for_user` after each stage and the bridge sends it `continue` only after you earned the stage before. Devin may work one stage ahead of what you have earned (pipelining): stage N+1 builds while you work on stage N, and the thread says "Waiting for Devin" when you are faster. Never two stages ahead.
+- **What the thread shows from the session:** status (working, waiting_for_user, finished, suspended, usage limit), the message stream as the build log, pull requests per stage with CI state and Devin Review comments, ACU used against the cap, the real session link, and a Stop button.
+- **Stress engine.** `window.EarnHooks = { getDifficulty(), onAdapt(cb), setDifficulty(level) }`. When the difficulty drops the bridge tells Devin the learner is stressed and to make the next stage smaller with comments.
+- **Honest fallback.** If the API errors, the quota is exceeded, the server has no bridge or token, or you switch on *Offline replay*, the chat says why in the thread and switches to a replay that is labelled SIMULATED everywhere (log lines, PRs, ACU). The replay is not a recording of a real session and follows the same stop-until-earned gate. Built-in courses (the four merge stages) stay available as an instant demo.
+- Code: `client/chat_core.js` (pure state machine), `chat_view.js` (view model), `chat_ctl.js` (controller), `chat_bridge.js`, `chat_replay.js`, `chat.js` (DOM). Tests: `node --test client/test/`, `tests/test_chat_shell.py`. The ledger moved to `/ledger`.
+
 ## Earn the Code (Learn mode)
 `learn/stages.json` holds four stages (duplicate ids, signed adjust sum, Lamport last-writer-wins, oversell flag). Each has predict cases whose answers come from the real merge, a find-the-bug item built from a real mutant in `oracle/mutation.py`, a small function to write and an explain rubric. `learn/grader.py` grades all four checkpoints with plain code: written functions are checked (no imports, no underscore attributes), run in a subprocess with a builtins whitelist and CPU, memory, file-size and process limits, plugged into the real ledger code and judged by the referee. This is defence in depth, not a security boundary: the write endpoint only accepts a browser on the base laptop unless the host sets `STILLCOUNTS_LEARN_WRITE_LAN=1`, and a public deployment should run the server in a container as an unprivileged user. Edit the content in `learn/build_stages.py`, then regenerate:
 

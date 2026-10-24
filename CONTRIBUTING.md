@@ -10,6 +10,10 @@
 8. The merge is mutation-tested: `.venv/bin/pip install mutmut==3.8.0 && .venv/bin/mutmut run`. No more than the 3 documented equivalent mutants may survive (`docs/mutation.md`).
 9. Branches named `devin/*` may not touch `oracle/`, `stillcounts/crdt.py`, `tests/test_oracle_*.py` or `.github/CODEOWNERS`; CI fails them. CODEOWNERS alone is only advisory unless branch protection requires code-owner review, which the repo owner has to switch on.
 
+## Chat shell
+
+`client/chat_core.js` is the stop-until-earned state machine and must stay pure (no DOM, no network, no clock): change it test first in `client/test/chat_core.test.js`. The replay (`chat_replay.js`) must label everything it makes as simulated and must obey the same gate as a real session. Never show a locked stage's code, the expected answer or the right option in the browser.
+
 ## Socials & Support
 - Portfolio: https://ryyansafar.site
 - GitHub: https://github.com/ryyansafar

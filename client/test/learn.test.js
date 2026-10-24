@@ -291,5 +291,130 @@ test("learn page loads crdt.js before learn.js and is linked from the phone app 
   assert.ok(html.indexOf("/static/crdt.js") > 0 && html.indexOf("/static/crdt.js") < html.indexOf("/static/learn.js"));
   assert.ok(html.includes("/static/style.css") && html.includes("/static/learn.css"));
   assert.ok(read("index.html").includes('href="/static/learn.html"'));
+  assert.ok(read("ledger.html").includes('id="addbtn"'), "the old phone app lives on at ledger.html");
   assert.ok(read("board.html").includes('href="/static/learn.html"'));
+});
+
+// ---- the front door ----
+async function earnStageOne(server, root, app) {
+  one(root, "data-view", "course").fire("click");
+  answerAll(root, { p1: "12", p2: "Rice B", p3: "yes" });
+  one(root, "data-action", "predict").fire("click"); await app.idle();
+  one(root, "data-choice", "a").fire("click"); await app.idle();
+  one(root, "data-input", "write").value = "def quantity(group):\n    return sum(o.value for o in group)\n";
+  one(root, "data-action", "write").fire("click"); await app.idle();
+}
+const view = (root, v) => one(root, "data-view", v).fire("click");
+
+test("the front door pitches the product, links Course 1 and shows four tabs", async () => {
+  const { root } = await mounted(fakeServer());
+  assert.match(one(root, "data-hero", "pitch").textContent, /Do not paste code you do not understand/);
+  assert.deepStrictEqual(all(root, (n) => n.getAttribute("role") === "tab").map((n) => n.getAttribute("data-view")), ["course", "map", "results", "proof"]);
+  const html = read("index.html");
+  for (const href of ["/static/ledger.html", "/board", "/race", "/static/learn.html"]) assert.ok(html.includes('href="' + href + '"'), href);
+  assert.ok(html.indexOf("https://ryyansafar.site") < html.indexOf("https://github.com/ryyansafar"));
+  assert.ok(html.indexOf("/static/understand.js") < html.indexOf("/static/learn.js") && html.indexOf("/static/learn_views.js") < html.indexOf("/static/learn.js"));
+});
+
+test("the Understanding Map starts empty and colours code once a stage is earned", async () => {
+  const server = fakeServer(), { root, app } = await mounted(server);
+  view(root, "map");
+  assert.strictEqual(one(root, "data-gap", "none").textContent.includes("no code yet"), true);
+  assert.match(one(root, "data-map", "quantity").textContent, /Locked/);
+  await earnStageOne(server, root, app);
+  one(root, "data-action", "reveal").fire("click"); await app.idle();
+  view(root, "map");
+  const gap = all(root, (n) => n.getAttribute("data-gap") !== null && n.getAttribute("data-gap") !== "none");
+  assert.ok(gap.length, "a gap score appears once code is unlocked");
+  assert.ok(Number(gap[0].getAttribute("data-gap")) > 0);
+  assert.ok(byAttr(root, "data-level", "written").length + byAttr(root, "data-level", "bug").length > 0);
+  assert.strictEqual(one(root, "data-map", "quantity").textContent, REAL_CODE);
+});
+
+test("hints and first-try results are counted and shown on Results", async () => {
+  const server = fakeServer(), { root, app } = await mounted(server);
+  one(root, "data-hint-btn", "predict").fire("click");
+  assert.match(one(root, "data-hint", "predict").textContent, /^Hint: p1: 4 operations, 3 distinct ids/);
+  answerAll(root, { p1: "9", p2: "Rice B", p3: "yes" });
+  one(root, "data-action", "predict").fire("click"); await app.idle();           // wrong first
+  answerAll(root, { p1: "12" });
+  one(root, "data-action", "predict").fire("click"); await app.idle();
+  one(root, "data-choice", "a").fire("click"); await app.idle();                  // right first time
+  assert.deepStrictEqual(app.state.attempts["quantity/predict"], { tries: 2, firstTry: false });
+  assert.deepStrictEqual(app.state.attempts["quantity/bug"], { tries: 1, firstTry: true });
+  view(root, "results");
+  assert.match(root.textContent, /50%/);
+  assert.match(root.textContent, /1\s*hints used/i);
+  assert.ok(byAttr(root, "data-fade", "none").length, "no write passed yet, so no scaffold share");
+});
+
+test("before quiz is graded by the real merge, kept, and the after quiz opens after a stage is earned", async () => {
+  const server = fakeServer(), storage = memoryStorage();
+  const { root, app } = await mounted(server, storage);
+  view(root, "results");
+  assert.ok(!byAttr(root, "data-action", "quiz-after").length, "after quiz is locked until a stage is earned");
+  one(root, "data-action", "quiz-before").fire("click");
+  const inputs = all(root, (n) => (n.getAttribute("data-input") || "").indexOf("quiz:") === 0);
+  assert.strictEqual(inputs.length, 4);
+  one(root, "data-action", "quiz-submit").fire("click");
+  assert.match(one(root, "data-result", "quiz").textContent, /Answer every question/);
+  inputs.forEach((i) => { i.value = i.type === "number" ? "0" : "yes"; });
+  one(root, "data-action", "quiz-submit").fire("click");
+  assert.match(one(root, "data-result", "quiz").textContent, /You scored \d of 4/);
+  assert.strictEqual(app.state.quiz.before.total, 4);
+  assert.ok(JSON.parse(storage.getItem("sc_learn")).quiz.before, "the baseline is saved on the phone");
+  one(root, "data-action", "quiz-done").fire("click");
+  assert.ok(!byAttr(root, "data-action", "quiz-before").length, "the baseline can only be taken once");
+  await earnStageOne(server, root, app);
+  view(root, "results");
+  assert.ok(byAttr(root, "data-action", "quiz-after").length);
+});
+
+test("reveal shows the real code with your function diffed against it and the bug line marked", () => {
+  const V = require("../learn_views.js");
+  const h = (tag, attrs, kids) => {
+    const e = doc.createElement(tag);
+    Object.keys(attrs || {}).forEach((k) => { if (k === "text") e.textContent = attrs[k]; else if (k === "className") e.className = attrs[k]; else e.setAttribute(k, attrs[k]); });
+    (kids || []).forEach((c) => e.appendChild(typeof c === "string" ? doc.createTextNode(c) : c));
+    return e;
+  };
+  const code = "def quantity(ops):\n    return sum(o.value for o in ops)\n";
+  const stage = { id: "q", earned: true, checkpoints: { write: { function: "quantity" }, bug: { snippet: "x = 1\nreturn abs(v)\n", line: "return abs(v)" } } };
+  const st = { passed: { "q/predict": true, "q/bug": true, "q/write": true }, drafts: { "q/write": "def quantity(ops):\n    total = 0\n    return sum(o.value for o in ops)\n" } };
+  const root = doc.createElement("div"); root.replaceChildren(...V.revealView({ h, st }, stage, code));
+  assert.strictEqual(one(root, "data-code", "q").textContent, "def quantity(ops):\n    return sum(o.value for o in ops)");
+  const marks = byAttr(root, "data-diff", "del").concat(byAttr(root, "data-diff", "add"));
+  assert.deepStrictEqual(marks.map((n) => n.getAttribute("data-diff") + ":" + n.textContent), ["del:    total = 0"]);
+  assert.strictEqual(one(root, "data-bug-line", "q").children.filter((c) => c.getAttribute && c.getAttribute("data-m") === "!").length, 1);
+});
+
+test("the proof card holds only measured facts, can be named, copied and downloaded", async () => {
+  const server = fakeServer(), copied = [];
+  const root = doc.createElement("div"), storage = memoryStorage();
+  const app = L.mount(root, { doc, fetch: server.fetch, storage, nav: { clipboard: { writeText: async (t) => { copied.push(t); } } } });
+  await app.ready;
+  view(root, "proof");
+  assert.match(one(root, "data-status", "proof-empty").textContent, /Nothing to prove yet/);
+  await earnStageOne(server, root, app); view(root, "proof");
+  const name = one(root, "data-input", "proof-name"); name.value = "Asha"; name.fire("input");
+  assert.strictEqual(app.state.name, "Asha");
+  one(root, "data-action", "copy").fire("click"); await app.idle();
+  assert.strictEqual(copied.length, 1);
+  assert.match(copied[0], /Earned 1 of 2 stages/);
+  assert.match(copied[0], /self-reported, not an exam/);
+  assert.match(one(root, "data-action", "download").getAttribute("href"), /^data:image\/svg\+xml/);
+  assert.match(one(root, "data-result", "proof").textContent, /Copied/);
+});
+
+test("copy without a clipboard says so instead of failing", async () => {
+  const { root, app } = await mounted(fakeServer());
+  view(root, "proof");
+  one(root, "data-action", "copy").fire("click"); await app.idle();
+  assert.match(one(root, "data-result", "proof").textContent, /not available/);
+});
+
+test("the old ledger app is still reachable from the front door and the cache holds the new files", () => {
+  const sw = read("sw.js");
+  for (const f of ["/static/ledger.html", "/static/understand.js", "/static/learn_views.js", "/board"]) assert.ok(sw.includes('"' + f + '"'), f);
+  assert.match(read("ledger.html"), /href="\/"/);
 });

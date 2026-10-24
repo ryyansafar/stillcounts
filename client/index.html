@@ -7,35 +7,28 @@
 <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="/static/manifest.webmanifest">
 <link rel="stylesheet" href="/static/style.css">
-<title>Still Counts</title>
+<link rel="stylesheet" href="/static/learn.css">
+<title>Earn the Code</title>
 </head>
 <body>
 <main>
-  <header>
-    <h1>Still Counts</h1>
+  <nav class="learnnav" aria-label="Sections">
     <a class="navlink" href="/static/learn.html">Learn</a>
+    <a class="navlink" href="/static/ledger.html">Course 1 live app</a>
+    <a class="navlink" href="/board">Board</a>
     <a class="navlink" href="/race">Race</a>
-    <span id="status" class="pill" role="status" aria-live="polite">starting</span>
-  </header>
-  <div class="sub">Field camp ledger. Keeps counting with no signal. <span id="who"></span></div>
-  <input id="me" class="note" type="text" maxlength="40" placeholder="Your name (so the board shows who counted)" aria-label="Your name" style="margin:0 0 14px">
-  <div id="list"></div>
-  <div class="add">
-    <input id="newitem" type="text" placeholder="Add an item (for example Lanterns)" maxlength="40" aria-label="New item name">
-    <button id="addbtn" type="button" style="min-width:90px">Add</button>
-  </div>
-  <details class="p2p">
-    <summary>Phone to phone, no base needed</summary>
-    <p class="sub">Tap <b>Show my taps</b>, send the text to another phone by any way that works offline, and paste it there under <b>Merge pasted taps</b>. Both phones then agree, and both still send everything to the base later. Copy and paste only: no QR code yet.</p>
-    <textarea id="p2p-box" class="note" rows="4" aria-label="Taps to send or merge"></textarea>
-    <div class="btns"><button id="p2p-out" type="button">Show my taps</button><button id="p2p-in" type="button">Merge pasted taps</button></div>
-    <div id="p2p-msg" class="sub" role="status"></div>
-  </details>
-  <footer id="foot"></footer>
+  </nav>
+  <div id="learn"><p class="sub" data-status="loading">Loading lessons…</p></div>
+  <noscript><p class="card empty">Earn the Code needs JavaScript. The Course 1 live app still works: <a href="/static/ledger.html">open it</a>.</p></noscript>
+  <footer class="socials" aria-label="Links and support">
+    <a href="https://ryyansafar.site">Portfolio</a> · <a href="https://github.com/ryyansafar">GitHub</a> · <a href="https://buymeacoffee.com/ryyansafar">Buy me a coffee</a> ·
+    <a href="https://www.paypal.com/paypalme/ryyansafar">PayPal</a> · <a href="https://razorpay.me/@ryyansafar">Razorpay</a>
+  </footer>
 </main>
 <script src="/static/auth.js"></script>
 <script src="/static/crdt.js"></script>
-<script src="/static/exchange.js"></script>
-<script src="/static/app.js"></script>
+<script src="/static/understand.js"></script>
+<script src="/static/learn_views.js"></script>
+<script src="/static/learn.js"></script>
 </body>
 </html>

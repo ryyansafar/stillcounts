@@ -102,6 +102,8 @@ test("tap buttons are not torn down by a sync tick when nothing changed", async 
 
 // Regression: itemId() once stripped every non-ASCII letter, so any two non-Latin names collapsed into one row.
 // The strings are just two different non-Latin words (Greek here, chosen arbitrarily); the test is about the slug, not about any language.
+// Fixture note: this is Devin QA issue #9 (https://github.com/ryyansafar/stillcounts/issues/9), found by the browser QA session with Malayalam names.
+// The fixture uses neutral Greek words on purpose, and the QA session's glyphs rendered as boxes only because its browser lacked a font.
 test("distinct non-Latin item names stay distinct items", async () => {
   const tab = boot(makeStorage(), { online: false });
   await settle();

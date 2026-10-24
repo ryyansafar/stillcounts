@@ -9,15 +9,10 @@ import pytest
 from chaos.scenarios import SCENARIOS, run_one
 
 SEEDS = range(50)
-KNOWN_BUGS = {   # scenario -> regression test that pins it
+KNOWN_BUGS = {   # scenarios that still fail on some seeds -> the test that pins them (the other 22 must pass all 50 seeds)
     "net_retry_same_id_new_content": "tests/test_regress_net_retry_same_id_new_content.py",
-    "net_corrupt_line_shifts_cursor": "tests/test_regress_net_corrupt_line_shifts_cursor.py",
     "net_restore_old_backup": "tests/test_regress_net_restore_old_backup.py",
-    "ids_enormous_lamport": "tests/test_regress_ids_enormous_lamport.py",
-    "life_two_tabs_one_phone": "tests/test_regress_life_two_tabs_one_phone.py",
-    "life_cursor_after_log_shrinks": "tests/test_regress_life_cursor_after_log_shrinks.py",
     "life_storage_quota": "tests/test_regress_life_storage_quota.py",
-    "life_clock_jump_lamport": "tests/test_regress_life_clock_jump_lamport.py",
 }
 
 
@@ -55,3 +50,12 @@ def test_regression_files_exist():
     root = Path(__file__).parent.parent
     for path in KNOWN_BUGS.values():
         assert (root / path).exists(), path
+
+
+def test_summary_counts_runs_failures_and_lost_ops_per_scenario():
+    from chaos.run import summarise
+    runs = [{"scenario": "a", "ok": True, "lost": 0}, {"scenario": "a", "ok": False, "lost": 3},
+            {"scenario": "b", "ok": True, "lost": 0}]
+    s = summarise(runs, [0, 1])
+    assert s["runs"] == 3 and s["failed"] == 1 and s["lost_ops"] == 3 and s["seeds"] == [0, 2]
+    assert s["by_scenario"]["a"] == {"runs": 2, "failed": 1, "lost": 3}

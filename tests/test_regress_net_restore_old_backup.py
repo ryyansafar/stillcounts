@@ -32,3 +32,10 @@ def test_minimal_reproduction():
     sim.run(9000)
     r = sim.finish()
     assert r["ok"], r["error"]
+
+
+@pytest.mark.xfail(strict=True, reason="still open: 4 of 500 seeds lose one op after a restore (a phone that never saw it)")
+@pytest.mark.parametrize("seed", [251, 261, 305, 315])
+def test_remaining_failing_seeds(seed):
+    r = run_one(seed, SCENARIO)
+    assert r["ok"], f"seed {seed}: {r['error']}"

@@ -5,9 +5,12 @@ const assert = require("node:assert");
 const fs = require("node:fs");
 const L = require("../learn.js");
 
-const fixture = process.env.LEARN_FIXTURE && JSON.parse(fs.readFileSync(process.env.LEARN_FIXTURE, "utf8"));
+// The fixture is the stage list the real server sends plus the real merge's answers. It is committed so a plain
+// `node --test client/test/` runs these checks; tests/test_learn_ui_contract.py fails if it is out of date.
+const path = require("node:path");
+const fixture = JSON.parse(fs.readFileSync(process.env.LEARN_FIXTURE || path.join(__dirname, "fixtures", "learn_contract.json"), "utf8"));
 
-test("the real stage list renders as four checkpoints per stage with the options and cases the UI needs", { skip: !fixture }, () => {
+test("the real stage list renders as four checkpoints per stage with the options and cases the UI needs", () => {
   const stages = L.normalizeStages(fixture.api);
   assert.strictEqual(stages.length, 4);
   stages.forEach((s) => {
@@ -22,7 +25,7 @@ test("the real stage list renders as four checkpoints per stage with the options
   });
 });
 
-test("the browser's merge gives the same answer as the real grader for every predict case", { skip: !fixture }, () => {
+test("the browser's merge gives the same answer as the real grader for every predict case", () => {
   const stages = L.normalizeStages(fixture.api);
   let n = 0;
   stages.forEach((s) => s.checkpoints.predict.cases.forEach((c) => {

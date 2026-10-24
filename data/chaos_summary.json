@@ -1,12 +1,12 @@
 {
- "note": "Summary of a real run: python -m chaos.run --seeds 0:500. Full per-run output (about 2 MB) is regenerated locally and git-ignored.",
+ "note": "Summary of a real run: python -m chaos.run --seeds 0:500 --summary data/chaos_summary.json. Full per-run output is regenerated locally and git-ignored.",
  "seeds": [
   0,
   500
  ],
  "runs": 12500,
- "failed": 3506,
- "lost_ops": 92222,
+ "failed": 671,
+ "lost_ops": 65686,
  "by_scenario": {
   "net_torn_append_crash": {
    "runs": 500,
@@ -20,13 +20,13 @@
   },
   "net_corrupt_line_shifts_cursor": {
    "runs": 500,
-   "failed": 455,
-   "lost": 455
+   "failed": 0,
+   "lost": 0
   },
   "net_restore_old_backup": {
    "runs": 500,
-   "failed": 491,
-   "lost": 11261
+   "failed": 4,
+   "lost": 4
   },
   "net_outbox_clobber_inflight": {
    "runs": 500,
@@ -70,8 +70,8 @@
   },
   "ids_enormous_lamport": {
    "runs": 500,
-   "failed": 499,
-   "lost": 3429
+   "failed": 0,
+   "lost": 0
   },
   "ids_coerced_lamport_types": {
    "runs": 500,
@@ -90,8 +90,8 @@
   },
   "life_two_tabs_one_phone": {
    "runs": 500,
-   "failed": 398,
-   "lost": 2345
+   "failed": 0,
+   "lost": 0
   },
   "life_reinstall_resets_identity": {
    "runs": 500,
@@ -105,8 +105,8 @@
   },
   "life_cursor_after_log_shrinks": {
    "runs": 500,
-   "failed": 488,
-   "lost": 4611
+   "failed": 0,
+   "lost": 0
   },
   "life_kill_between_saves": {
    "runs": 500,
@@ -115,8 +115,8 @@
   },
   "life_storage_quota": {
    "runs": 500,
-   "failed": 435,
-   "lost": 65937
+   "failed": 427,
+   "lost": 65442
   },
   "life_stale_sw_bad_batch": {
    "runs": 500,
@@ -125,8 +125,8 @@
   },
   "life_clock_jump_lamport": {
    "runs": 500,
-   "failed": 500,
-   "lost": 3944
+   "failed": 0,
+   "lost": 0
   },
   "control_network_chaos": {
    "runs": 500,

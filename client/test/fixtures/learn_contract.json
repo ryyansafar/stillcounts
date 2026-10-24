@@ -1,0 +1,646 @@
+{
+ "api": {
+  "stages": [
+   {
+    "bug": {
+     "line": "for op in ops:",
+     "options": [
+      {
+       "id": "a",
+       "text": "The quantity sum ignores negative adjustments."
+      },
+      {
+       "id": "b",
+       "text": "merge groups the raw operations without calling dedupe(), so a retried operation is counted again."
+      },
+      {
+       "id": "c",
+       "text": "Items are sorted by name, so the delivery order changes the result."
+      },
+      {
+       "id": "d",
+       "text": "Last-writer-wins picks the earliest write."
+      }
+     ],
+     "prompt": "This merge was changed by one line. Phones now report too many blankets after a bad signal day. What is wrong?",
+     "snippet": "def merge(ops: Iterable[Op]) -> dict[str, dict]:\n    by_item: dict[str, list[Op]] = {}\n    for op in ops:\n        by_item.setdefault(op.item, []).append(op)\n    state: dict[str, dict] = {}\n    for item in sorted(by_item):\n        group = by_item[item]\n        names = [o for o in group if o.kind == \"create\"]\n        notes = [o for o in group if o.kind == \"note\"]\n        flags = [o for o in group if o.kind == \"delete\"]\n        state[item] = {\n            \"name\": _lww(names, item),\n            \"qty\": sum(o.value for o in group if o.kind == \"adjust\"),\n            \"note\": _lww(notes, \"\"),\n            \"alive\": not _lww(flags, False),\n        }\n    return state"
+    },
+    "code": null,
+    "explain": {
+     "min_points": 3,
+     "prompt": "In your own words: why can the same operation arrive more than once, and why is it never counted twice?"
+    },
+    "id": "duplicate-ids",
+    "order": 1,
+    "predict": {
+     "cases": [
+      {
+       "field": "qty",
+       "id": "p1",
+       "item": "blankets",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "blankets",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 10
+        },
+        {
+         "id": "ph-a:1",
+         "item": "blankets",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 10
+        },
+        {
+         "id": "ph-b:1",
+         "item": "blankets",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-b",
+         "value": 5
+        }
+       ],
+       "prompt": "Phone A received 10 blankets. The signal dropped and the outbox sent it again. Phone B received 5. What is the blanket count?",
+       "question": "What is the quantity of blankets?"
+      },
+      {
+       "field": "qty",
+       "id": "p2",
+       "item": "rice",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "rice",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 20
+        },
+        {
+         "id": "ph-a:2",
+         "item": "rice",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": -4
+        },
+        {
+         "id": "ph-a:2",
+         "item": "rice",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": -4
+        },
+        {
+         "id": "ph-a:2",
+         "item": "rice",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": -4
+        }
+       ],
+       "prompt": "20 bags of rice arrive, then one issue of 4 bags is retried three times. How much rice is left?",
+       "question": "What is the quantity of rice?"
+      },
+      {
+       "field": "qty",
+       "id": "p3",
+       "item": "water",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "water",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 4
+        },
+        {
+         "id": "ph-a:1",
+         "item": "water",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": 7
+        }
+       ],
+       "prompt": "Two copies of id ph-a:1 disagree: one says +4 at Lamport 1, the other +7 at Lamport 2. The merge keeps the copy with the larger (lamport, replica, kind, item, value). What is the water count?",
+       "question": "What is the quantity of water?"
+      }
+     ],
+     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+    },
+    "progress": {
+     "bug": false,
+     "explain": false,
+     "predict": false,
+     "write": false
+    },
+    "summary": "A phone's outbox retries until the server says yes, so the same operation can arrive more than once. Every operation has a unique id, and the merge keeps one copy per id.",
+    "title": "Counted once, even when sent twice",
+    "unlocked": false,
+    "write": {
+     "function": "dedupe",
+     "prompt": "Write dedupe(ops): keep one operation per id.",
+     "stub": "def dedupe(ops):\n    \"\"\"Return each operation exactly once, sorted by id.\n\n    ops is an iterable of Op(id, replica, lamport, kind, item, value). The same id can\n    arrive many times. Keep one op per id. If two ops share an id but differ in content,\n    keep the one with the larger _total(op), so every phone picks the same copy.\n    Call _validate(op) on every op first: it raises ValueError for a malformed op.\n    \"\"\"\n    raise NotImplementedError\n"
+    }
+   },
+   {
+    "bug": {
+     "line": "\"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),",
+     "options": [
+      {
+       "id": "a",
+       "text": "abs() turns every issue (a negative adjustment) into a receipt."
+      },
+      {
+       "id": "b",
+       "text": "Adjustments from other replicas are skipped."
+      },
+      {
+       "id": "c",
+       "text": "The sum should be taken over unique items, not operations."
+      },
+      {
+       "id": "d",
+       "text": "Notes are added into the quantity."
+      }
+     ],
+     "prompt": "One line of the merge was changed. Now the stock only ever goes up. What is wrong?",
+     "snippet": "def merge(ops: Iterable[Op]) -> dict[str, dict]:\n    by_item: dict[str, list[Op]] = {}\n    for op in dedupe(ops):\n        by_item.setdefault(op.item, []).append(op)\n    state: dict[str, dict] = {}\n    for item in sorted(by_item):\n        group = by_item[item]\n        names = [o for o in group if o.kind == \"create\"]\n        notes = [o for o in group if o.kind == \"note\"]\n        flags = [o for o in group if o.kind == \"delete\"]\n        state[item] = {\n            \"name\": _lww(names, item),\n            \"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),\n            \"note\": _lww(notes, \"\"),\n            \"alive\": not _lww(flags, False),\n        }\n    return state"
+    },
+    "code": null,
+    "explain": {
+     "min_points": 3,
+     "prompt": "In your own words: why does the ledger add up signed changes instead of storing the current count?"
+    },
+    "id": "signed-adjust-sum",
+    "order": 2,
+    "predict": {
+     "cases": [
+      {
+       "field": "qty",
+       "id": "p1",
+       "item": "tarpaulin",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "tarpaulin",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 50
+        },
+        {
+         "id": "ph-a:2",
+         "item": "tarpaulin",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": -12
+        },
+        {
+         "id": "ph-a:3",
+         "item": "tarpaulin",
+         "kind": "adjust",
+         "lamport": 3,
+         "replica": "ph-a",
+         "value": -8
+        }
+       ],
+       "prompt": "50 tarpaulins arrive, then 12 and 8 are handed out. How many are left?",
+       "question": "What is the quantity of tarpaulin?"
+      },
+      {
+       "field": "qty",
+       "id": "p2",
+       "item": "paracetamol",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "paracetamol",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 10
+        },
+        {
+         "id": "ph-b:1",
+         "item": "paracetamol",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-b",
+         "value": -3
+        },
+        {
+         "id": "ph-a:2",
+         "item": "paracetamol",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": -2
+        },
+        {
+         "id": "ph-b:2",
+         "item": "paracetamol",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-b",
+         "value": 6
+        }
+       ],
+       "prompt": "Two phones were offline all morning. A: +10, -2. B: -3, +6. What is the paracetamol count after they sync?",
+       "question": "What is the quantity of paracetamol?"
+      },
+      {
+       "field": "qty",
+       "id": "p3",
+       "item": "baby-food",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "baby-food",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 5
+        },
+        {
+         "id": "ph-a:2",
+         "item": "baby-food",
+         "kind": "note",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": "stage 2 jars"
+        },
+        {
+         "id": "ph-a:3",
+         "item": "baby-food",
+         "kind": "adjust",
+         "lamport": 3,
+         "replica": "ph-a",
+         "value": -3
+        },
+        {
+         "id": "ph-b:1",
+         "item": "baby-food",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-b",
+         "value": -4
+        }
+       ],
+       "prompt": "Baby food: +5 received, then two phones issue 3 and 4. A note is also added. What is the count?",
+       "question": "What is the quantity of baby-food?"
+      }
+     ],
+     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+    },
+    "progress": {
+     "bug": false,
+     "explain": false,
+     "predict": false,
+     "write": false
+    },
+    "summary": "Phones never send 'the count is 30'. They send changes: +50 received, -12 issued. The quantity is the sum of every signed adjustment, so offline changes from many phones add up.",
+    "title": "Quantity is a sum of signed changes",
+    "unlocked": false,
+    "write": {
+     "function": "quantity",
+     "prompt": "Write quantity(ops): the quantity of one item.",
+     "stub": "def quantity(ops):\n    \"\"\"Return the quantity of one item as an int.\n\n    ops is every operation of one item, of any kind (\"adjust\", \"create\", \"note\",\n    \"delete\"). Only \"adjust\" operations change the quantity: their value is a signed,\n    non-zero int (+ received, - issued). Return the sum of those values.\n    \"\"\"\n    raise NotImplementedError\n"
+    }
+   },
+   {
+    "bug": {
+     "line": "return min(ops, key=_order).value if ops else default",
+     "options": [
+      {
+       "id": "a",
+       "text": "Replica ids should never be compared."
+      },
+      {
+       "id": "b",
+       "text": "The default should be an empty string."
+      },
+      {
+       "id": "c",
+       "text": "min() keeps the oldest write, so a later write never takes effect."
+      },
+      {
+       "id": "d",
+       "text": "Writes should be ordered by the phone's wall clock."
+      }
+     ],
+     "prompt": "One line was changed. Renames no longer stick. What is wrong?",
+     "snippet": "def _lww(ops: list[Op], default: Any) -> Any:\n    return min(ops, key=_order).value if ops else default"
+    },
+    "code": null,
+    "explain": {
+     "min_points": 3,
+     "prompt": "In your own words: how does the ledger decide which rename wins, and why not use the time on the phone?"
+    },
+    "id": "lamport-lww",
+    "order": 3,
+    "predict": {
+     "cases": [
+      {
+       "field": "name",
+       "id": "p1",
+       "item": "blankets",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "blankets",
+         "kind": "create",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": "Blankets"
+        },
+        {
+         "id": "ph-b:1",
+         "item": "blankets",
+         "kind": "create",
+         "lamport": 3,
+         "replica": "ph-b",
+         "value": "Wool blankets"
+        }
+       ],
+       "prompt": "Phone A names the item 'Blankets' at Lamport 1. Phone B renames it 'Wool blankets' at Lamport 3. What is the name?",
+       "question": "What is the name of blankets?"
+      },
+      {
+       "field": "name",
+       "id": "p2",
+       "item": "rice",
+       "ops": [
+        {
+         "id": "ph-b:1",
+         "item": "rice",
+         "kind": "create",
+         "lamport": 2,
+         "replica": "ph-b",
+         "value": "Rice (25 kg)"
+        },
+        {
+         "id": "ph-a:1",
+         "item": "rice",
+         "kind": "create",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": "Rice"
+        }
+       ],
+       "prompt": "ph-a and ph-b both rename rice at Lamport 2. A tie on time is broken by replica id. What is the name?",
+       "question": "What is the name of rice?"
+      },
+      {
+       "field": "note",
+       "id": "p3",
+       "item": "water",
+       "ops": [
+        {
+         "id": "ph-c:1",
+         "item": "water",
+         "kind": "note",
+         "lamport": 5,
+         "replica": "ph-c",
+         "value": "1 L bottles"
+        },
+        {
+         "id": "ph-a:1",
+         "item": "water",
+         "kind": "note",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": "Use first"
+        }
+       ],
+       "prompt": "ph-c wrote its note at Lamport 5. ph-a's note at Lamport 2 arrives last, and ph-a's wall clock said it was later. What is the note?",
+       "question": "What is the note on water?"
+      },
+      {
+       "field": "alive",
+       "id": "p4",
+       "item": "tarpaulin",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "tarpaulin",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 3
+        },
+        {
+         "id": "ph-a:2",
+         "item": "tarpaulin",
+         "kind": "delete",
+         "lamport": 4,
+         "replica": "ph-a",
+         "value": true
+        },
+        {
+         "id": "ph-b:1",
+         "item": "tarpaulin",
+         "kind": "delete",
+         "lamport": 6,
+         "replica": "ph-b",
+         "value": false
+        }
+       ],
+       "prompt": "Tarpaulin is deleted at Lamport 4, then restored at Lamport 6. Is it alive?",
+       "question": "Is tarpaulin still alive (not deleted)? yes or no"
+      }
+     ],
+     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+    },
+    "progress": {
+     "bug": false,
+     "explain": false,
+     "predict": false,
+     "write": false
+    },
+    "summary": "Names, notes and deletions keep one value. The write with the highest (Lamport time, replica id) wins. The phone's wall clock is never used: it can be hours wrong.",
+    "title": "Last writer wins, by Lamport time",
+    "unlocked": false,
+    "write": {
+     "function": "_lww",
+     "prompt": "Write _lww(ops, default): the last-writer-wins value.",
+     "stub": "def _lww(ops, default):\n    \"\"\"Return the value of the winning write, or default if ops is empty.\n\n    ops is a list of writes to one register (all names, all notes or all deletes of one\n    item). The winner has the highest _order(op), which is (op.lamport, op.replica):\n    the highest Lamport time, and on a tie the highest replica id.\n    \"\"\"\n    raise NotImplementedError\n"
+    }
+   },
+   {
+    "bug": {
+     "line": "oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]",
+     "options": [
+      {
+       "id": "a",
+       "text": "Deleted items are flagged."
+      },
+      {
+       "id": "b",
+       "text": "Conflicts are counted for the winning replica."
+      },
+      {
+       "id": "c",
+       "text": "Only the first oversold item is reported."
+      },
+      {
+       "id": "d",
+       "text": "qty <= 0 flags stock of exactly zero; it should be qty < 0."
+      }
+     ],
+     "prompt": "One line of the statistics was changed. Coordinators now get alerts for shelves that are simply empty. What is wrong?",
+     "snippet": "def stats(ops: Iterable[Op]) -> dict:\n    unique = dedupe(ops)\n    state = merge(unique)\n    conflicts = 0\n    groups: dict[tuple[str, str], list[Op]] = {}\n    for o in unique:\n        if o.kind in (\"create\", \"note\", \"delete\"):\n            groups.setdefault((o.item, o.kind), []).append(o)\n    for g in groups.values():\n        winner = max(g, key=_order)\n        conflicts += sum(1 for o in g if o.replica != winner.replica)\n    oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]\n    return {\"ops\": len(unique), \"items\": len(state), \"conflicts\": conflicts, \"oversold\": oversold}"
+    },
+    "code": null,
+    "explain": {
+     "min_points": 3,
+     "prompt": "In your own words: why can stock go below zero, and what does the ledger do about it?"
+    },
+    "id": "oversell-flag",
+    "order": 4,
+    "predict": {
+     "cases": [
+      {
+       "field": "oversold",
+       "id": "p1",
+       "item": "blankets",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "blankets",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 2
+        },
+        {
+         "id": "ph-a:2",
+         "item": "blankets",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": -2
+        },
+        {
+         "id": "ph-b:1",
+         "item": "blankets",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-b",
+         "value": -2
+        }
+       ],
+       "prompt": "2 blankets left. Phones A and B, both offline, each hand out 2. Is blankets flagged as oversold?",
+       "question": "Is blankets flagged as oversold? yes or no"
+      },
+      {
+       "field": "oversold",
+       "id": "p2",
+       "item": "rice",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "rice",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": 4
+        },
+        {
+         "id": "ph-b:1",
+         "item": "rice",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-b",
+         "value": -3
+        },
+        {
+         "id": "ph-a:2",
+         "item": "rice",
+         "kind": "adjust",
+         "lamport": 2,
+         "replica": "ph-a",
+         "value": -1
+        }
+       ],
+       "prompt": "4 bags of rice arrive and exactly 4 are handed out. Is rice flagged?",
+       "question": "Is rice flagged as oversold? yes or no"
+      },
+      {
+       "field": "oversold",
+       "id": "p3",
+       "item": "water",
+       "ops": [
+        {
+         "id": "ph-a:1",
+         "item": "water",
+         "kind": "adjust",
+         "lamport": 1,
+         "replica": "ph-a",
+         "value": -5
+        },
+        {
+         "id": "ph-b:1",
+         "item": "water",
+         "kind": "delete",
+         "lamport": 3,
+         "replica": "ph-b",
+         "value": true
+        }
+       ],
+       "prompt": "Water went to -5, then the item was deleted. Is water flagged?",
+       "question": "Is water flagged as oversold? yes or no"
+      }
+     ],
+     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+    },
+    "progress": {
+     "bug": false,
+     "explain": false,
+     "predict": false,
+     "write": false
+    },
+    "summary": "Two offline phones can both hand out the last blankets. Both handouts really happened, so the merge keeps both and the count goes negative. A live item below zero is flagged for a human.",
+    "title": "Oversold stock is flagged, not hidden",
+    "unlocked": false,
+    "write": {
+     "function": "oversold_items",
+     "prompt": "Write oversold_items(state): which items need a human.",
+     "stub": "def oversold_items(state):\n    \"\"\"Return the list of oversold item keys, in the order they appear in state.\n\n    state is the merged ledger: {item: {\"name\": str, \"qty\": int, \"note\": str,\n    \"alive\": bool}}. An item is oversold when its quantity is below zero and it has\n    not been deleted (alive is True).\n    \"\"\"\n    raise NotImplementedError\n"
+    }
+   }
+  ]
+ },
+ "expected": {
+  "duplicate-ids": {
+   "p1": 15,
+   "p2": 16,
+   "p3": 7
+  },
+  "lamport-lww": {
+   "p1": "Wool blankets",
+   "p2": "Rice (25 kg)",
+   "p3": "1 L bottles",
+   "p4": true
+  },
+  "oversell-flag": {
+   "p1": true,
+   "p2": false,
+   "p3": false
+  },
+  "signed-adjust-sum": {
+   "p1": 30,
+   "p2": 11,
+   "p3": -2
+  }
+ }
+}

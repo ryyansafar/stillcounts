@@ -86,7 +86,8 @@
     if (busy) return; busy = true;
     var unsent = ops.filter(function (o) { return !synced[o.id]; });
     fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" },
-                         body: JSON.stringify({ replica: replica, name: myName || null, cursor: cursor, epoch: epoch, anchor: anchor, ops: unsent.slice(0, 500) }) })
+                         body: JSON.stringify({ replica: replica, name: myName || null, cursor: cursor, epoch: epoch, anchor: anchor,
+                                                held: ops.length, queued: unsent.length, ops: unsent.slice(0, 500) }) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (body) {
         // The base's log is not the one this phone last read (restored, wiped, lines dropped): forget what we thought

@@ -22,6 +22,7 @@ from server.race_api import race_router
 from stillcounts.crdt import Op, dedupe, merge, stats
 
 ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = Path(os.environ.get("STILLCOUNTS_DATA_DIR") or ROOT / "data")   # where the log, names and harness files live
 MAX_OPS_PER_SYNC = 500
 MAX_ID = 64
 MAX_TEXT = 200
@@ -83,6 +84,8 @@ class SyncIn(BaseModel):
     epoch: str | None = Field(default=None, max_length=64)
     anchor: str | None = Field(default=None, max_length=MAX_ID)   # id of the log entry just before `cursor`
     name: str | None = Field(default=None, max_length=200)
+    held: int | None = Field(default=None, ge=0, le=10 ** 7)      # how many ops this phone holds (as reported, not verified)
+    queued: int | None = Field(default=None, ge=0, le=10 ** 7)    # how many of them it has not yet had acknowledged
     ops: list[Any] = Field(default_factory=list, max_length=MAX_OPS_PER_SYNC)
 
 
@@ -166,7 +169,7 @@ def _referee_score() -> dict:
     return _REFEREE
 
 
-def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
+def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
                notifier: Callable[[str, str], None] | None = None,
                learn_grader: Any = None, learn_stages: str | Path | None = None,
                learn_clock: Callable[[], float] = time.monotonic, race_game: Any = None) -> FastAPI:
@@ -191,6 +194,19 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
             return f"{'+' if op.value > 0 else ''}{op.value} {label}"
         return {"create": f"added {op.value}", "note": f"noted {label}", "delete": ("removed " if op.value else "restored ") + label}[op.kind]
     notified: set[str] = set()
+    phones: dict[str, dict] = {}                  # replica -> what it last said about itself; in memory only
+
+    def phone_report() -> list[dict]:
+        """What each phone last reported: how many ops it holds and how many are still queued. Reported by the phone,
+        so it is a live indicator and not proof; the harness is the proof."""
+        now = time.monotonic()
+        with store.lock:
+            total = len(store.ops)
+        rows = []
+        for replica, p in sorted(phones.items()):
+            rows.append({"replica": replica, "name": names.get(replica), "held": p["held"], "queued": p["queued"],
+                         "age_s": round(now - p["seen"], 1), "caught_up": p["held"] == total and p["queued"] == 0})
+        return rows
 
     def check_oversell() -> None:
         over = set(stats(store.ops)["oversold"])
@@ -210,6 +226,8 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
     @app.post("/api/sync")
     def sync(body: SyncIn) -> dict:
         remember_name(body.replica, body.name)
+        if body.held is not None:
+            phones[body.replica] = {"held": body.held, "queued": body.queued or 0, "seen": time.monotonic()}
         accepted: list[Op] = []
         rejected: list[dict] = []
         with store.lock:                          # one consistent snapshot: validate, append, then slice the log
@@ -247,7 +265,7 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
         merged = merge(ops)
         activity = [{"who": names.get(o.replica, o.replica), "text": describe(o, merged)} for o in ops[-10:]]
         return {"state": merged, "stats": stats(ops), "log_size": len(ops), "names": dict(names),
-                "replicas": sorted({o.replica for o in ops}), "activity": activity}
+                "replicas": sorted({o.replica for o in ops}), "activity": activity, "phones": phone_report()}
 
     @app.get("/api/export.csv")
     def export_csv() -> Response:
@@ -306,11 +324,21 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
 
     @app.get("/api/devin")
     def devin_counts() -> dict:
-        path = Path(store_path).parent / "devin_counts.json"
+        """Counts for the board. A live snapshot from ops/devin_counts.py wins when it covers at least as many sessions
+        as the committed evidence; otherwise the committed evidence is used."""
+        from ops.devin_evidence import counts, load
+        folder = Path(store_path).parent
         try:
-            return json.loads(path.read_text())
+            committed = counts(load(folder / "devin_evidence.json"))
+        except (OSError, ValueError, KeyError):
+            committed = {"sessions": 0, "prs": 0, "issues": 0, "source": "none"}
+        try:
+            live = json.loads((folder / "devin_counts.json").read_text())
+            if live.get("sessions", 0) >= committed["sessions"]:
+                return {**live, "source": "live Devin API snapshot"}
         except (OSError, ValueError):
-            return {"sessions": 0, "prs": 0, "structured_outputs": 0, "by_status": {}}
+            pass
+        return committed
 
     @app.get("/api/qr.svg")
     def qr(text: str = Query(..., max_length=300)) -> Response:

@@ -450,7 +450,7 @@ class Phone:
         self.busy = True
         batch = self.unsent()[:BATCH]
         body = js_dumps({"replica": self.replica, "cursor": self.cursor, "epoch": self.epoch, "anchor": self.anchor,
-                         "ops": batch})
+                         "held": len(self.ops), "queued": len(self.unsent()), "ops": batch})
         self.sim.net.request(self.name, "POST", "/api/sync", body.encode(),
                              lambda status, data: self.sim.on_device(self.device, lambda: self._reply(batch, status, data), self))
 

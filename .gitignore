@@ -15,3 +15,5 @@ data/learn_progress.json
 data/learn_progress.json.tmp
 .sessions*.json
 data/devin_counts.json
+data/ops.jsonl.epoch
+data/ops.jsonl.names

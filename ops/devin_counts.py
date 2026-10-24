@@ -24,10 +24,21 @@ def summarise(sessions: list[dict]) -> dict:
     }
 
 
+def session_ids(root: Path = ROOT) -> list[str]:
+    """Every session id from every launch file (.sessions.json, .sessions_extra.json, .sessions_learn.json, ...),
+    each id once. The files are git-ignored: they are written by the launch scripts on the machine that started them."""
+    ids: list[str] = []
+    for path in sorted(Path(root).glob(".sessions*.json")):
+        for v in json.loads(path.read_text()).values():
+            if v["session_id"] not in ids:
+                ids.append(v["session_id"])
+    return ids
+
+
 def collect(env_path: str) -> dict:
     env = load_env(env_path)
     client = DevinClient(env["DEVIN_TOKEN"], env["DEVIN_ORG"])
-    ids = [v["session_id"] for v in json.loads((ROOT / ".sessions.json").read_text()).values()]
+    ids = session_ids()
     sessions = [client.get_session(i) for i in ids]
     out = summarise(sessions)
     out["updated"] = time.strftime("%H:%M:%S")

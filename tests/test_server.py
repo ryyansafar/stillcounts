@@ -136,3 +136,25 @@ def test_chaos_falls_back_to_the_committed_summary(tmp_path):
     (tmp_path / "chaos_summary.json").write_text(json.dumps({"runs": 5, "failed": 1}))
     body = c.get("/api/chaos").json()
     assert body["runs"] == [] and body["summary"]["failed"] == 1
+
+
+def test_phone_reports_show_who_is_caught_up(tmp_path):
+    from fastapi.testclient import TestClient
+    from server.app import create_app
+    c = TestClient(create_app(tmp_path / "ops.jsonl"))
+    op = {"id": "p:1", "replica": "p", "lamport": 1, "kind": "adjust", "item": "rice", "value": 1}
+    c.post("/api/sync", json={"replica": "p", "cursor": 0, "held": 1, "queued": 1, "ops": [op]})
+    c.post("/api/sync", json={"replica": "q", "cursor": 0, "held": 0, "queued": 0, "ops": []})
+    rows = {r["replica"]: r for r in c.get("/api/state").json()["phones"]}
+    assert rows["p"]["queued"] == 1 and rows["p"]["caught_up"] is False     # it said it still had one queued
+    assert rows["q"]["held"] == 0 and rows["q"]["caught_up"] is False       # the log has 1 op and q holds none
+    c.post("/api/sync", json={"replica": "q", "cursor": 0, "held": 1, "queued": 0, "ops": []})
+    assert {r["replica"]: r["caught_up"] for r in c.get("/api/state").json()["phones"]}["q"] is True
+
+
+def test_a_phone_that_never_reports_is_not_listed(tmp_path):
+    from fastapi.testclient import TestClient
+    from server.app import create_app
+    c = TestClient(create_app(tmp_path / "ops.jsonl"))
+    c.post("/api/sync", json={"replica": "old", "cursor": 0, "ops": []})
+    assert c.get("/api/state").json()["phones"] == []

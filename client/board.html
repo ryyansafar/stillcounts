@@ -27,6 +27,8 @@ td.neg { color: var(--bad); }
 .panel b { font-size:34px; font-variant-numeric: tabular-nums; }
 .panel span { color: var(--muted); font-size:14px; word-break:break-all; }
 @media (max-width:760px){ .panels{grid-template-columns:1fr;} }
+.note-line { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+.bar-note { color: var(--muted); font-size: 14px; margin: 4px 0 12px; }
 .csv { margin-left:auto; align-self:center; color: var(--muted); font-size:14px; }
 .feed { margin: 8px 0 16px; color: var(--muted); font-size: 16px; min-height: 28px; display:flex; flex-wrap:wrap; gap:8px; }
 .feed span { background: var(--panel); border:1px solid var(--line); border-radius:999px; padding:4px 12px; }
@@ -52,15 +54,17 @@ td.neg { color: var(--bad); }
     <div class="big" id="headline">Waiting for phones</div>
     <div class="stats">
       <div class="stat"><b id="s-ops">0</b><span>operations</span></div>
-      <div class="stat"><b id="s-lost">0</b><span>lost</span></div>
+      <div class="stat"><b id="s-caught">–</b><span>phones caught up (as reported)</span></div>
       <div class="stat"><b id="s-conf">0</b><span>conflicts merged</span></div>
       <div class="stat"><b id="s-phones">0</b><span>phones seen</span></div>
     </div>
     <div class="feed" id="feed" aria-live="polite"></div>
+    <p class="note-line" id="harness-line"></p>
     <table><thead><tr><th>Item</th><th>Stock</th><th>Note</th></tr></thead><tbody id="rows"></tbody></table>
   </section>
   <section id="attack" class="hidden">
     <div class="big" id="attack-head">Attack harness</div>
+    <p class="bar-note" id="attack-note">These are simulated phones, a faulty network and a crashing server, not the phones in this room.</p>
     <div id="runs"></div>
   </section>
   <section id="race" class="hidden">

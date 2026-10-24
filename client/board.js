@@ -20,9 +20,14 @@
     (data.activity || []).filter(function (a) { return a.who !== "seed"; }).slice(-6).forEach(function (a) {
       feed.appendChild(cell("span", "", a.who + ": " + a.text));
     });
-    var over = data.stats.oversold.length;
+    var over = data.stats.oversold.length, fresh = (data.phones || []).filter(function (p) { return p.age_s < 15; });
+    var behind = fresh.filter(function (p) { return !p.caught_up; }).length;
+    $("s-caught").textContent = fresh.length ? (fresh.length - behind) + " / " + fresh.length : "–";
     $("headline").textContent = data.stats.ops === 0 ? "Waiting for phones"
-      : (over ? over + " item(s) need a human" : "Every phone agrees. Nothing lost.");
+      : over ? over + " item(s) need a human"
+      : !fresh.length ? data.stats.ops + " operations merged"
+      : behind ? behind + " of " + fresh.length + " phone(s) still catching up"
+      : "Every phone holds every operation";
   }
 
   function poll() {
@@ -33,9 +38,30 @@
     fetch("/api/race/board").then(function (r) { return r.json(); }).then(renderRace).catch(function () {});
   }
 
+  function harnessLine(text) { $("harness-line").textContent = text; }
+
+  // Per-scenario rows from the committed summary, used when the full per-run file is not on this machine.
+  function renderSummary(sum) {
+    var box = $("runs");
+    var names = Object.keys(sum.by_scenario || {}), open = 0;
+    names.sort(function (a, b) { return sum.by_scenario[b].failed - sum.by_scenario[a].failed; });
+    names.forEach(function (n) {
+      var r = sum.by_scenario[n], bad = r.failed > 0; if (bad) open += 1;
+      var line = document.createElement("div"); line.className = "run";
+      line.appendChild(cell("span", bad ? "fail" : "ok", bad ? "OPEN " : "PASS "));
+      line.appendChild(document.createTextNode(n + " · " + r.failed + " of " + r.runs + " runs failed · " + r.lost + " ops lost"));
+      box.appendChild(line);
+    });
+    $("attack-head").textContent = open + " of " + names.length + " scenarios still fail";
+    $("attack-note").textContent = "Committed summary of a real harness run (" + sum.runs + " simulated runs, seeds " + sum.seeds[0] + " to " + (sum.seeds[1] - 1) +
+      "): " + sum.failed + " runs failed, " + sum.lost_ops + " operations lost. Simulated phones, not the phones in this room.";
+    harnessLine("Attack harness (simulated, not these phones): " + sum.failed + " of " + sum.runs + " runs failed in " + open + " scenarios. See the Attack tab.");
+  }
+
   function renderRuns(d) {
     var box = $("runs"); box.replaceChildren();
     var runs = d.runs || [], total = 0, lost = 0, bad = 0;
+    if (!runs.length && d.summary && d.summary.by_scenario) { renderSummary(d.summary); return; }
     runs.forEach(function (r) {
       total += r.ops || 0; lost += r.lost || 0; if (!r.ok) bad += 1;
       var line = document.createElement("div"); line.className = "run";
@@ -44,8 +70,8 @@
         " ops · " + (r.conflicts || 0) + " conflicts · lost " + (r.lost || 0) + (r.label ? " · " + r.label : "")));
       box.appendChild(line);
     });
-    $("attack-head").textContent = runs.length ? runs.length + " scenarios · " + total + " ops · " + lost + " lost · " + bad + " failed" : "No harness results yet";
-    $("s-lost").textContent = String(lost);
+    $("attack-head").textContent = runs.length ? runs.length + " runs · " + total + " ops · " + lost + " lost in the harness · " + bad + " failed" : "No harness results yet";
+    harnessLine(runs.length ? "Attack harness (simulated, not these phones): " + bad + " of " + runs.length + " runs failed, " + lost + " ops lost. See the Attack tab." : "");
   }
 
   function renderRace(d) {
@@ -87,7 +113,7 @@
     }).catch(function () {});
     fetch("/api/devin").then(function (r) { return r.json(); }).then(function (d) {
       $("p-devin").textContent = d.sessions + " sessions";
-      $("p-devin-sub").textContent = d.prs + " pull requests · " + d.structured_outputs + " structured results";
+      $("p-devin-sub").textContent = d.prs + " pull requests merged" + (d.issues ? " · " + d.issues + " issues filed" : "") + " · see docs/devin.md";
     }).catch(function () {});
   }
   panels(); setInterval(panels, 15000);

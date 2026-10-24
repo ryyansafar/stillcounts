@@ -101,3 +101,43 @@ def test_load_env_rejects_a_doubled_token(tmp_path):
     p.write_text("DEVIN_TOKEN=cog_abccog_abc\nDEVIN_ORG=org-1\n")
     with pytest.raises(DevinError):
         load_env(p)
+
+
+def test_session_ids_come_from_every_launch_file_once(tmp_path):
+    import json
+    from ops.devin_counts import session_ids
+    (tmp_path / ".sessions.json").write_text(json.dumps({"A": {"session_id": "s1"}, "B": {"session_id": "s2"}}))
+    (tmp_path / ".sessions_extra.json").write_text(json.dumps({"C": {"session_id": "s3"}, "A2": {"session_id": "s1"}}))
+    (tmp_path / ".sessions_learn.json").write_text(json.dumps({"D": {"session_id": "s4"}}))
+    (tmp_path / "other.json").write_text(json.dumps({"X": {"session_id": "no"}}))
+    assert session_ids(tmp_path) == ["s1", "s2", "s3", "s4"]
+
+
+def test_docs_devin_page_is_generated_from_the_evidence_file():
+    from ops.devin_evidence import PAGE, load, render
+    assert PAGE.read_text(encoding="utf-8") == render(load()), "run: python -m ops.devin_evidence"
+
+
+def test_evidence_matches_the_launch_files_and_counts_are_honest():
+    from ops.devin_counts import session_ids
+    from ops.devin_evidence import counts, load
+    evidence = load()
+    ids = [s["session_id"] for s in evidence["sessions"]]
+    assert len(ids) == len(set(ids)) == 9
+    if session_ids():                                  # the launch files are git-ignored, so only check where they exist
+        assert sorted(ids) == sorted(session_ids())
+    assert counts(evidence)["prs"] == 5
+
+
+def test_api_devin_prefers_the_committed_evidence_over_a_stale_live_file(tmp_path):
+    import json
+    import shutil
+    from fastapi.testclient import TestClient
+    from server.app import create_app
+    from ops.devin_evidence import EVIDENCE
+    shutil.copy(EVIDENCE, tmp_path / "devin_evidence.json")
+    (tmp_path / "devin_counts.json").write_text(json.dumps({"sessions": 4, "prs": 1}))
+    c = TestClient(create_app(tmp_path / "ops.jsonl"))
+    assert c.get("/api/devin").json()["sessions"] == 9
+    (tmp_path / "devin_counts.json").write_text(json.dumps({"sessions": 9, "prs": 5, "acus_reported": 1.5}))
+    assert c.get("/api/devin").json()["acus_reported"] == 1.5

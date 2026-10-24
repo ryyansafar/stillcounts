@@ -10,7 +10,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - run: pip install -r requirements.txt
-      - run: python -m pytest -q --cov=stillcounts --cov=server --cov=oracle
+      - run: python -m pytest -q --cov=stillcounts --cov=server --cov=oracle --cov=learn --cov-report=term-missing --cov-fail-under=90
       - run: node --test client/test/
       - run: python -m oracle.oracle --seed 0xA3 --ops 240 --perms 200
       - run: python -m oracle.mutation

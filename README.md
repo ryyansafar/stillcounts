@@ -98,7 +98,7 @@ The ledger is a set of operations, each with a unique id. State is a pure functi
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m pytest -q
 node --test client/test/
-scripts/run.sh          # serves on port 8000, prints the board link with a join token
+scripts/run.sh          # serves on port 8000, prints the board link with a join token (add STILLCOUNTS_LEARN_WRITE_LAN=1 so phones can use the Write checkpoint; see docs/DEMO.md)
 ```
 
 Open `/` for the course (`/static/learn.html` is the same page; the ledger phone app is `/static/ledger.html`). The first visit needs the base; after that the lessons work offline. After editing the course content in `learn/build_stages.py`, regenerate with `.venv/bin/python -m learn.build_stages`. `docs/DEMO.md` is the timed demo script.

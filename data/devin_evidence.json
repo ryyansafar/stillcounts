@@ -29,7 +29,7 @@
    "role": "WRITER-chaos-sim",
    "session_id": "140578aa9dab4f60a205cbd33a937fa4",
    "kind": "writer",
-   "outcome": "Built chaos/, a deterministic simulation of the 24 scout scenarios, with regression tests. Its runs showed 8 scenarios failing. The playbook asked for a separate fix pull request per failure; none was opened, so the failures were pinned as strict expected failures.",
+   "outcome": "Built chaos/, a deterministic simulation of the 24 scout scenarios plus one control run (25 in all), with regression tests. Its runs showed 8 scenarios failing. The playbook asked for a separate fix pull request per failure; none was opened, so the failures were pinned as strict expected failures.",
    "pr": 1,
    "issues": []
   },

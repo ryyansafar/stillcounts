@@ -9,8 +9,10 @@ Check `README.md` first: the Understanding tab, gap score and proof card are rea
 ## Before you go on (off stage, about 5 minutes)
 
 ```bash
-scripts/run.sh          # prints the board link with this run's join token
+STILLCOUNTS_LEARN_WRITE_LAN=1 scripts/run.sh   # prints the board link with this run's join token
 ```
+
+`STILLCOUNTS_LEARN_WRITE_LAN=1` is needed for the **Write** checkpoint: without it the base answers phones with 403 and only the laptop's own browser can submit code. With it, code a learner types on a phone runs on the demo laptop (in the sandbox, which is defence in depth, not a security boundary), so use it only on a network you trust, such as your own hotspot, never on venue Wi-Fi with strangers.
 
 1. Open the printed `http://localhost:8000/board?t=...` link on the projector. The QR code on it carries the join token.
 2. A volunteer who is **not a coder** gets a phone. Scan the QR code, open the Learn link, and let the lessons load once with signal (they are cached after the first visit).
@@ -18,7 +20,7 @@ scripts/run.sh          # prints the board link with this run's join token
    ```bash
    brew install mkcert && mkcert -install
    mkcert <laptop-ip> localhost
-   STILLCOUNTS_TLS_CERT=<laptop-ip>+1.pem STILLCOUNTS_TLS_KEY=<laptop-ip>+1-key.pem scripts/run.sh
+   STILLCOUNTS_LEARN_WRITE_LAN=1 STILLCOUNTS_TLS_CERT=<laptop-ip>+1.pem STILLCOUNTS_TLS_KEY=<laptop-ip>+1-key.pem scripts/run.sh
    ```
    Each phone must trust mkcert's root certificate (`mkcert -CAROOT` shows where it is).
 4. Rehearse once with a throwaway learner so the volunteer's progress starts clean.
@@ -48,5 +50,5 @@ scripts/run.sh          # prints the board link with this run's join token
 - No venue Wi-Fi: the laptop can host a hotspot; phones only need to reach the base address.
 - A phone shows `join link needed`: it did not scan this run's QR code. Scan again.
 - Lessons show "Connect once to download them": the phone never loaded them with signal. Reconnect and open the Learn page once.
-- Write checkpoint says it is not allowed from this device: by default only the base laptop's own browser may use it (`STILLCOUNTS_LEARN_WRITE_LAN=1` changes that).
+- Write checkpoint says it is not allowed from this device (HTTP 403): you started the base without `STILLCOUNTS_LEARN_WRITE_LAN=1`. Restart it with that variable (see the pre-flight command); the lesson progress is kept.
 - Fallbacks: `docs/screenshots/` has the phone, board, attack and learn screens. No demo video is committed; record a 60-second airplane-mode clip yourself before the event.

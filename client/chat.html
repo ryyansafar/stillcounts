@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#212121">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/chat.css">
+<link rel="stylesheet" href="/static/hr_widget.css">
+<title>Still Counts</title>
+</head>
+<body class="chatpage">
+<div id="app" class="shell">
+  <aside id="side" class="side" aria-label="Chats">
+    <button id="newchat" type="button" class="newchat">+ New chat</button>
+    <div id="chatlist" class="chatlist" role="list"></div>
+    <details class="menu" id="more">
+      <summary>More</summary>
+      <div class="menu-pop">
+        <nav class="pages" aria-label="Other pages">
+          <a href="/ledger">Ledger</a>
+          <a href="/board">Board</a>
+          <a href="/static/learn.html">Learn</a>
+          <a href="/race">Race</a>
+          <a href="/static/results.html">Results</a>
+        </nav>
+        <label class="toggle"><input id="offline" type="checkbox"><span>Offline replay <small>Never calls Devin. The build is simulated and labelled as such.</small></span></label>
+        <div id="socials" class="socials" aria-label="Links and support"></div>
+      </div>
+    </details>
+  </aside>
+  <div id="scrim" class="scrim"></div>
+  <section class="mainpane">
+    <header class="topbar">
+      <div id="topbar" class="topleft"></div>
+      <div id="hr-widget" class="hrhost"></div>
+    </header>
+    <div id="livebar" class="livebar hidden" role="status" aria-label="Devin status"></div>
+    <div id="banner" class="banner hidden" role="status"></div>
+    <div id="welcome" class="welcome"></div>
+    <div id="thread" class="thread" aria-live="polite" aria-label="Conversation"></div>
+    <div class="dock">
+      <div id="gate" class="gate hidden" role="status"></div>
+      <div class="composer">
+        <textarea id="prompt" rows="1" aria-label="Message" placeholder="Ask Devin to build something small"></textarea>
+        <button id="send" type="button" class="send" aria-label="Send">&#8593;</button>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="/static/auth.js"></script>
+<script src="/static/crdt.js"></script>
+<script src="/static/learn.js"></script>
+<script src="/static/stress.js"></script>
+<script src="/static/hr.js"></script>
+<script src="/static/hr_widget.js"></script>
+<script src="/static/chat_core.js"></script>
+<script src="/static/chat_view.js"></script>
+<script src="/static/chat_bridge.js"></script>
+<script src="/static/chat_replay.js"></script>
+<script src="/static/devin_live.js"></script>
+<script src="/static/chat_ctl.js"></script>
+<script src="/static/chat.js"></script>
+</body>
+</html>

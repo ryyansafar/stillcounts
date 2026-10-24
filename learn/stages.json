@@ -202,7 +202,28 @@
    "function": "dedupe",
    "prompt": "Write dedupe(ops): keep one operation per id.",
    "stub": "def dedupe(ops):\n    \"\"\"Return each operation exactly once, sorted by id.\n\n    ops is an iterable of Op(id, replica, lamport, kind, item, value). The same id can\n    arrive many times. Keep one op per id. If two ops share an id but differ in content,\n    keep the one with the larger _total(op), so every phone picks the same copy.\n    Call _validate(op) on every op first: it raises ValueError for a malformed op.\n    \"\"\"\n    raise NotImplementedError\n",
-   "hook": null
+   "hook": null,
+   "guided": {
+    "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer.",
+    "choices": [
+     {
+      "id": "a",
+      "body": "    best = {}\n    for op in ops:\n        _validate(op)\n        best.setdefault(op.id, op)\n    return [best[k] for k in sorted(best)]\n"
+     },
+     {
+      "id": "b",
+      "body": "    best = {}\n    for op in ops:\n        _validate(op)\n        cur = best.get(op.id)\n        if cur is None or _total(op) > _total(cur):\n            best[op.id] = op\n    return [best[k] for k in sorted(best)]\n"
+     },
+     {
+      "id": "c",
+      "body": "    best = {}\n    for op in ops:\n        cur = best.get(op.id)\n        if cur is None or _total(op) > _total(cur):\n            best[op.id] = op\n    return [best[k] for k in sorted(best)]\n"
+     },
+     {
+      "id": "d",
+      "body": "    return sorted(ops, key=lambda op: op.id)\n"
+     }
+    ]
+   }
   },
   "explain": {
    "prompt": "In your own words: why can the same operation arrive more than once, and why is it never counted twice?",
@@ -489,6 +510,27 @@
    "hook": {
     "old": "sum(o.value for o in group if o.kind == \"adjust\")",
     "new": "quantity(group)"
+   },
+   "guided": {
+    "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer.",
+    "choices": [
+     {
+      "id": "a",
+      "body": "    return sum(abs(o.value) for o in ops if o.kind == \"adjust\")\n"
+     },
+     {
+      "id": "b",
+      "body": "    return sum(o.value for o in ops if o.kind == \"adjust\")\n"
+     },
+     {
+      "id": "c",
+      "body": "    return sum(o.value for o in ops if o.kind == \"adjust\" and o.value > 0)\n"
+     },
+     {
+      "id": "d",
+      "body": "    return len([o for o in ops if o.kind == \"adjust\"])\n"
+     }
+    ]
    }
   },
   "explain": {
@@ -765,7 +807,28 @@
    "function": "_lww",
    "prompt": "Write _lww(ops, default): the last-writer-wins value.",
    "stub": "def _lww(ops, default):\n    \"\"\"Return the value of the winning write, or default if ops is empty.\n\n    ops is a list of writes to one register (all names, all notes or all deletes of one\n    item). The winner has the highest _order(op), which is (op.lamport, op.replica):\n    the highest Lamport time, and on a tie the highest replica id.\n    \"\"\"\n    raise NotImplementedError\n",
-   "hook": null
+   "hook": null,
+   "guided": {
+    "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer.",
+    "choices": [
+     {
+      "id": "a",
+      "body": "    return min(ops, key=_order).value if ops else default\n"
+     },
+     {
+      "id": "b",
+      "body": "    return max(ops, key=lambda o: o.lamport).value if ops else default\n"
+     },
+     {
+      "id": "c",
+      "body": "    return max(ops, key=_order).value if ops else default\n"
+     },
+     {
+      "id": "d",
+      "body": "    return ops[-1].value if ops else default\n"
+     }
+    ]
+   }
   },
   "explain": {
    "prompt": "In your own words: how does the ledger decide which rename wins, and why not use the time on the phone?",
@@ -1028,6 +1091,27 @@
    "hook": {
     "old": "[i for i, s in state.items() if s[\"qty\"] < 0 and s[\"alive\"]]",
     "new": "oversold_items(state)"
+   },
+   "guided": {
+    "prompt": "Pick the body that does what the docstring says. It is graded by running it, like any other answer.",
+    "choices": [
+     {
+      "id": "a",
+      "body": "    return [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]\n"
+     },
+     {
+      "id": "b",
+      "body": "    return [i for i, s in state.items() if s[\"qty\"] < 0]\n"
+     },
+     {
+      "id": "c",
+      "body": "    return [i for i, s in state.items() if s[\"qty\"] < 0 and s[\"alive\"]]\n"
+     },
+     {
+      "id": "d",
+      "body": "    return [i for i, s in state.items() if s[\"qty\"] < 0 and s[\"alive\"]][:1]\n"
+     }
+    ]
    }
   },
   "explain": {

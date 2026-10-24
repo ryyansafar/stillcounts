@@ -32,7 +32,7 @@ MAX_LEARNERS = 10_000
 # Fields a locked stage may show. Everything else (code, expected answers, solutions, rubrics, ...) stays hidden.
 PUBLIC_STAGE = ("id", "order", "title", "summary")
 PUBLIC_CHECKPOINT = ("prompt", "question", "hint", "ops", "choices", "options", "snippet", "line", "mutant_source", "diff",
-                     "function", "signature", "stub", "starter", "docstring", "min_points")
+                     "function", "signature", "stub", "starter", "docstring", "min_points", "guided")
 PUBLIC_CASE = ("id", "name", "prompt", "question", "ops", "item", "field")      # predict cases: show the ops, never the expected result
 
 Learner = Annotated[str, Header(alias="X-Learner-Id", pattern=LEARNER_PATTERN)]

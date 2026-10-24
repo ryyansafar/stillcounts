@@ -290,7 +290,7 @@ test("learn page loads crdt.js before learn.js and is linked from the phone app 
   const html = read("learn.html");
   assert.ok(html.indexOf("/static/crdt.js") > 0 && html.indexOf("/static/crdt.js") < html.indexOf("/static/learn.js"));
   assert.ok(html.includes("/static/style.css") && html.includes("/static/learn.css"));
-  assert.ok(read("index.html").includes('href="/static/learn.html"'));
+  assert.ok(read("chat.html").includes('href="/static/learn.html"'));
   assert.ok(read("ledger.html").includes('id="addbtn"'), "the old phone app lives on at ledger.html");
   assert.ok(read("board.html").includes('href="/static/learn.html"'));
 });
@@ -310,7 +310,7 @@ test("the front door pitches the product, links Course 1 and shows four tabs", a
   const { root } = await mounted(fakeServer());
   assert.match(one(root, "data-hero", "pitch").textContent, /Do not paste code you do not understand/);
   assert.deepStrictEqual(all(root, (n) => n.getAttribute("role") === "tab").map((n) => n.getAttribute("data-view")), ["course", "map", "results", "proof"]);
-  const html = read("index.html");
+  const html = read("learn.html");
   for (const href of ["/static/ledger.html", "/board", "/race", "/static/learn.html"]) assert.ok(html.includes('href="' + href + '"'), href);
   assert.ok(html.indexOf("https://ryyansafar.site") < html.indexOf("https://github.com/ryyansafar"));
   assert.ok(html.indexOf("/static/understand.js") < html.indexOf("/static/learn.js") && html.indexOf("/static/learn_views.js") < html.indexOf("/static/learn.js"));

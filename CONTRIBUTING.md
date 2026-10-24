@@ -14,9 +14,16 @@ This repository (`stillcounts`) holds Earn the Code and its first course, an off
 10. Anything not yet on main (Understanding Map, gap score, `make_course`) must be labelled as in progress in the docs until it is. If a Devin CLI session did later work, label it "Devin CLI, local".
 11. Branches named `devin/*` may not touch `oracle/`, `stillcounts/crdt.py`, `tests/test_oracle_*.py` or `.github/CODEOWNERS`; CI fails them. CODEOWNERS alone is only advisory unless branch protection requires code-owner review, which the repo owner has to switch on.
 
+## Chat shell
+
+`client/chat_core.js` is the stop-until-earned state machine and must stay pure (no DOM, no network, no clock): change it test first in `client/test/chat_core.test.js`. The replay (`chat_replay.js`) must label everything it makes as simulated and must obey the same gate as a real session. Never show a locked stage's code, the expected answer or the right option in the browser.
+
 ## Socials & Support
 - Portfolio: https://ryyansafar.site
 - GitHub: https://github.com/ryyansafar
 - Buy Me a Coffee: https://buymeacoffee.com/ryyansafar
 - PayPal: https://www.paypal.com/paypalme/ryyansafar
 - Razorpay: https://razorpay.me/@ryyansafar
+
+Chat shell notes: Devin bridge in `server/devin_bridge.py` and `server/live_course.py`, client in `client/devin_live.js`, `chat_*.js`, `hr*.js`, `stress.js`.
+Tests: `.venv/bin/python -m pytest -q` and `node --test client/test/`.

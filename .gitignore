@@ -18,3 +18,6 @@ data/devin_counts.json
 data/ops.jsonl.epoch
 data/ops.jsonl.names
 mutants/
+data/learn_adaptations.jsonl
+data/devin_live.json
+data/devin_live.json.tmp

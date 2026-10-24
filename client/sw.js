@@ -1,10 +1,13 @@
 // Caches the app shell so the ledger opens and works with no network at all.
 // Strategy: network first (so updates arrive when there is a signal), cache as the fallback after a short timeout.
-var CACHE = "stillcounts-v9";
-var SHELL = ["/", "/static/auth.js", "/static/crdt.js", "/static/exchange.js", "/static/app.js", "/static/style.css", "/static/manifest.webmanifest", "/static/icons/icon-192.png",
+var CACHE = "stillcounts-v13";
+var SHELL = ["/", "/ledger", "/board", "/race", "/static/auth.js", "/static/crdt.js", "/static/exchange.js", "/static/app.js", "/static/style.css", "/static/manifest.webmanifest",
+             "/static/icons/icon-192.png", "/static/icons/icon.svg", "/static/icons/logo.svg",
              "/static/learn.html", "/static/learn.js", "/static/learn.css", "/static/understand.js", "/static/learn_views.js",
-             "/static/ledger.html", "/board", "/static/icons/icon.svg",
-             "/race", "/static/race.js", "/static/race.css"];
+             "/static/ledger.html", "/static/race.js", "/static/race.css",
+             "/static/stress.js", "/static/hr.js", "/static/hr_widget.js", "/static/hr_widget.css",
+             "/static/chat.html", "/static/chat.css", "/static/chat_core.js", "/static/chat_view.js", "/static/chat_bridge.js",
+             "/static/chat_replay.js", "/static/devin_live.js", "/static/results.html", "/static/results.js", "/static/chat_ctl.js", "/static/chat.js"];
 var NETWORK_TIMEOUT_MS = 2500;
 
 self.addEventListener("install", function (e) {

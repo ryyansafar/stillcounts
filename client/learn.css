@@ -1,0 +1,49 @@
+/* Learn mode. Colours come from style.css so it matches the ledger. */
+.learnnav { display: flex; gap: 8px; margin-bottom: 14px; }
+#learn h2 { font-size: 22px; margin: 22px 0 6px; }
+#learn h3 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin: 0 0 8px; }
+#learn h4 { font-size: 15px; margin: 12px 0 4px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+.bar { height: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; overflow: hidden; margin-top: 4px; }
+.bar .fill { height: 100%; width: 0; background: var(--good); transition: width .3s ease; }
+.bartext { color: var(--muted); font-size: 14px; margin: 6px 0 14px; }
+
+.stages { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 8px; }
+.stages .stage { width: 100%; min-height: 60px; display: flex; align-items: center; gap: 14px; padding: 0 16px; text-align: left; }
+.stages .stage .title { flex: 1; }
+.stages .stage .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.stages li.current .stage { border-color: var(--text); }
+.stages li.locked .stage { color: var(--muted); cursor: not-allowed; }
+.stages li.earned .stage { border-color: var(--good); }
+
+/* padlock drawn in CSS: a body and a shackle */
+.lock { position: relative; display: inline-block; flex: none; width: 18px; height: 14px; margin-top: 8px; border-radius: 3px; background: var(--muted); }
+.lock::before { content: ""; position: absolute; left: 3px; top: -9px; width: 8px; height: 9px; border: 2px solid var(--muted); border-bottom: 0; border-radius: 6px 6px 0 0; }
+.lock.open { background: var(--warn); }
+.lock.open::before { border-color: var(--warn); left: 9px; }
+.lock.earned { width: 24px; height: 24px; margin-top: 0; border-radius: 50%; background: var(--good); color: #0a0a0a; font-weight: 800; font-size: 15px; line-height: 24px; text-align: center; }
+.lock.earned::before { display: none; }
+
+.cp.locked { opacity: .55; }
+.cp.done { border-color: var(--good); }
+.ops { margin: 6px 0 12px; padding-left: 22px; font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row .field { flex: 1 1 140px; }
+.row button { flex: 1 1 200px; padding: 0 16px; }
+.field { font: inherit; width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-height: 52px; }
+.codein, .code { font: 15px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+textarea.field { resize: vertical; margin-bottom: 8px; }
+.code { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto; white-space: pre; margin: 8px 0 12px; }
+.code.real { border-color: var(--good); }
+.choices { display: grid; gap: 8px; }
+.choices button { padding: 10px 16px; text-align: left; }
+button.wide { width: 100%; }
+button:disabled { cursor: not-allowed; }
+button.unlock { border-color: var(--good); color: var(--good); }
+.result { min-height: 1.4em; margin: 10px 0 0; font-weight: 600; }
+.result.good { color: var(--good); }
+.result.bad { color: var(--bad); }
+.result.warn { color: var(--warn); }
+.rubric { margin: 4px 0 0; padding-left: 22px; }
+.rubric li { margin: 4px 0; }
+.empty { color: var(--muted); }

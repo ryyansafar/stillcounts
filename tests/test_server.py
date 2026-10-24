@@ -105,8 +105,10 @@ def test_service_worker_is_served_from_the_root_scope(tmp_path):
     c, _ = make(tmp_path)
     r = c.get("/sw.js")
     assert r.status_code == 200 and r.headers["service-worker-allowed"] == "/"
-    assert "stillcounts-v3" in r.text
+    assert 'var CACHE = "stillcounts-v' in r.text
     assert c.get("/static/crdt.js").status_code == 200
+    for name in ("learn.html", "learn.js", "learn.css"):
+        assert c.get("/static/" + name).status_code == 200 and "/static/" + name in r.text
 
 
 def test_seed_is_idempotent(tmp_path):

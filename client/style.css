@@ -25,3 +25,5 @@ button:active { background: var(--olive); }
 .add input { flex: 1; font: inherit; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 12px; min-height: 52px; }
 footer { color: var(--muted); font-size: 13px; margin-top: 20px; }
 .hidden { display: none; }
+.navlink { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--btn); color: var(--text); font-weight: 700; text-decoration: none; }
+.navlink:active { background: var(--olive); }

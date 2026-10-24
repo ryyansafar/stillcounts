@@ -1,0 +1,301 @@
+{
+ "SCOUT-NETWORK": {
+  "area": "NETWORK FAULTS: partitions that heal late, duplicated and reordered delivery, partial syncs cut off mid-batch, repeated retries, huge offline backlogs, a replica that syncs twice at once",
+  "notes": "Read-only scout of main at 0b4f4ad. The repo was not changed. client/index.html is a 43-byte placeholder, so there is no real client sync loop: the scenarios drive server.app (create_app + TestClient) and stillcounts.outbox.Outbox directly. I reproduced scenarios 1-5, 6 and 8 with throwaway scripts in /tmp against the real code; the observed results are given in why_it_might_break. Scenario 7's server half passed (4 concurrent 300-op batches gave 900 unique ops and 900 file lines); its notifier race is inferred from the code and was not reproduced. The cause behind most of them: the server dedupes by id with first-writer-wins, unlike crdt.dedupe, which keeps the max content. The cursor is a list index into a log rebuilt from a JSONL file that skips bad lines. Outbox.flush rewrites the whole file from an old read. The existing tests only cover pure merge permutations, idempotent re-POSTs of the same op, a 501-op rejection and restart with a clean log. None of them covers torn writes, id collisions, a cursor that no longer matches the log, or outbox races.",
+  "scenarios": [
+   {
+    "name": "Server crash mid-append tears a line; the next accepted op merges into it and disappears on restart",
+    "steps": [
+     "Start create_app(tmp/ops.jsonl). ph-a POSTs /api/sync with ph-a:1 (adjust rice +5) and gets accepted=1.",
+     "Simulate a crash during LogStore.append: write a half line with no trailing newline to ops.jsonl, e.g. '{\"id\": \"ph-a:2\", \"replica\": \"ph-a\", \"lam'.",
+     "Restart the server (new create_app on the same path). ph-b POSTs ph-b:1 (adjust rice +7) and gets accepted=1. The fh.write lands on the same line as the torn fragment.",
+     "Restart again and GET /api/log.",
+     "Run check_delivery(created=[ph-a:1, ph-b:1], {'server': log, 'ph-b': ph-b local ops + log}). ph-a never got an ack for ph-a:2, so its retry is a separate check."
+    ],
+    "expected": "The oracle should FAIL: the server lost 1 of 2 ops (ph-b:1). Its state is rice=5 where the reference is 12, even though ph-b was told accepted=1 and has dropped the op from its outbox.",
+    "why_it_might_break": "LogStore only appends JSON plus a newline. It never writes a leading newline or fsyncs, and never repairs a file whose last line is incomplete. On load, the line that is torn fragment plus next op is invalid JSON and is skipped with 'except ValueError: continue', so an op that was acknowledged is silently lost. Reproduced: after the restart the log ids were ['ph-a:1'] only."
+   },
+   {
+    "name": "A retry with the same id but different content (edited queued op, or reinstalled phone restarts its counter)",
+    "steps": [
+     "ph-a POSTs ph-a:1 = adjust rice +5 at lamport 1. The response is lost because the network drops.",
+     "Before retrying, the phone changes the queued op, or a reinstalled phone with its counter reset to 0 makes a new ph-a:1 = adjust rice +9 at lamport 2, and POSTs it.",
+     "The server returns accepted=0. The phone's local log holds both variants, or only the new one.",
+     "ph-b syncs from cursor 0.",
+     "Compare canonical(merge(phone local)), canonical(merge(server /api/log)) and canonical(merge(ph-b received)). Also run check_delivery with created set to both variants."
+    ],
+    "expected": "check_delivery should FAIL with 'state differs': crdt.dedupe picks the content with the larger _total (qty 9), but the server and ph-b hold the first copy (qty 5). The replicas do not converge.",
+    "why_it_might_break": "LogStore._add dedupes on id with first-writer-wins and _seen, while crdt.dedupe keeps max(_total). The two rules disagree, so convergence depends on arrival order. accepted=0 tells the phone nothing about the conflict. The test_crdt property tests deliberately keep only the first op per id, so this case is never exercised. Reproduced: server qty 5, merge of both 9."
+   },
+   {
+    "name": "A restart drops a corrupt log line, so every index cursor moves and late-syncing replicas skip ops for good",
+    "steps": [
+     "ph-a pushes ph-a:1..3. ph-b pulls and saves cursor=3.",
+     "Corrupt one earlier line in ops.jsonl, e.g. truncate line 1 (disk full or torn write as in scenario 1), then restart the server.",
+     "ph-c pushes ph-c:1. It is stored at index 2 because the log now has 3 entries.",
+     "ph-b comes back after a long partition and syncs with cursor=3.",
+     "Run check_delivery(created=all ops, {'ph-b': what ph-b holds})."
+    ],
+    "expected": "The oracle should FAIL: ph-b is missing ph-c:1 (lost 1 of N). It sees ops: [] and a cursor that never goes back, so nothing ever repairs it.",
+    "why_it_might_break": "The cursor is len(store.ops), a position in a list rebuilt from whichever lines happen to parse. Any line skipped at load moves every later op down a slot, and the store.ops[cursor:] slice skips them. Reproduced: ph-b at cursor 3 got [] while the log was ['ph-a:2','ph-a:3','ph-c:1']."
+   },
+   {
+    "name": "A partition heals after the server was restored from an older backup: the stale cursor runs past the end of the log",
+    "steps": [
+     "Server log has 50 ops. ph-a pulls them and saves cursor=50, then goes offline.",
+     "The base server is wiped or restored from a backup with 1 op (another replica's ph-c:1) and keeps running.",
+     "Other replicas push ops at indices 1..k.",
+     "ph-a comes back and syncs with cursor=50, then keeps syncing with whatever cursor each response returns.",
+     "Run check_delivery for ph-a and for the server against the union of everything created."
+    ],
+    "expected": "The oracle should FAIL. ph-a gets ops: [] and then a cursor of len(log), so ops at the lower indices (ph-c:1 and anything pushed while its cursor was too high) never reach it. The server has also lost the 49 ops that only ph-a holds, unless ph-a re-pushes its entire history.",
+    "why_it_might_break": "The server never checks cursor <= len(store.ops) and has no log epoch or id, so a client cannot tell the log was replaced. A slice past the end returns nothing without an error. Reproduced: cursor=50 against a 1-op log returned ops [] and cursor 1."
+   },
+   {
+    "name": "Outbox.flush clobbers an op enqueued while a slow sync is in flight",
+    "steps": [
+     "On the phone, Outbox(path) holds ph-a:1 and ph-a:2.",
+     "Call flush(send) where send is slow (poor signal). While ph-a:1 is in flight, the volunteer taps and enqueue(ph-a:3) appends to the file.",
+     "The flush finishes and calls _write(items[sent:]) using the list it read before ph-a:3 existed.",
+     "Reconnect, flush again, then run check_delivery(created=[ph-a:1..3], {'server': log})."
+    ],
+    "expected": "The oracle should FAIL: the server lost 1 of 3 ops (ph-a:3). The op was removed from the phone's queue before it was ever sent.",
+    "why_it_might_break": "flush does read, then send, then _write(old_list[sent:]) using a truncating write_text, with no lock or re-read. Anything appended during the send window is overwritten. A crash during write_text can also leave an empty outbox. Reproduced: flush returned (2, 0), pending()=0, and the file was empty, with ph-a:3 gone."
+   },
+   {
+    "name": "A huge offline backlog contains one poison op, so every batch after it stalls behind a 422",
+    "steps": [
+     "ph-a stays offline for days and queues 5,000 ops. Op #1,234 is malformed: adjust with value 0 or true, a 201-character note, or kind 'restock' from a newer app version.",
+     "On reconnect, first try a single POST of all 5,000 ops, then send them in chunks of 500 in order, as Outbox.flush would.",
+     "Retry each failed chunk with exponential backoff up to 20 times.",
+     "Meanwhile ph-b keeps syncing normally. Run check_delivery(created = the 4,999 valid ops plus ph-b's ops, {'server': log, 'ph-b': received})."
+    ],
+    "expected": "The single 5,000-op POST is rejected (MAX_OPS_PER_SYNC=500, 422). With chunking, chunks 1-2 land, chunk 3 is rejected whole on every retry, and the oracle FAILS for chunks 3-10: about 3,999 valid ops are never delivered, even though only one op is bad.",
+    "why_it_might_break": "/api/sync deliberately rejects the whole batch when one op fails validation, and the 422 does not say which op. Outbox.flush stops at the first failure, so retries hit the same wall forever. Nothing quarantines the bad op. Reproduced: 501 ops and a batch with one value=0 op both returned 422 with 0 stored."
+   },
+   {
+    "name": "The same replica syncs twice at once over overlapping batches, interleaved with pulls",
+    "steps": [
+     "Fire 4 POST /api/sync calls from ph-a at the same time on threads (FastAPI runs sync def handlers in a threadpool). Each carries 300 ops, and neighbouring batches overlap by 100 ids. Each uses cursor 0.",
+     "At the same time, have ph-b pull with its saved cursor in a loop.",
+     "Include items that go negative in some batches and positive in others, so check_oversell runs concurrently.",
+     "Afterwards compare /api/log, a reload of ops.jsonl from disk (restart), and ph-b's accumulated log, then run check_delivery and permutation_check on the union."
+    ],
+    "expected": "The oracle should PASS: 900 unique ops in memory and on disk, ph-b receives all of them, and the state is identical. Keep this as a guard. Any drift between memory and the file, or a second oversell notification, is a regression.",
+    "why_it_might_break": "append is locked, but the response computes 'cursor': len(store.ops) and the store.ops[cursor:] slice outside the lock. check_oversell reads store.ops and changes the shared notified set with no lock, so it can send duplicate notifications or miss one. Re-ordering the response dict or adding pagination later could drop ops. Server side reproduced as passing: 900 unique ops and 900 file lines. The notifier race is only inferred from the code."
+   },
+   {
+    "name": "A replica comes back after a late heal with a skewed, enormous Lamport value and a spoofed replica id",
+    "steps": [
+     "ph-z has a broken or hostile clock and stays offline for a week. It writes note/create/delete ops at lamport 2**80, sending replica='ph-z' in the body but op.replica='ph-a' on some ops.",
+     "While it was away, ph-a and ph-b made honest edits at lamports around 1..500.",
+     "ph-z heals and syncs. The server accepts everything (lamport only needs ge=1).",
+     "Honest replicas observe the max lamport (Clock.observe) and keep editing. A JS client would parse 2**80 as a float and lose precision.",
+     "Run permutation_check and check_delivery on the union. Also check that later honest notes and deletes still take effect."
+    ],
+    "expected": "permutation_check and check_delivery should pass, because the merge is still deterministic. But every honest LWW write after the heal loses to ph-z until clocks catch up to 2**80. A JS replica that rounds lamport would compute a different _order, giving divergent canonical state and an oracle FAIL on that replica's log.",
+    "why_it_might_break": "The server sets no upper bound on lamport and no skew limit compared with the server's max, and it does not check that op.replica == body.replica. One bad sync can pin the names, notes and alive flags forever. Any client stack without arbitrary-precision ints breaks the byte-identical promise. Reproduced: lamport 2**80 got HTTP 200, and an op with replica 'ph-z' in a body from 'ph-a' got accepted=1."
+   }
+  ]
+ },
+ "SCOUT-IDS-CLOCKS": {
+  "area": "IDS AND CLOCKS: Lamport ties, same-id/different-content, replica id collisions, enormous/skewed Lamport, empty/unicode text, negative/huge quantities, tombstone/restore races",
+  "notes": "Read-only scout of main @ 0b4f4ad. No repo edits, no PRs. Behaviours marked VERIFIED were reproduced in-process with fastapi.testclient against the real create_app/merge/check_delivery, using a temp store path outside the repo (pydantic 2.14.1, Python 3.10). client/index.html and board.html are stubs (43 and 36 bytes), so there are no client-side clock scenarios here. Most severe: (1) U+2028 text is silently dropped on restart and the shifted cursor then hides later ops; (2) a lone-surrogate note brings down every endpoint until restart and is then lost; (3) same-id/different-content makes the server and a replica diverge, and check_delivery fails whichever log is the reference. NEXT: the writer harness should add generators for these value/id shapes (generate_ops only makes ASCII names, unique ids and small lamports) and drive restart cycles of LogStore.",
+  "scenarios": [
+   {
+    "name": "U+2028 line separator in a note silently drops the op on server restart, and the shifted cursor hides later ops",
+    "steps": [
+     "Replica ph-a syncs op a:1 {kind:note,item:rice,value:'line\\u2028two'}; server answers accepted:1, cursor:1.",
+     "Replica ph-a syncs more ops; its saved cursor is now N (VERIFIED N=7).",
+     "Restart the server process (create_app on the same ops.jsonl). LogStore uses str.splitlines(), which also splits on U+2028/U+2029/\\x85/\\x1c-\\x1e, so the a:1 line splits into two invalid JSON pieces and both are skipped by 'except ValueError: continue'.",
+     "Replica ph-b syncs a new op y:1, which lands at index N-1.",
+     "ph-a pulls with cursor=N and gets []. It never sees y:1, and the server no longer has a:1.",
+     "Run check_delivery(created=all ops, deliveries={server: /api/log, ph-a: ph-a's received log})."
+    ],
+    "expected": "Oracle fails: the server lost a:1, and ph-a lost y:1 even though both syncs returned 200. VERIFIED: after restart the log had 6 of 7 ops, and pulling from the old cursor returned [] after y:1 was added.",
+    "why_it_might_break": "json.dumps(ensure_ascii=False) writes U+2028 raw, but splitlines() treats it as a newline. The loader drops corrupt lines silently, and the cursor is a list index, so one dropped line moves every later index for clients that sync by cursor."
+   },
+   {
+    "name": "Lone surrogate in text poisons the server and the op is lost",
+    "steps": [
+     "Replica sends raw JSON {\"id\":\"s:1\",...,\"kind\":\"note\",\"value\":\"\\ud800\"} (valid JSON escape, passes pydantic, passes crdt._validate).",
+     "LogStore.append adds s:1 to memory and _seen, then the UTF-8 file write raises UnicodeEncodeError, so the server returns 500.",
+     "Replica retries s:1, and other replicas sync normal op s:2.",
+     "Call /api/state and /api/log; restart the server; run check_delivery."
+    ],
+    "expected": "Oracle should report s:1 lost. VERIFIED: every later /api/sync, /api/state and /api/log returned 500 (response encoding of the poisoned op failed). s:2 was written to disk even though its sync returned 500. After restart s:1 was gone and only s:2 remained.",
+    "why_it_might_break": "Validation does not reject unpaired surrogates. _add mutates memory before persistence can fail, and nothing rolls it back, so one op takes the whole service down until restart and then disappears."
+   },
+   {
+    "name": "Same id, different content: server keeps the first arrival while dedupe keeps the max",
+    "steps": [
+     "Phone ph-q creates q:1 {lamport:1,adjust rice,-500}. A buggy or replayed client also emits q:1 with value 5 (for example after an edit-in-place, or a counter reset that reuses the id).",
+     "Partition: the server gets value -500 from one path first, then value 5 from another (accepted:0).",
+     "Replica R holds both versions locally, and crdt.dedupe picks the larger _total (repr '5' > '-500'), so value 5.",
+     "Run check_delivery with the reference taken from either the server log or R's log."
+    ],
+    "expected": "Converged state is identical everywhere. VERIFIED: the server's qty is -500 and R's qty is 5, and check_delivery fails whichever log is the reference ('state differs from the reference after delivery'). The id-based lost check sees nothing missing.",
+    "why_it_might_break": "LogStore._add dedupes by id with first-arrival-wins, but merge resolves duplicate ids by max content, so the two dedupe rules disagree. The server also never relays the second version. The permutation oracle and test_crdt only use unique ids ('ops with the same id must be identical, so keep the first'), so this is not covered."
+   },
+   {
+    "name": "Replica id collision: two phones both named ph-a reuse ids ph-a:1..n",
+    "steps": [
+     "Two fresh installs default to the same replica id (or a restored backup clones a phone), and both counters start at 1.",
+     "Phone 1 syncs ph-a:1..5 (adjusts); the server accepts 5.",
+     "Phone 2 syncs its own ph-a:1..5 with different items and values; the server replies 200 accepted:0, and the outbox treats that as sent and clears the queue.",
+     "Per-phone created logs are combined into the reference; run check_delivery and permutation_check."
+    ],
+    "expected": "Oracle should flag that phone 2's five counts are missing. The server reports success, so the loss is silent. If both phones also share lamports, LWW ties on (lamport, replica) are broken only by id sort order, and stats.conflicts reports 0 because the 'conflicting' writes share a replica id.",
+    "why_it_might_break": "Nothing makes replica ids unique, and op ids are just replica:counter. accepted:0 cannot be told apart from an idempotent retry. stats() counts conflicts only when replica != winner.replica."
+   },
+   {
+    "name": "Enormous or skewed Lamport values: a permanent LWW winner and stuck outbox batches",
+    "steps": [
+     "A phone with a corrupted clock sends note {lamport:10**40, value:'huge'}; the server accepts it (VERIFIED, 200).",
+     "Any replica that calls Clock.observe(10**40) jumps forward; a JS client (Number) rounds values above 2**53, so ticks there collide or go backwards.",
+     "A different phone sends lamport with 5000 digits: the request returns 400 'error parsing the body' (VERIFIED), because of Python's int-digits limit.",
+     "Outbox.flush stops at the first failure, so every op queued behind the bad batch waits forever.",
+     "Run permutation_check on a log mixing 10**40, 2**53+1 and 2**53 lamports, plus check_delivery after the stuck outbox."
+    ],
+    "expected": "Permutation order still converges (pure Python ints). But the 10**40 note cannot be overwritten in practice, and check_delivery reports ops lost behind the 400-rejected batch.",
+    "why_it_might_break": "There is no upper bound on lamport (Field(ge=1) only) and no skew check against the observed max. The rejection is all-or-nothing per batch with head-of-line blocking in the outbox. JS precision loss changes the (lamport, replica) order between clients."
+   },
+   {
+    "name": "Pydantic coercion makes the server and phone copies of the same op differ (lamport true/'7'/8.0)",
+    "steps": [
+     "Phone keeps op a:5 locally as {lamport:'7'} (or true, or 8.0) and sends it.",
+     "The server's OpIn coerces this to int 7 (true becomes 1, 8.0 becomes 8) and stores and relays the coerced version (VERIFIED, all accepted 200).",
+     "The phone merges its own raw copy: crdt._validate raises ValueError for a str/bool/float lamport, so the local merge crashes. If the phone instead stores the relayed copy next to its raw one, the same id now has different content.",
+     "Run check_delivery with the phone's raw created ops as the reference."
+    ],
+    "expected": "The oracle errors or fails on the phone side while the server looks healthy. A bool lamport True that becomes 1 also silently changes LWW order.",
+    "why_it_might_break": "Validation is split between lax pydantic coercion at the edge and strict isinstance checks in crdt, so the op the server stores is not byte-identical to the op the phone created."
+   },
+   {
+    "name": "Lamport ties and tombstone/restore races decided by string order, not causality",
+    "steps": [
+     "ph-a reinstalls and its Clock restarts at 0, so ph-a:9 and ph-a:10 are both written at lamport 5 (note 'nine', then note 'ten'). Merge picks 'ten' only because max() returns the first maximum and dedupe sorts ids as strings ('ph-a:10' < 'ph-a:9') (VERIFIED). With ids ph-a:2 and ph-a:10 the older write wins.",
+     "Concurrently ph-a restores item x (delete False @ lamport 4) and ph-b deletes it (delete True @ lamport 4): ph-b wins on replica string order, so x is dead (VERIFIED). A restore issued after seeing the delete but without Clock.observe also loses.",
+     "While x is dead, adjusts drive qty to -20; stats.oversold leaves dead items out, so no notifier fires. When x is restored, the oversell appears late.",
+     "Run permutation_check (it should pass) and an intent check: the last restore in causal order should win."
+    ],
+    "expected": "Permutation oracle passes (deterministic), but the human-intended outcome is lost and stats.conflicts reports 0 for same-replica ties. Flags the oracle's blind spot: it checks convergence, not intent.",
+    "why_it_might_break": "_order is only (lamport, replica) with no op-id or counter tiebreak, ids compare as strings, Clock.time is never persisted, and oversold ignores tombstoned items."
+   },
+   {
+    "name": "Unicode and size edges in item ids and values: NFC/NFD split, empty text, huge signed quantities",
+    "steps": [
+     "ph-a adjusts item 'caf\\u00e9' +1 and ph-b adjusts 'cafe\\u0301' +1: merge keeps two separate items that render identically (VERIFIED). Also try 'Rice' vs 'rice' and trailing whitespace.",
+     "ph-c sends create with value '' (empty name) and note '': accepted, so name becomes '' instead of the item id.",
+     "ph-d sends adjust value 10**30, then -10**30-1 (VERIFIED accepted; qty 1000000000000000000000000000005 in state).",
+     "An item id of exactly 64 chars plus a 200-char unicode note with combining marks or emoji: check the server's max_length counts against what the phone counts (code points vs UTF-16 units vs bytes).",
+     "Run check_delivery and compare /api/state with what a JS/float consumer of the canonical JSON reads."
+    ],
+    "expected": "Converges per the oracle, but the ledger shows duplicate stock lines, a blank name, and quantities a JS board cannot represent exactly. One phone may reject a batch the server accepts (or the reverse) because of length counting, giving divergent logs.",
+    "why_it_might_break": "There is no Unicode normalization of item ids, no bound on adjust magnitude, and no non-empty check on create text. Length limits count Python code points, which may not match how clients count."
+   }
+  ]
+ },
+ "SCOUT-APP-LIFECYCLE": {
+  "area": "APP LIFECYCLE (browser client with IndexedDB/localStorage op log + service worker): kill mid-sync, two tabs on one replica id, storage quota, stale SW after update while offline, phone clock changes, reinstall losing replica id",
+  "notes": "Read-only scout of main @0b4f4ad. No edits, no PRs. client/index.html is a stub, so client behaviour is inferred from the planned design. I checked scenarios 1, 3, 4 and 7 against the real server.app, crdt.merge and oracle.check_delivery with a throwaway script in /tmp. (1) Two ops with the same id: the server kept the first to arrive (qty -30) while merge() keeps the highest _total (qty 5), and check_delivery raised 'state differs'. (3) After a torn line in ops.jsonl, the next accepted op disappeared on restart (live log_size 2, after restart 1). (4) Sending cursor 40 to a 1-op log returned ops=[] and cursor=1, so op 0 is never delivered. (7) One float adjust made the whole batch return 422. Gaps in the existing tests: the oracle's generate_ops never creates two different ops with the same id; test_crdt's hypothesis test filters them out on purpose ('ops with the same id must be identical'); and check_delivery compares ids only, so a replaced op with a reused id is not counted as lost. Root causes to target: LogStore._add keeps the first op for an id while crdt.dedupe keeps the max, the cursor is a position in a list rather than a stable sequence number, the log is appended with no fsync or torn-line recovery, and one bad op rejects the whole batch. NEXT: the writer harness should simulate each replica's id generator, Lamport clock and cursor persistence separately, so each of the three can be lost or reset on its own.",
+  "scenarios": [
+   {
+    "name": "Two tabs share one replica id and counter, so op ids collide",
+    "steps": [
+     "Open tab A and tab B on the same phone. Both read replica='ph-a', counter=0, lamport=0 from localStorage.",
+     "Offline: tab A records adjust rice +5 as id 'ph-a:1' (lamport 1). Tab B records adjust rice -30, also as id 'ph-a:1' (lamport 1), because neither tab saw the other's counter write.",
+     "Tab B syncs first: POST /api/sync with [B's op]. accepted=1.",
+     "Tab A syncs: POST /api/sync with [A's op]. accepted=0, and the server silently drops it.",
+     "Run check_delivery(created=[A,B], {'server': server log, 'tabA': A's merged log}) and permutation_check over A's and B's ops."
+    ],
+    "expected": "Both adjustments are counted (qty -25), or the client never issues the same id twice. The oracle should report a lost op.",
+    "why_it_might_break": "Checked: the server keeps the first arrival (qty -30) but crdt.dedupe keeps the max _total (qty 5), so the server and the clients disagree depending on arrival order, and one real distribution is gone either way. check_delivery only compares ids, so it never reports 'lost'; it only fails on 'state differs' here. Nothing guards the counter with an atomic read-modify-write (no BroadcastChannel or Web Locks)."
+   },
+   {
+    "name": "Reinstall or cleared site data reuses the replica id and resets counter and Lamport",
+    "steps": [
+     "Phone ph-a syncs ops ph-a:1..ph-a:20 (lamport up to 20), including note blankets='Expired, do not issue' at lamport 20.",
+     "The volunteer clears site data or reinstalls the PWA. The client rebuilds replica id 'ph-a' from the volunteer name or device label, with counter=0 and Clock(start=0).",
+     "Before its first pull, the phone records adjust blankets -10 (id ph-a:1, lamport 1) and note blankets='OK to issue' (id ph-a:2, lamport 2).",
+     "Sync: POST /api/sync, cursor 0, with the two new ops.",
+     "Also try a variant: the phone gets a brand-new random replica id, but 15 unsynced ops lived only in the wiped storage."
+    ],
+    "expected": "The new ops are accepted under ids that cannot collide. A fresh note written after the reinstall wins, or at least the conflict is flagged. In the variant, check_delivery reports 'lost 15'.",
+    "why_it_might_break": "The server returns accepted=0 for ids ph-a:1 and ph-a:2 because they already exist, so the -10 issue and the new note vanish silently. Even with new ids, lamport 1-2 loses LWW to the stale lamport-20 note, because Clock never observes server time before the first local write. Unsynced ops in wiped storage cannot be recovered, and nothing warns the user."
+   },
+   {
+    "name": "Base process killed mid-append leaves a torn line in ops.jsonl",
+    "steps": [
+     "Phone ph-a syncs op x:1, which is fully written.",
+     "Phone ph-b's sync is in LogStore.append when the process is killed (power cut at the base laptop). The file ends with a partial line '{\"id\": \"x:2\", \"repl' and no newline.",
+     "Restart the server. The torn line is skipped and x:2 is not in memory.",
+     "Phone ph-b retries and sends y:1. append() opens the file in 'a' mode and writes y:1's JSON straight onto the end of the partial line. The server replies accepted=1, and the phone marks y:1 as synced and deletes it from its outbox.",
+     "Restart the server again and call /api/log."
+    ],
+    "expected": "Every op the server acknowledged is still there after a restart (x:1 and y:1).",
+    "why_it_might_break": "Checked: after the second restart the log contains only x:1. y:1 was merged into the corrupt line and skipped by the bare 'except ValueError: continue', even though the client got an ack. There is no fsync, no write-then-rename, and no repair of the trailing newline. check_delivery over the server log would report 'lost 1'."
+   },
+   {
+    "name": "Positional cursor goes stale after the server log shrinks or shifts",
+    "steps": [
+     "Phone ph-a pulls and stores cursor=40.",
+     "The base log loses lines (torn-line skip as above, a restored backup, or a new data dir). The server now holds 1 op, z:1.",
+     "Phone ph-a syncs with cursor=40 and no ops. The server returns ops=[] and cursor=1, and the phone saves cursor=1.",
+     "The next sync from cursor 1 also returns [], so z:1 is never pulled.",
+     "Variant: lines in the middle are dropped, so indices shift and the phone skips the ops that moved into the old range."
+    ],
+    "expected": "Each replica's received log eventually holds every op on the server. check_delivery passes for every phone.",
+    "why_it_might_break": "Checked: store.ops[body.cursor:] slices by list position, with no epoch or log id and no check that cursor <= len. A cursor from an earlier log silently hides ops, and the server's returned cursor sends the client to the wrong place."
+   },
+   {
+    "name": "App killed between saving the cursor and saving the received ops (or between sending and the ack)",
+    "steps": [
+     "Phone ph-b posts its outbox and gets back 30 remote ops and cursor=120.",
+     "The client writes cursor=120 to localStorage first (synchronous), then begins an IndexedDB transaction to store the 30 ops.",
+     "The OS kills the tab before the IDB transaction commits.",
+     "The app relaunches and syncs with cursor=120: no new ops arrive.",
+     "Mirror case: the client marks the outbox ops 'sent' before the POST resolves, and is killed before the request reaches the base."
+    ],
+    "expected": "No op is lost. Either the cursor and the ops are committed in one atomic transaction, or the client re-pulls from a safe cursor. check_delivery passes for ph-b.",
+    "why_it_might_break": "localStorage and IndexedDB cannot share a transaction, and writes to the two can finish in a different order than they started. The server will happily resend if asked (idempotent), but a cursor saved too early means the client never asks again. Marking ops sent too early drops them for good, and check_delivery would report lost N."
+   },
+   {
+    "name": "Storage quota reached mid-batch (QuotaExceededError / IDB AbortError)",
+    "steps": [
+     "Fill origin storage to near the quota, or use Safari's 7-day eviction / a private-mode tab with small storage.",
+     "A volunteer records 50 quick adjusts. The client ticks the Lamport clock and counter in memory, renders them, and writes each op to storage.",
+     "Write #23 throws QuotaExceededError. Depending on the implementation, the counter may already be saved while the op is not, or the op saved while the counter is not.",
+     "The app reloads. Ops 23-50 are gone, or the counter rolls back so the next op reuses id ph-a:23 with different content.",
+     "Variant: the outbox grows past 500 ops and the client sends it as one POST."
+    ],
+    "expected": "Ops shown to the user are never lost, and ids are never reused. Large backlogs are split into batches of 500 or fewer. check_delivery reports no loss.",
+    "why_it_might_break": "This leads straight into scenario 1 (one id, two contents: the server keeps the first, merge keeps the max). The UI shows counts that were never saved. MAX_OPS_PER_SYNC=500 makes a single large POST fail with 422, so a client that does not split batches never syncs again."
+   },
+   {
+    "name": "Stale service worker runs the old client after an update, offline, and sends a batch the server rejects",
+    "steps": [
+     "Deploy v2 of the client and server (for example a new value shape or a new op kind such as 'transfer'). Phone ph-c is offline and its service worker still serves v1.",
+     "v1 records 40 valid adjusts plus one op v2 rejects: adjust with value 2.5 (half a sack), a value sent as the string '5', or an id longer than 64 characters.",
+     "Connectivity returns. v1 POSTs all 41 ops in one batch.",
+     "The server validates the whole batch with dedupe() and returns 422, and none of the 41 ops are stored.",
+     "v1 retries the same outbox head forever (Outbox.flush stops at the first failure). Meanwhile v1 receives v2 ops with kind 'transfer', and its merge() raises 'unknown op kind'."
+    ],
+    "expected": "The 40 valid ops still reach the base, and the bad op is quarantined and shown to a human. The old client survives unknown kinds, or the update forces a refresh. check_delivery should report the 40 as lost while the outbox is stuck.",
+    "why_it_might_break": "Checked: one bad op gets the whole batch rejected (422 'adjust needs a non-zero integer'). That turns a single version mismatch into a poison pill that blocks every later count from that phone. _validate raises on unknown kinds, so a version mismatch between client and server causes a crash or diverging merges, not a graceful skip."
+   },
+   {
+    "name": "Phone clock jump feeds a huge Lamport value that breaks LWW and JS number precision",
+    "steps": [
+     "The client seeds or bumps its Lamport value from Date.now() (or uses wall time as a 'fast-forward' after reinstall). The phone clock is set to 2099, giving lamport ~4.0e12.",
+     "Phone ph-a writes note rice='Hold' at lamport 4102444800000. The clock is then corrected, and later writes from every phone use small values.",
+     "Push the variant further: lamport above 2^53, e.g. 9007199254740993, written by a buggy or hostile client and stored by Python as an exact int.",
+     "Phone ph-b pulls the op. JSON.parse rounds the value to 9007199254740992, and ph-b re-sends it while forwarding or re-pushing its log.",
+     "Merge on the server and on each phone, and run check_delivery and permutation_check over the union."
+    ],
+    "expected": "No single wall-clock jump can freeze an item's name, note or delete flag. Lamport values above the JS safe-integer limit are rejected at the server. All replicas reach byte-identical state.",
+    "why_it_might_break": "OpIn has only ge=1 and no upper bound, so one skewed op wins every later LWW write until another replica observes it (Clock.observe is never called by the server). Above 2^53 the same id exists with two different lamport values: crdt.dedupe picks the max, the server keeps the first, and replicas diverge. The oracle's generate_ops only produces small consecutive lamport values, so this case is never exercised."
+   }
+  ]
+ }
+}

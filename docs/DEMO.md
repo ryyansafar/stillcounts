@@ -1,54 +1,49 @@
-# Demo script: 3 minutes, two beats and a close
+# Demo script: 3 minutes
 
-The one line: **people paste AI code they do not understand. Earn the Code makes that gap visible, then closes it: the reference solution is revealed only after you earn it, and the lessons still work with the Wi-Fi pulled.** Be straight about it if asked: the merge code and its JavaScript twin are public, so nothing is secret. What is gated is the guided path, the reveal and your unlock record.
+The one line: **AI can build an app in minutes, but people cannot explain what it built. Here the AI builds one stage, stops, and only goes on when you prove you understand it. It also notices when you are stressed and makes the steps easier.** Be straight about it if asked: the merge code and its JavaScript twin are public, so nothing is secret. What is gated is the guided path, the reveal of the reference code and your unlock record.
 
-Track fit: primary Track 2 (make the invisible visible), secondary Track 3 (works anyway), tertiary Track 4 (play).
+Say plainly that the build you watch is a **labelled replay** unless you configured a Devin token (see the end). Every simulated line says so on screen.
 
-Check `README.md` first: the Understanding tab, gap score and proof card are real; weakest-function targeting and fading help are not built. Only show on stage what is on screen and working.
-
-## Before you go on (off stage, about 5 minutes)
+## Before you go on (off stage, about 2 minutes)
 
 ```bash
-STILLCOUNTS_LEARN_WRITE_LAN=1 scripts/run.sh   # prints the board link with this run's join token
+scripts/run.sh          # prints the board link with this run's join token; the root page is the chat
+# or, for a quick look on your own laptop with no token:
+STILLCOUNTS_OPEN=1 scripts/run.sh
 ```
 
-`STILLCOUNTS_LEARN_WRITE_LAN=1` is needed for the **Write** checkpoint: without it the base answers phones with 403 and only the laptop's own browser can submit code. With it, code a learner types on a phone runs on the demo laptop (in the sandbox, which is defence in depth, not a security boundary), so use it only on a network you trust, such as your own hotspot, never on venue Wi-Fi with strangers.
+Open `http://localhost:8000/`. Open **More** in the sidebar once to know where the other pages are (Ledger, Board, Learn, Race, Results). Delete old chats so you start clean.
 
-1. Open the printed `http://localhost:8000/board?t=...` link on the projector. The QR code on it carries the join token.
-2. A volunteer who is **not a coder** gets a phone. Scan the QR code, open the Learn link, and let the lessons load once with signal (they are cached after the first visit).
-3. HTTPS is needed on the phone for the offline beat. Browsers install the offline app only on `https://` or `localhost`. Set it up as below, load the Learn page once with signal, and confirm the "not saved for offline use" warning is gone. **This has not been tried on the real demo phones yet: rehearse it.**
-   ```bash
-   brew install mkcert && mkcert -install
-   mkcert <laptop-ip> localhost
-   STILLCOUNTS_LEARN_WRITE_LAN=1 STILLCOUNTS_TLS_CERT=<laptop-ip>+1.pem STILLCOUNTS_TLS_KEY=<laptop-ip>+1-key.pem scripts/run.sh
-   ```
-   Each phone must trust mkcert's root certificate (`mkcert -CAROOT` shows where it is).
-4. Rehearse once with a throwaway learner so the volunteer's progress starts clean.
+The **Write** checkpoint runs code on the laptop. A browser on the laptop itself is always allowed. A phone or another machine gets HTTP 403 unless you start the server with `STILLCOUNTS_LEARN_WRITE_LAN=1`; code a learner types then runs on the demo laptop in the sandbox (defence in depth, not a security boundary), so use it only on a network you trust, such as your own hotspot, never on venue Wi-Fi with strangers.
 
-## Beat 1: the invisible gap (0:00 to 1:40)
+No internet and no Devin call are needed: the built-in course and its replay run from the laptop.
 
-1. Say: "Devin built much of the scaffolding around this app, and AI-written code like it gets pasted every day. Raise a hand if you could explain the merge." Show the pasted-code state: every stage not yet earned, the reference code not revealed. This is what understanding looks like when you have only pasted: nothing earned. Then open the Understanding tab: every line unseen, gap score low.
-2. Hand the volunteer stage 1, **Counted once, even when sent twice**. **Predict**: two phones, one signal drop, one operation sent twice. What is the blanket count? Their numbers are their own: no other phone has the same case. They answer; the server runs the real merge and checks them. Show that a wrong guess only names the wrong case and swaps in a new one: it never shows the answer.
-3. **Find the bug**: a five-line excerpt of the same code with one line changed. They click the changed line and pick the cause from four statements. A wrong pick locks the options for 30 seconds. The grader is plain code.
-4. Say where it goes next: **Write** (a small function, judged by the same referee that tests the real app) and **Explain** (keyword-matched against a rubric shown after, practice only). Passing predict, find the bug and write reveals the reference code. Explain never unlocks anything.
+## The path (about 3 minutes)
 
-## Beat 2: offline (1:40 to 2:30)
+1. **New chat, build, stop (0:00).** Press "Try the built-in demo" (or type what to build with the offline replay toggle on). A plan of four stages appears and stage 1, "Counted once, even when sent twice", is built. The status line reads "Devin has stopped. Earn stage 1 to let it go on." The code panel says **Code locked**. Point at the label: this is a simulated replay.
+2. **Fail a checkpoint (0:30).** In **Predict**, type a wrong number for each case and press Check. The chat names which cases are wrong, gives a hint, and says Devin stays stopped. It does not show the answer, and the wrong cases are replaced by new numbers. The code is still locked and stage 2 is not started.
+3. **Pass it (1:00).** Answer the new cases (the real merge decides). Then **Find the bug**: click the changed line in the short excerpt and pick the cause; a wrong pick locks the options for 30 seconds and reshuffles them. Then **Write** `dedupe`. When the third passes, the code **unlocks with a highlighted diff** and Devin is told to continue with stage 2; it builds it and stops again. **Explain** is practice: real sentences, shown against a hidden rubric, and it never unlocks anything alone.
+4. **Heart rate (2:00).** Click the heart item in the top bar. Press **Sudden spike**. The thread says "HR 96 vs baseline 72: switching to guided answers and a slower pace" and the difficulty drops (stage 2's checkpoint now shows hints and one case at a time; at level 1 write is guided fill-in or multiple choice, with a breathing prompt). Nothing is passed for you. Say that the reading stays on the device.
+5. **Calm (2:30).** Press **Calm**. The level is restored one step at a time, each with a line in the thread (about 20 seconds per step).
+6. **Offline (2:45).** Turn the network off (airplane mode, or the browser's offline switch) and reload: the chat, its history and the replay still open from the service worker's cache. Be honest that grading itself needs the base laptop: an answer submitted with the base unreachable says it needs a signal and is kept in the box. The Learn page (`/static/learn.html`) is where predict still works with no signal; that pass is provisional until the server re-checks it.
 
-1. Pull the Wi-Fi: airplane mode on the volunteer's phone.
-2. The volunteer does another stage's **Predict** checkpoint. With no signal the phone grades it itself with the public merge and says the pass is provisional. Show the pill or banner as the phone reports it.
-3. Say which parts do need the base: find the bug, write and explain go through `/api/learn`. Do not hide that. If the phone shows a warning that it is offline, read it out.
-4. Turn Wi-Fi back on. The phone sends the answers again and the base laptop re-checks them: the pass counts only if the server agrees. Progress is on the base laptop.
+Optional close: `/race` on two phones (same operations, shuffled differently on each, faster correct answers rank higher), and `docs/devin.md` for what Devin did and what a human rewrote. Do not quote the Results numbers as a study.
 
-## Close (2:30 to 3:00)
+## Live Devin (optional, not required for the demo)
 
-- **Play**: two phones open `/race` (QR code on the board's Race tab). Same operations, shuffled differently on each phone; faster correct answers rank higher.
-- **Devin, honestly**: `docs/devin.md` has the table. 9 cloud sessions, 5 pull requests, all merged by a human; a 2.3 MB file was replaced, a sandbox that allowed `import os` was rewritten by hand, and the cloud quota ran out. Later work is labelled Devin CLI, local.
-- Do not quote the quiz as a result. A few volunteers is a demo, not a study.
+With `DEVIN_TOKEN` and `DEVIN_ORG` set (or `STILLCOUNTS_DEVIN_ENV` pointing at an env file), a prompt starts a real Devin session and the thread shows its status, plan, log and pull requests as they arrive (the chat then says LIVE DEVIN). It was not exercised against a real session in the final integration run, so rehearse it before relying on it. On any error, usage limit or missing token the chat says why in the thread and switches to the labelled replay.
 
 ## If something fails
 
-- No venue Wi-Fi: the laptop can host a hotspot; phones only need to reach the base address.
-- A phone shows `join link needed`: it did not scan this run's QR code. Scan again.
-- Lessons show "Connect once to download them": the phone never loaded them with signal. Reconnect and open the Learn page once.
-- Write checkpoint says it is not allowed from this device (HTTP 403): you started the base without `STILLCOUNTS_LEARN_WRITE_LAN=1`. Restart it with that variable (see the pre-flight command); the lesson progress is kept.
-- Fallbacks: `docs/screenshots/` has the phone, board, attack and learn screens. No demo video is committed; record a 60-second airplane-mode clip yourself before the event.
+- The chat says "Live Devin is not available" and switches to the replay: expected without a token.
+- A checkpoint says "Needs a signal": the base is unreachable. Reconnect.
+- Write says it is graded on the base laptop only (HTTP 403): you are on a phone and started the server without `STILLCOUNTS_LEARN_WRITE_LAN=1`. Restart with it, or use the laptop's own browser. Progress is kept.
+- A phone shows `join link needed`: it did not scan this run's QR code from the board. Scan again, or start with `STILLCOUNTS_OPEN=1` on a network you trust.
+- HTTPS for installing the offline app on phones (browsers need `https://` or `localhost`); this has not been tried on real demo phones, so rehearse it:
+  ```bash
+  brew install mkcert && mkcert -install
+  mkcert <laptop-ip> localhost
+  STILLCOUNTS_TLS_CERT=<laptop-ip>+1.pem STILLCOUNTS_TLS_KEY=<laptop-ip>+1-key.pem scripts/run.sh
+  ```
+  Each phone must trust mkcert's root certificate (`mkcert -CAROOT` shows where it is).
+- Fallbacks: `docs/screenshots/` has the chat at each step (empty, stopped, failed checkpoint, bug hunt, unlocked diff, heart-rate spike and calm, offline reload, mobile) and the other pages. No demo video is committed.

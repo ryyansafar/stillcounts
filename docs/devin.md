@@ -18,7 +18,7 @@ Generated from `data/devin_evidence.json` by `python -m ops.devin_evidence`. Do 
 
 ## Who did what
 
-Devin wrote the scenario list (three read-only scouts), the first version of the chaos harness, and the Learn, Race and board-tab scaffolding. A human wrote the merge function, the referee, the server, the phone client, the sync protocol fixes, the sandbox that finally held, and every bug fix the harness provoked. Counting sessions or pull requests overstates how much of the hard part Devin did.
+Devin wrote the scenario list (three read-only scouts), the first version of the chaos harness, and the Learn, Race and board-tab scaffolding. A human wrote the merge function, the referee, the server, the phone client, the sync protocol fixes, the sandbox that finally held, and every bug fix the harness provoked. The chat shell, the heart-rate engine, the live Devin bridge, the built-in course and the integration that made the chat the root page were not produced by any of these nine cloud sessions and are not credited to Devin. Counting sessions or pull requests overstates how much of the hard part Devin did.
 
 ## ACU use
 
@@ -30,7 +30,7 @@ Not recorded, and not claimed. The Devin API has not been queried: no Devin toke
 - A later blind review found the replacement was still escapable: the learner's function ran inside the ledger module's namespace, where `json` was visible, and `json.codecs.sys.modules["os"]` passed the AST check. That was also fixed by hand: the function now runs in a fresh namespace that holds only ledger symbols (tests/test_learn_sandbox.py has the exact probe as a regression test). The Learn write endpoint is still closed to the LAN by default.
 - QA-RECORD's branch devin/qa-fixes was never turned into a pull request. Its client fix for two tabs and for half-typed notes was cherry-picked, then changed: a tab now takes over only operations it has never seen, so a stale record cannot undo a resync.
 - QA-RECORD's third fix commit (install segno in run.sh and CI) was not cherry-picked because main already had the CI fix; run.sh was fixed separately.
-- WRITER-chaos-sim reported 8 failing scenarios but opened no fix pull requests. All of the fixes (cursor and reset, re-stamping refused Lamport times, two tabs, a fresh id for a reused id, most of the restore-from-backup cases) were written by hand. Two scenarios are still open (see README).
+- WRITER-chaos-sim reported 8 failing scenarios but opened no fix pull requests. All of the fixes (cursor and reset, re-stamping refused Lamport times, two tabs, a fresh id for a reused id, most of the restore-from-backup cases) were written by hand. Three scenarios are still open (see README).
 - No Devin pull request was rejected outright; all five were merged by a human pressing merge. Two of the five (the chaos harness and the Learn grader) needed substantial human rework afterwards.
 
 ## What Devin did not do

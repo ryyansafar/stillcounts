@@ -659,7 +659,7 @@
                   view.bar, view.barText];
       var heroNode = h("section", { className: "hero", "data-hero": "pitch" }, [
                     h("p", { className: "lede", text: "Do not paste code you do not understand." }),
-                    h("p", { className: "sub", text: "In Anthropic's January 2026 randomized trial, people coding with AI scored 50% on a skills quiz against 67% for people coding by hand, and the biggest gap was debugging. Here you predict what a real app's merge does, find the line that was changed in a copy of it and write a function yourself before the app reveals its reference solution. Plain code, not a model, checks every answer on the server." }),
+                    h("p", { className: "sub", text: "In a randomized trial published in January 2026, people coding with AI scored 50% on a skills quiz against 67% for people coding by hand, and the biggest gap was debugging. Here you predict what a real app's merge does, find the line that was changed in a copy of it and write a function yourself before the app reveals its reference solution. Plain code, not a model, checks every answer on the server." }),
                     h("p", { className: "sub", "data-hero": "honest", text: "Be clear about what is gated: the merge code is public in this repository and crdt.js, its JavaScript twin, runs on every phone, so nothing here is secret. What the server holds back is the guided path, the reference-solution reveal and your unlock record. Anyone who runs the public code can work out a predict answer, so a pass is practice, not proof." })]);
       if (!st.stages.length) {
         kids.splice(1, 0, heroNode);

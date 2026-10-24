@@ -12,12 +12,22 @@ This repository (`stillcounts`) holds Earn the Code and its first course, an off
 8. `tests/test_chaos_open_set.py` replays the attack harness. If you fix an open scenario, remove it from `OPEN` there, drop its strict xfail in `tests/test_regress_*.py`, and re-run `.venv/bin/python -m chaos.run --seeds 0:500 --summary data/chaos_summary.json` (about 20 minutes).
 9. The merge is mutation-tested: `.venv/bin/pip install mutmut==3.8.0 && .venv/bin/mutmut run`. No more than the 3 documented equivalent mutants may survive (`docs/mutation.md`).
 9. Course content is graded by plain code, never by a model. A new stage needs predict cases whose answers come from running the real merge, a find-the-bug item built from a real mutant, a write task judged by the referee, and an explain rubric. Do not add a checkpoint that a model grades.
-10. Anything not yet on main (weakest-function targeting, fading help, `make_course`, streaks) must be labelled as not built in the docs until it is. If a Devin CLI session did later work, label it "Devin CLI, local".
+10. Anything not yet on main (weakest-function targeting, fading help, streaks, `make_course` inside the chat) must be labelled as not built in the docs until it is. If a Devin CLI session did later work, label it "Devin CLI, local".
 11. Branches named `devin/*` may not touch `oracle/`, `stillcounts/crdt.py`, `tests/test_oracle_*.py` or `.github/CODEOWNERS`; CI fails them. CODEOWNERS alone is only advisory unless branch protection requires code-owner review, which the repo owner has to switch on.
 
 ## Chat shell
 
-`client/chat_core.js` is the stop-until-earned state machine and must stay pure (no DOM, no network, no clock): change it test first in `client/test/chat_core.test.js`. The replay (`chat_replay.js`) must label everything it makes as simulated and must obey the same gate as a real session. Never show a locked stage's code, the expected answer or the right option in the browser.
+The root page is the chat (`client/chat.html`). `client/chat_core.js` is the stop-until-earned state machine and must stay pure (no DOM, no network, no clock): change it test first in `client/test/chat_core.test.js`. Rules the tests pin:
+
+- Devin builds one stage, stops, and is told to continue only after the stage is earned (`LOOKAHEAD` is 0). The bridge refuses an unearned continue with 403.
+- The replay (`chat_replay.js`) labels everything it makes as simulated and obeys the same gate as a real session.
+- The browser never decides an unlock. Learner identity is the server's HttpOnly cookie (`sc_learner`); the page sends no identity, only an attempt name (`X-Attempt`) so a new chat starts from zero. Live sessions can be graded only by the browser that started them.
+- Never show a locked stage's code, the expected answer or the right option in the browser; never keep them in `localStorage`.
+- Heart rate stays on the device. The stress policy (`client/stress.js`) lowers difficulty and never auto-passes anything.
+
+The live bridge is `server/devin_bridge.py` and `server/live_course.py`, with the browser side in `client/devin_live.js` and `client/chat_bridge.js`. The token stays on the server. Test the bridge with a fake Devin (`tests/test_devin_bridge.py`), not a real one.
+
+Before you push: `.venv/bin/python -m pytest -q`, `node --test client/test/`, `.venv/bin/python -m oracle.oracle --seed 0xA3 --ops 240 --perms 200` and `.venv/bin/python -m oracle.mutation`. `scripts/run.sh test` runs the first two. Do not commit generated or live data (`data/ops.jsonl*`, `data/chaos_results.json`). Commit messages are conventional (`feat:`, `fix:`, `docs:`) and commits are authored by you alone.
 
 ## Socials & Support
 - Portfolio: https://ryyansafar.site
@@ -25,6 +35,3 @@ This repository (`stillcounts`) holds Earn the Code and its first course, an off
 - Buy Me a Coffee: https://buymeacoffee.com/ryyansafar
 - PayPal: https://www.paypal.com/paypalme/ryyansafar
 - Razorpay: https://razorpay.me/@ryyansafar
-
-Chat shell notes: Devin bridge in `server/devin_bridge.py` and `server/live_course.py`, client in `client/devin_live.js`, `chat_*.js`, `hr*.js`, `stress.js`.
-Tests: `.venv/bin/python -m pytest -q` and `node --test client/test/`.

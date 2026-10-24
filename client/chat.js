@@ -118,7 +118,9 @@
     function submitKind(b, kind, body, cp) {
       var chat = ctl.active(); if (!chat) return;
       ui.busy[b.n] = true; ui.results[b.n + "/" + kind] = { cls: "", text: "Checking…" }; render();
-      ctl.grade(chat.id, b.n, kind, body).then(function (res) { ui.results[b.n + "/" + kind] = V.outcome(kind, res, cp && cp.hint ? cp : { hint: HINTS[kind] }); }, function (err) {
+      ctl.grade(chat.id, b.n, kind, body).then(function (res) {
+        if (kind === "predict" && res.result && Array.isArray(res.result.wrong)) res.result.wrong.forEach(function (id) { delete ui.drafts[b.n + "/predict/" + id]; });   // a replaced case starts empty
+        ui.results[b.n + "/" + kind] = V.outcome(kind, res, cp && cp.hint ? cp : { hint: HINTS[kind] }); }, function (err) {
         var text = err.status === 429 ? "Too many tries in a row. Wait a moment, then try again."
           : err.status === 403 ? "Code is graded on the base laptop only. Ask the host to run it there."
           : /locked/.test(err.message) ? "Locked. Earn the earlier stage first."

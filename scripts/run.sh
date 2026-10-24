@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the Still Counts server (phone app at /, board at /board) and the tests.
+# Run the Earn the Code server (the chat is the root page; ledger at /ledger, board at /board) and the tests.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ -d .venv ] || python3 -m venv .venv

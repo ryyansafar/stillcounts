@@ -7,13 +7,15 @@ import importlib
 import ipaddress
 import json
 import os
+import re
+import secrets
 import threading
 import time
 from collections import deque
 from pathlib import Path
 from typing import Annotated, Any, Callable
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -26,7 +28,7 @@ MAX_EXPLAIN = 4000
 MAX_SOURCE_BYTES = 4096            # learner source that the referee executes
 WRITE_WINDOW = 60.0                # seconds
 WRITE_LIMIT = 5                    # executed writes per learner per window
-GLOBAL_WRITE_LIMIT = 30            # executed writes across all learners per window (learner ids are self-chosen)
+GLOBAL_WRITE_LIMIT = 30            # executed writes across all learners per window (a browser can still drop its cookie)
 MAX_LEARNERS = 10_000
 
 # Fields a locked stage may show. Everything else (code, expected answers, solutions, rubrics, ...) stays hidden.
@@ -35,8 +37,24 @@ PUBLIC_CHECKPOINT = ("prompt", "question", "hint", "ops", "choices", "options", 
                      "function", "signature", "stub", "starter", "docstring", "min_points")
 PUBLIC_CASE = ("id", "name", "prompt", "question", "ops", "item", "field")      # predict cases: show the ops, never the expected result
 
-Learner = Annotated[str, Header(alias="X-Learner-Id", pattern=LEARNER_PATTERN)]
-MaybeLearner = Annotated[str | None, Header(alias="X-Learner-Id", pattern=LEARNER_PATTERN)]
+LEARNER_COOKIE = "sc_learner"
+COOKIE_MAX_AGE = 60 * 60 * 24 * 365
+
+
+def learner_id(request: Request, response: Response) -> str:
+    """The learner is the browser that holds the server-issued cookie. The id is random and HttpOnly, so page
+    scripts cannot read or choose it, and any X-Learner-Id header is ignored. A missing or malformed cookie gets a
+    fresh id."""
+    current = request.cookies.get(LEARNER_COOKIE, "")
+    if re.fullmatch(LEARNER_PATTERN, current):
+        return current
+    fresh = secrets.token_urlsafe(24)
+    response.set_cookie(LEARNER_COOKIE, fresh, max_age=COOKIE_MAX_AGE, path="/", httponly=True, samesite="lax",
+                        secure=request.url.scheme == "https")
+    return fresh
+
+
+Learner = Annotated[str, Depends(learner_id)]
 
 
 class AnswerIn(BaseModel):
@@ -192,7 +210,7 @@ def learn_router(progress_path: Path, stages_path: Path | None = None, grader: A
                 "progress": state, "unlocked": is_open, "code": stages[stage_id].get("code") if is_open else None}
 
     @router.get("/stages")
-    def list_stages(learner: MaybeLearner = None) -> dict:
+    def list_stages(learner: Learner) -> dict:
         return {"stages": [stage_view(s, progress.get(learner, sid)) for sid, s in stages.items()]}
 
     @router.post("/{stage_id}/predict")

@@ -18,7 +18,7 @@ COMMITTED = ROOT / "client" / "test" / "fixtures" / "learn_contract.json"
 
 def build_fixture(tmp_path) -> dict:
     client = TestClient(create_app(tmp_path / "ops.jsonl"))
-    api = client.get("/api/learn/stages", headers={"X-Learner-Id": "contract"}).json()
+    api = client.get("/api/learn/stages").json()
     expected = {s["id"]: {c["id"]: c["expected"] for c in s["predict"]["cases"]} for s in load_stages()}
     return {"api": api, "expected": expected}
 

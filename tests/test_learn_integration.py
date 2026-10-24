@@ -9,7 +9,6 @@ from learn.grader import load_stages
 from server.app import create_app
 from tests.test_learn_grader import REAL, WRONG
 
-H = {"X-Learner-Id": "ada"}
 STAGE_IDS = {1: "duplicate-ids", 2: "signed-adjust-sum", 3: "lamport-lww", 4: "oversell-flag"}
 
 
@@ -23,7 +22,7 @@ def _full(order):
 
 
 def test_locked_stage_list_leaks_no_answers_or_real_code(client):
-    body = client.get("/api/learn/stages", headers=H).json()
+    body = client.get("/api/learn/stages").json()
     text = json.dumps(body)
     assert [s["id"] for s in body["stages"]] == list(STAGE_IDS.values())
     assert all(s["unlocked"] is False and s["code"] is None for s in body["stages"])
@@ -43,33 +42,35 @@ def test_locked_stage_list_leaks_no_answers_or_real_code(client):
 def test_earning_all_three_checkpoints_unlocks_the_real_code(client, order):
     stage, sid = _full(order), STAGE_IDS[order]
     guesses = {c["id"]: c["expected"] for c in stage["predict"]["cases"]}
-    r = client.post(f"/api/learn/{sid}/predict", json={"answer": guesses}, headers=H).json()
+    r = client.post(f"/api/learn/{sid}/predict", json={"answer": guesses}).json()
     assert r["passed"] is True and r["unlocked"] is False and r["code"] is None
-    r = client.post(f"/api/learn/{sid}/bug", json={"answer": stage["bug"]["answer"]}, headers=H).json()
+    r = client.post(f"/api/learn/{sid}/bug", json={"answer": stage["bug"]["answer"]}).json()
     assert r["passed"] is True and r["unlocked"] is False
-    r = client.post(f"/api/learn/{sid}/write", json={"source": REAL[order]}, headers=H).json()
+    assert r["result"]["explanation"] == stage["bug"]["explanation"] and "explanation" not in r   # the client must read result.explanation
+    r = client.post(f"/api/learn/{sid}/write", json={"source": REAL[order]}).json()
     assert r["passed"] is True, r["result"]
     assert r["unlocked"] is True and r["code"] == stage["code"]
-    stages = client.get("/api/learn/stages", headers=H).json()["stages"]
+    stages = client.get("/api/learn/stages").json()["stages"]
     assert next(s for s in stages if s["id"] == sid)["unlocked"] is True
 
 
 def test_a_wrong_function_gets_a_counterexample_and_stays_locked(client):
-    r = client.post("/api/learn/lamport-lww/write", json={"source": WRONG[3]}, headers=H).json()
+    r = client.post("/api/learn/lamport-lww/write", json={"source": WRONG[3]}).json()
     assert r["passed"] is False and r["unlocked"] is False and r["code"] is None
     assert r["result"]["counterexample"]
+    assert {"ops", "expected", "got"} <= set(r["result"]["counterexample"]) and r["result"]["error"]   # the client shows both
 
 
 def test_a_wrong_predict_guess_does_not_pass(client):
     stage = _full(2)
     wrong = {c["id"]: 12345 for c in stage["predict"]["cases"]}
-    r = client.post("/api/learn/signed-adjust-sum/predict", json={"answer": wrong}, headers=H).json()
+    r = client.post("/api/learn/signed-adjust-sum/predict", json={"answer": wrong}).json()
     assert r["passed"] is False and r["progress"]["predict"] is False
 
 
 def test_explain_reveals_the_rubric_only_after_submitting(client):
     sid = "duplicate-ids"
-    r = client.post(f"/api/learn/{sid}/explain", json={"text": "retries resend the same unique id so it is deduped"}, headers=H).json()
+    r = client.post(f"/api/learn/{sid}/explain", json={"text": "retries resend the same unique id so it is deduped"}).json()
     assert r["result"]["covered"] and r["progress"]["explain"] is True
-    explain = next(s for s in client.get("/api/learn/stages", headers=H).json()["stages"] if s["id"] == sid)["explain"]
+    explain = next(s for s in client.get("/api/learn/stages").json()["stages"] if s["id"] == sid)["explain"]
     assert "rubric" in explain

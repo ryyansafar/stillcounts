@@ -129,5 +129,5 @@ def test_outbox_keeps_an_item_enqueued_while_a_flush_is_in_flight(tmp_path):
     def slow_send(item):
         box.enqueue({"n": 99})          # a new message arrives while the send is in progress
 
-    assert box.flush(slow_send) == (1, 0)
+    assert box.flush(slow_send) == (1, 1)   # one sent, the newly arrived one still waiting
     assert box.pending() == 1           # the new one must survive

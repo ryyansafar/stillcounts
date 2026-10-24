@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="stylesheet" href="/static/style.css">
+<title>Still Counts · Course 1 live app</title>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Still Counts</h1>
+    <a class="navlink" href="/">Learn</a>
+    <a class="navlink" href="/race">Race</a>
+    <span id="status" class="pill" role="status" aria-live="polite">starting</span>
+  </header>
+  <div class="sub">Field camp ledger. Keeps counting with no signal. <span id="who"></span></div>
+  <input id="me" class="note" type="text" maxlength="40" placeholder="Your name (so the board shows who counted)" aria-label="Your name" style="margin:0 0 14px">
+  <div id="list"></div>
+  <div class="add">
+    <input id="newitem" type="text" placeholder="Add an item (for example Lanterns)" maxlength="40" aria-label="New item name">
+    <button id="addbtn" type="button" style="min-width:90px">Add</button>
+  </div>
+  <details class="p2p">
+    <summary>Phone to phone, no base needed</summary>
+    <p class="sub">Tap <b>Show my taps</b>, send the text to another phone by any way that works offline, and paste it there under <b>Merge pasted taps</b>. Both phones then agree, and both still send everything to the base later. Copy and paste only: no QR code yet.</p>
+    <textarea id="p2p-box" class="note" rows="4" aria-label="Taps to send or merge"></textarea>
+    <div class="btns"><button id="p2p-out" type="button">Show my taps</button><button id="p2p-in" type="button">Merge pasted taps</button></div>
+    <div id="p2p-msg" class="sub" role="status"></div>
+  </details>
+  <footer id="foot"></footer>
+</main>
+<script src="/static/auth.js"></script>
+<script src="/static/crdt.js"></script>
+<script src="/static/exchange.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

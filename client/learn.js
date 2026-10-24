@@ -14,10 +14,14 @@
 // Every response carries `progress`, `unlocked` and, once unlocked, `code`.
 (function (root) {
   "use strict";
-  var C = typeof module !== "undefined" && module.exports ? require("./crdt.js") : root.StillCounts;
+  var NODE = typeof module !== "undefined" && module.exports;
+  var C = NODE ? require("./crdt.js") : root.StillCounts;
+  var U = NODE ? require("./understand.js") : root.Understand;
+  var Views = NODE ? require("./learn_views.js") : root.LearnViews;
   var KINDS = ["predict", "bug", "write", "explain"];
   var LABELS = { predict: "Predict", bug: "Find the bug", write: "Write", explain: "Explain" };
   var KEY = "sc_learn";
+  var VIEWS = [["course", "Course"], ["map", "Understanding"], ["results", "Results"], ["proof", "Proof"]];
   var TIMEOUT_MS = 4000;
 
   function payloadOf(raw) {
@@ -142,18 +146,20 @@
   }
 
   function mount(container, opts) {
-    var doc = opts.doc, fetchFn = opts.fetch, storage = opts.storage;
+    var doc = opts.doc, fetchFn = opts.fetch, storage = opts.storage, nav = opts.nav;
     var saved = {};
     try { saved = JSON.parse(storage.getItem(KEY)) || {}; } catch (e) { saved = {}; }
     var st = { stages: normalizeStages(saved.stages || []), raw: saved.stages || null, passed: saved.passed || {},
                queue: saved.queue || [], codes: saved.codes || {}, drafts: saved.drafts || {}, selected: saved.selected || null,
+               attempts: saved.attempts || {}, hints: saved.hints || {}, quiz: saved.quiz || {}, view: saved.view || "course", name: saved.name || "",
                online: null, loaded: false, learner: saved.learner || newLearnerId() };
     var pending = [], view = {};
 
     function persist() {
       try {
         storage.setItem(KEY, JSON.stringify({ learner: st.learner, stages: st.raw, passed: st.passed, queue: st.queue, codes: st.codes,
-                                              drafts: st.drafts, selected: st.selected }));
+                                              drafts: st.drafts, selected: st.selected,
+                                              attempts: st.attempts, hints: st.hints, quiz: st.quiz, view: st.view, name: st.name }));
       } catch (e) { /* storage full: keep going in memory */ }
     }
     function track(p) { pending.push(p); return p; }
@@ -230,6 +236,35 @@
       }).then(refresh);
     }
 
+    // first-try and hint counts are kept on this phone; they feed the Results tab and the proof card
+    function record(stage, kind, ok) {
+      var k = key(stage, kind), a = st.attempts[k];
+      st.attempts[k] = a ? { tries: a.tries + 1, firstTry: a.firstTry } : { tries: 1, firstTry: !!ok };
+      persist();
+    }
+
+    function hintText(stage, kind) {
+      var cp = stage.checkpoints[kind] || {};
+      if (cp.hint) return cp.hint;
+      if (kind === "predict") {
+        return (cp.cases || []).map(function (c) {
+          var ids = {}; (c.ops || []).forEach(function (o) { ids[o.id] = true; });
+          return c.id + ": " + (c.ops || []).length + " operations, " + Object.keys(ids).length + " distinct ids.";
+        }).join(" ");
+      }
+      if (kind === "bug") return "Compare each line of the snippet with the rule in this stage's summary. One line breaks it.";
+      if (kind === "write") return "Follow the docstring literally: it says what to return. The real merge calls your function.";
+      return "Say what would go wrong without this code, then why this version fixes it.";
+    }
+
+    function doHint(stage, kind) {
+      var k = key(stage, kind);
+      st.hints[k] = (st.hints[k] || 0) + 1; persist();
+      var box = view.hintBoxes[kind];
+      if (box) { box.className = "hint"; box.textContent = "Hint: " + hintText(stage, kind); }
+      refresh();
+    }
+
     function setResult(kind, cls, text) {
       var r = view.results[kind]; if (!r) return;
       r.className = "result " + cls; r.textContent = text;
@@ -252,6 +287,7 @@
       if (unanswered) { setResult("predict", "warn", "Answer every case (" + hintFor(unanswered) + " for " + unanswered.id + ")."); return Promise.resolve(); }
       var allRight = cases.every(function (c) { return local[c.id]; }), body = { answer: guesses };
       function show(ok) {
+        record(stage, "predict", ok);
         var wrong = cases.filter(function (c) { return !local[c.id]; });
         setResult("predict", ok ? "good" : "bad", ok ? "Right. The real merge agrees on every case."
           : "Not quite. " + wrong.map(function (c) { return c.id + ": the real merge gives " + predictAnswer(c); }).join("; ") + ".");
@@ -269,6 +305,7 @@
       if (!answer) { setResult("bug", "warn", "Say what is wrong first."); return Promise.resolve(); }
       return post(stage, "bug", { answer: answer }).then(function (res) {
         var ok = absorb(stage, "bug", res, false);
+        record(stage, "bug", ok);
         setResult("bug", ok ? "good" : "bad", ok ? "Found it." + (res.explanation ? " " + res.explanation : "") : "Not that one. Look again.");
         refresh();
       }, function (err) { setResult("bug", "warn", offlineText(err)); refresh(); });
@@ -288,6 +325,7 @@
       setResult("write", "", "Running the referee…");
       return post(stage, "write", { source: code }).then(function (res) {
         var ok = absorb(stage, "write", res, false);
+        record(stage, "write", ok);
         setResult("write", ok ? "good" : "bad", ok ? "Passed the referee." : "Not yet: " + failureText(res.result || res));
         refresh();
       }, function (err) { setResult("write", "warn", offlineText(err)); refresh(); });
@@ -299,6 +337,7 @@
       if (!text.trim()) { setResult("explain", "warn", "Write a sentence or two first."); return Promise.resolve(); }
       return post(stage, "explain", { text: text }).then(function (res) {
         var ok = absorb(stage, "explain", res, true), r = res.result || res, points = [];
+        record(stage, "explain", ok);
         (r.covered || []).forEach(function (p) { points.push("Covered: " + (p.point || p)); });
         (r.missed || []).forEach(function (p) { points.push("Missed: " + (p.point || p)); });
         (r.rubric || res.rubric || []).forEach(function (p) { points.push(typeof p === "string" ? p : (p.text || p.point || JSON.stringify(p))); });
@@ -312,8 +351,8 @@
     function doReveal(stage) {
       function show() {
         var code = st.codes[stage.id] || stage.code;
-        view.codeBox.replaceChildren(code ? h("pre", { className: "code real", "data-code": stage.id, text: code })
-          : h("p", { className: "result warn", text: "Connect once to download the real code." }));
+        view.codeBox.replaceChildren.apply(view.codeBox, code ? Views.revealView(ctxOf(), stage, code)
+          : [h("p", { className: "result warn", text: "Connect once to download the real code." })]);
       }
       if (st.codes[stage.id] || stage.code) { show(); return Promise.resolve(); }
       return load().then(show);
@@ -374,6 +413,10 @@
         kids.push(h("button", { type: "button", className: "wide", "data-action": "explain", text: "Submit and see the rubric" }));
         view.rubric = h("div", { className: "rubricbox" });
       }
+      view.hintBoxes[kind] = h("p", { className: "hint empty", "data-hint": kind, "aria-live": "polite" });
+      var hb = h("button", { type: "button", className: "ghost", "data-hint-btn": kind, text: "Hint (counted in your results)" });
+      hb.addEventListener("click", function () { if (!guard(stage, kind)) doHint(stage, kind); });
+      kids.push(hb, view.hintBoxes[kind]);
       kids.push(view.results[kind]);
       if (view.rubric && kind === "explain") kids.push(view.rubric);
       var el = h("section", { className: "card cp", "data-checkpoint": kind }, [
@@ -405,24 +448,66 @@
       return st.stages[0];
     }
 
-    function render() {
-      view = { cards: {}, results: {}, inputs: {}, items: {} };
-      view.net = h("span", { className: "pill", role: "status", "data-status": "net" });
-      view.fill = h("div", { className: "fill" });
-      view.bar = h("div", { className: "bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100",
-                            "aria-label": "Checkpoints earned" }, [view.fill]);
-      view.barText = h("div", { className: "bartext" });
-      var kids = [h("header", {}, [h("h1", { text: "Learn · Earn the Code" }), view.net]),
-                  h("div", { className: "sub", text: "The real merge code stays locked until you earn each stage. Plain code checks your answers." }),
-                  view.bar, view.barText];
-      if (!st.stages.length) {
-        kids.push(h("p", { className: "card empty", "data-status": "empty",
-          text: st.online === false ? "No signal. Connect once to download the lessons; after that they work offline."
-                                    : "Loading lessons… Connect once to download them; after that they work offline." }));
-        container.replaceChildren.apply(container, kids);
-        refresh();
-        return;
-      }
+    function button(text, action, fn, cls) {
+      var b = h("button", { type: "button", className: cls || "wide", "data-action": action, text: text });
+      b.addEventListener("click", fn);
+      return b;
+    }
+
+    function setView(v) { st.view = v; persist(); render(); }
+
+    function startQuiz(phase) {
+      if (phase === "before" && st.quiz.before) return;
+      var qs = U.buildQuiz(st.stages, phase);
+      if (!qs.length) return;
+      st.runningQuiz = { phase: phase, questions: qs, inputs: {} };
+      setView("quiz");
+    }
+
+    function submitQuiz() {
+      var qz = st.runningQuiz; if (!qz) return;
+      var score = 0, missing = null;
+      qz.questions.forEach(function (q) {
+        var g = gradePredict(q, qz.inputs[q.qid].value);
+        if (g === null) { missing = missing || q; } else if (g) score += 1;
+      });
+      var out = all(container, function (n) { return n.getAttribute && n.getAttribute("data-result") === "quiz"; })[0];
+      if (missing) { if (out) { out.className = "result warn"; out.textContent = "Answer every question (" + hintFor(missing) + ")."; } return; }
+      var verdict = {};
+      qz.questions.forEach(function (q) { verdict[q.qid] = gradePredict(q, qz.inputs[q.qid].value); });
+      st.quiz = Object.assign({}, st.quiz); st.quiz[qz.phase] = { score: score, total: qz.questions.length, at: new Date().toISOString().slice(0, 10) };
+      persist();
+      qz.questions.forEach(function (q) {
+        var m = all(container, function (n) { return n.getAttribute && n.getAttribute("data-qmark") === q.qid; })[0];
+        if (m) { m.className = "qmark " + (verdict[q.qid] ? "good" : "bad");
+          m.textContent = verdict[q.qid] ? "Right." : "Not right" + (qz.phase === "after" ? ": the real merge gives " + predictAnswer(q) + "." : "."); }
+      });
+      if (out) { out.className = "result good"; out.textContent = "You scored " + score + " of " + qz.questions.length + "."; out.parentNode.appendChild(button("See results", "quiz-done", function () { setView("results"); })); }
+      all(container, function (n) { return n.tagName === "INPUT" || (n.getAttribute && /^quiz-(submit|cancel)$/.test(n.getAttribute("data-action") || "")); })
+        .forEach(function (n) { n.disabled = true; });
+    }
+
+    function proofMsg(text) {
+      var r = all(container, function (n) { return n.getAttribute && n.getAttribute("data-result") === "proof"; })[0];
+      if (r) { r.className = "result good"; r.textContent = text; }
+    }
+    function copyText(text) {
+      var c = nav && nav.clipboard;
+      if (!c || !c.writeText) { proofMsg("Copy is not available here. Select the card text and copy it."); return Promise.resolve(); }
+      return c.writeText(text).then(function () { proofMsg("Copied. Paste it anywhere."); }, function () { proofMsg("Could not copy. Select the card text instead."); });
+    }
+    function shareText(text) {
+      if (nav && nav.share) return nav.share({ title: "Proof of understanding", text: text }).catch(function () { /* cancelled */ });
+      return copyText(text);
+    }
+    var actions = { setView: setView, startQuiz: startQuiz, submitQuiz: submitQuiz, setName: function (v) { st.name = String(v).slice(0, 40); persist(); },
+                    share: function (t) { track(shareText(t)); }, copy: function (t) { track(copyText(t)); } };
+    function ctxOf() {
+      return { h: h, st: st, stages: st.stages, button: button, actions: actions, quiz: st.runningQuiz, predictAnswer: predictAnswer, hintFor: hintFor,
+               describeOp: describeOp, earned: function (s) { return isEarned(s, st.passed); } };
+    }
+
+    function courseView(kids) {
       var list = h("ol", { className: "stages" }, st.stages.map(function (s) {
         var b = h("button", { type: "button", className: "stage" }, [h("span", { className: "lock" }), h("span", { className: "title", text: s.title }),
                                                                       h("span", { className: "count" })]);
@@ -439,11 +524,49 @@
       view.stage = stage;
       var detail = [h("h2", { text: stage.title })];
       if (stage.summary) detail.push(h("p", { className: "sub", text: stage.summary }));
+      detail.push(h("p", { className: "scaffold", "data-scaffold": stage.id,
+        text: "Devin's scaffold: " + U.scaffoldLines(stage) + " lines (signature and docstring). You write the body, then the referee checks it." }));
       stage.order.forEach(function (k) { detail.push(card(stage, k)); });
       view.codeBox = h("div", { className: "codebox" });
       view.reveal = h("div", { className: "reveal" });
       detail.push(view.reveal, view.codeBox);
       kids.push(h("section", { className: "detail", "data-detail": stage.id }, detail));
+    }
+
+    function render() {
+      view = { cards: {}, results: {}, inputs: {}, items: {}, hintBoxes: {} };
+      view.net = h("span", { className: "pill", role: "status", "data-status": "net" });
+      view.fill = h("div", { className: "fill" });
+      view.bar = h("div", { className: "bar", role: "progressbar", "aria-valuemin": "0", "aria-valuemax": "100",
+                            "aria-label": "Checkpoints earned" }, [view.fill]);
+      view.barText = h("div", { className: "bartext" });
+      var kids = [h("header", {}, [h("h1", { text: "Earn the Code" }), view.net]),
+                  view.bar, view.barText];
+      var heroNode = h("section", { className: "hero", "data-hero": "pitch" }, [
+                    h("p", { className: "lede", text: "Do not paste code you do not understand." }),
+                    h("p", { className: "sub", text: "In Anthropic's January 2026 randomized trial, people coding with AI scored 50% on a skills quiz against 67% for people coding by hand, and the biggest gap was debugging. Here a real app's code stays locked until you predict it, find its bug and write it yourself. Plain code checks every answer." })]);
+      if (!st.stages.length) {
+        kids.splice(1, 0, heroNode);
+        kids.push(h("p", { className: "card empty", "data-status": "empty",
+          text: st.online === false ? "No signal. Connect once to download the lessons; after that they work offline."
+                                    : "Loading lessons… Connect once to download them; after that they work offline." }));
+        container.replaceChildren.apply(container, kids);
+        refresh();
+        return;
+      }
+      var cur = st.view === "quiz" && !st.runningQuiz ? "results" : st.view;
+      if (VIEWS.every(function (v) { return v[0] !== cur; }) && cur !== "quiz") cur = "course";
+      kids.push(h("div", { className: "tabs", role: "tablist" }, VIEWS.map(function (v) {
+        var t = h("button", { type: "button", className: "tab" + (cur === v[0] ? " on" : ""), role: "tab", "aria-selected": String(cur === v[0]), "data-view": v[0], text: v[1] });
+        t.addEventListener("click", function () { setView(v[0]); });
+        return t;
+      })));
+      var V = ctxOf();
+      if (cur === "course") { kids.splice(1, 0, heroNode); courseView(kids); }
+      else if (cur === "map") Array.prototype.push.apply(kids, Views.mapView(V));
+      else if (cur === "results") Array.prototype.push.apply(kids, Views.resultsView(V));
+      else if (cur === "proof") Array.prototype.push.apply(kids, Views.proofView(V));
+      else Array.prototype.push.apply(kids, Views.quizView(V));
       container.replaceChildren.apply(container, kids);
       refresh();
     }
@@ -475,7 +598,7 @@
         var n = s.order.filter(function (k) { return isDone(s, k, st.passed) || (earned && k !== "explain"); }).length;
         it.button.children[2].textContent = n + "/" + s.order.length;
       });
-      var stage = view.stage; if (!stage) return;
+      var stage = view.stage; if (!stage || !view.cards) return;
       stage.order.forEach(function (k) {
         var el = view.cards[k]; if (!el) return;
         var locked = isCheckpointLocked(stage, k, st.passed), done = isDone(stage, k, st.passed);
@@ -508,7 +631,7 @@
   try { store = root.localStorage; store.getItem(KEY); } catch (e) {
     var mem = {}; store = { getItem: function (k) { return k in mem ? mem[k] : null; }, setItem: function (k, v) { mem[k] = String(v); } };
   }
-  var app = mount(el, { doc: root.document, fetch: root.fetch.bind(root), storage: store });
+  var app = mount(el, { doc: root.document, fetch: root.fetch.bind(root), storage: store, nav: root.navigator });
   root.addEventListener("online", function () { app.flush(); });
   root.addEventListener("offline", function () { app.state.online = false; app.reload(); });
   if ("serviceWorker" in root.navigator) root.navigator.serviceWorker.register("/sw.js").catch(function () {});

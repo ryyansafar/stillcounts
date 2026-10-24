@@ -114,7 +114,7 @@
       return n;
     });
     return { id: c.id + "-v" + v, ops: ops, item: c.item, field: c.field || "qty",
-             question: "After the phones merge, what is the " + (c.field === "oversold" ? "oversold status (yes or no)" : (c.field || "qty")) + " of " + c.item + "?" };
+             question: "After the phones merge, what is the " + (c.field === "oversold" ? "oversold status (yes or no)" : c.field === "qty" || !c.field ? "quantity" : c.field) + " of " + c.item + "?" };
   }
 
   function buildQuiz(stages, phase) {

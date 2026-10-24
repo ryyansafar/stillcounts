@@ -4,18 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="/static/manifest.webmanifest">
 <link rel="stylesheet" href="/static/style.css">
 <link rel="stylesheet" href="/static/learn.css">
-<title>Still Counts · Learn</title>
+<title>Earn the Code</title>
 </head>
 <body>
 <main>
-  <nav class="learnnav"><a class="navlink" href="/">Ledger</a><a class="navlink" href="/board">Board</a></nav>
-  <div id="learn"><p class="sub">Loading lessons…</p></div>
+  <nav class="learnnav" aria-label="Sections">
+    <a class="navlink" href="/static/learn.html">Learn</a>
+    <a class="navlink" href="/static/ledger.html">Course 1 live app</a>
+    <a class="navlink" href="/board">Board</a>
+    <a class="navlink" href="/race">Race</a>
+  </nav>
+  <div id="learn"><p class="sub" data-status="loading">Loading lessons…</p></div>
+  <noscript><p class="card empty">Earn the Code needs JavaScript. The Course 1 live app still works: <a href="/static/ledger.html">open it</a>.</p></noscript>
+  <footer class="socials" aria-label="Links and support">
+    <a href="https://ryyansafar.site">Portfolio</a> · <a href="https://github.com/ryyansafar">GitHub</a> · <a href="https://buymeacoffee.com/ryyansafar">Buy me a coffee</a> ·
+    <a href="https://www.paypal.com/paypalme/ryyansafar">PayPal</a> · <a href="https://razorpay.me/@ryyansafar">Razorpay</a>
+  </footer>
 </main>
 <script src="/static/auth.js"></script>
 <script src="/static/crdt.js"></script>
+<script src="/static/understand.js"></script>
+<script src="/static/learn_views.js"></script>
 <script src="/static/learn.js"></script>
 </body>
 </html>

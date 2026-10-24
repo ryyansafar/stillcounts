@@ -8,6 +8,7 @@ import ast
 import json
 from pathlib import Path
 
+from learn.cases import render
 from oracle.mutation import MUTANTS, _load
 from stillcounts.crdt import Op, merge, stats
 
@@ -32,19 +33,19 @@ STAGES = [
         "summary": "A phone's outbox retries until the server says yes, so the same operation can arrive "
                    "more than once. Every operation has a unique id, and the merge keeps one copy per id.",
         "predict": [
-            {"id": "p1", "prompt": "Phone A received 10 blankets. The signal dropped and the outbox sent it again. "
-                                   "Phone B received 5. What is the blanket count?",
+            {"id": "p1", "template": "Phone A received {v0} blankets. The signal dropped and the outbox sent it again. "
+                                      "Phone B received {v2}. What is the blanket count?",
              "ops": [op("ph-a:1", 1, "adjust", "blankets", 10), op("ph-a:1", 1, "adjust", "blankets", 10),
                      op("ph-b:1", 1, "adjust", "blankets", 5)],
              "ask": {"item": "blankets", "field": "qty"}},
-            {"id": "p2", "prompt": "20 bags of rice arrive, then one issue of 4 bags is retried three times. "
-                                   "How much rice is left?",
+            {"id": "p2", "template": "{v0} bags of rice arrive, then one issue of {v1} bags is retried three times. "
+                                      "How much rice is left?",
              "ops": [op("ph-a:1", 1, "adjust", "rice", 20), op("ph-a:2", 2, "adjust", "rice", -4),
                      op("ph-a:2", 2, "adjust", "rice", -4), op("ph-a:2", 2, "adjust", "rice", -4)],
              "ask": {"item": "rice", "field": "qty"}},
-            {"id": "p3", "prompt": "Two copies of id ph-a:1 disagree: one says +4 at Lamport 1, the other +7 at "
-                                   "Lamport 2. The merge keeps the copy with the larger (lamport, replica, kind, "
-                                   "item, value). What is the water count?",
+            {"id": "p3", "template": "Two copies of id ph-a:1 disagree: one says +{v0} at Lamport {l0}, the other +{v1} at "
+                                      "Lamport {l1}. The merge keeps the copy with the larger (lamport, replica, kind, "
+                                      "item, value). What is the water count?",
              "ops": [op("ph-a:1", 1, "adjust", "water", 4), op("ph-a:1", 2, "adjust", "water", 7)],
              "ask": {"item": "water", "field": "qty"}},
         ],
@@ -82,10 +83,14 @@ STAGES = [
             "prompt": "In your own words: why can the same operation arrive more than once, and why is it "
                       "never counted twice?",
             "min_points": 3,
+            "min_words": 25,
+            "example_case": "p1",
             "rubric": [
                 {"id": "unique-id", "point": "Every operation carries a unique id.",
                  "keywords": kw("id", "ids", "identifier*", "unique")},
-                {"id": "duplicates", "point": "Retries on a flaky network deliver the same operation more than once.",
+                {"id": "duplicates", "example": True,
+                 "point": "Retries on a flaky network deliver the same operation more than once, so counting every "
+                          "copy gives the wrong total (show it with the numbers of your case).",
                  "keywords": kw("retr*", "resen*", "re sen*", "twice", "again", "more than once", "duplicat*",
                                 "repeat*", "copies", "copy")},
                 {"id": "keep-one", "point": "The merge keeps one operation per id before counting.",
@@ -106,17 +111,17 @@ STAGES = [
         "summary": "Phones never send 'the count is 30'. They send changes: +50 received, -12 issued. "
                    "The quantity is the sum of every signed adjustment, so offline changes from many phones add up.",
         "predict": [
-            {"id": "p1", "prompt": "50 tarpaulins arrive, then 12 and 8 are handed out. How many are left?",
+            {"id": "p1", "template": "{v0} tarpaulins arrive, then {v1} and {v2} are handed out. How many are left?",
              "ops": [op("ph-a:1", 1, "adjust", "tarpaulin", 50), op("ph-a:2", 2, "adjust", "tarpaulin", -12),
                      op("ph-a:3", 3, "adjust", "tarpaulin", -8)],
              "ask": {"item": "tarpaulin", "field": "qty"}},
-            {"id": "p2", "prompt": "Two phones were offline all morning. A: +10, -2. B: -3, +6. What is the "
-                                   "paracetamol count after they sync?",
+            {"id": "p2", "template": "Two phones were offline all morning. A: +{v0}, -{v2}. B: -{v1}, +{v3}. What is the "
+                                      "paracetamol count after they sync?",
              "ops": [op("ph-a:1", 1, "adjust", "paracetamol", 10), op("ph-b:1", 1, "adjust", "paracetamol", -3),
                      op("ph-a:2", 2, "adjust", "paracetamol", -2), op("ph-b:2", 2, "adjust", "paracetamol", 6)],
              "ask": {"item": "paracetamol", "field": "qty"}},
-            {"id": "p3", "prompt": "Baby food: +5 received, then two phones issue 3 and 4. A note is also added. "
-                                   "What is the count?",
+            {"id": "p3", "template": "Baby food: +{v0} received, then two phones issue {v2} and {v3}. A note is also added. "
+                                      "What is the count?",
              "ops": [op("ph-a:1", 1, "adjust", "baby-food", 5), op("ph-a:2", 2, "note", "baby-food", "stage 2 jars"),
                      op("ph-a:3", 3, "adjust", "baby-food", -3), op("ph-b:1", 2, "adjust", "baby-food", -4)],
              "ask": {"item": "baby-food", "field": "qty"}},
@@ -152,8 +157,12 @@ STAGES = [
             "prompt": "In your own words: why does the ledger add up signed changes instead of storing the "
                       "current count?",
             "min_points": 3,
+            "min_words": 25,
+            "example_case": "p1",
             "rubric": [
-                {"id": "signed-change", "point": "Each operation is a signed change, not an absolute count.",
+                {"id": "signed-change", "example": True,
+                 "point": "Each operation is a signed change, not an absolute count (show it with the numbers of "
+                          "your case).",
                  "keywords": kw("signed", "sign", "change*", "delta*", "difference*", "increment*", "decrement*",
                                 "plus", "minus", "negative", "positive")},
                 {"id": "commutative", "point": "Addition gives the same total in any order.",
@@ -177,20 +186,20 @@ STAGES = [
         "summary": "Names, notes and deletions keep one value. The write with the highest (Lamport time, "
                    "replica id) wins. The phone's wall clock is never used: it can be hours wrong.",
         "predict": [
-            {"id": "p1", "prompt": "Phone A names the item 'Blankets' at Lamport 1. Phone B renames it "
-                                   "'Wool blankets' at Lamport 3. What is the name?",
+            {"id": "p1", "template": "Phone A names the item '{s0}' at Lamport {l0}. Phone B renames it "
+                                      "'{s1}' at Lamport {l1}. What is the name?",
              "ops": [op("ph-a:1", 1, "create", "blankets", "Blankets"),
                      op("ph-b:1", 3, "create", "blankets", "Wool blankets")],
              "ask": {"item": "blankets", "field": "name"}},
-            {"id": "p2", "prompt": "ph-a and ph-b both rename rice at Lamport 2. A tie on time is broken by "
-                                   "replica id. What is the name?",
+            {"id": "p2", "template": "ph-a and ph-b both rename rice at Lamport {l0}. A tie on time is broken by "
+                                      "replica id. What is the name?",
              "ops": [op("ph-b:1", 2, "create", "rice", "Rice (25 kg)"), op("ph-a:1", 2, "create", "rice", "Rice")],
              "ask": {"item": "rice", "field": "name"}},
-            {"id": "p3", "prompt": "ph-c wrote its note at Lamport 5. ph-a's note at Lamport 2 arrives last, "
-                                   "and ph-a's wall clock said it was later. What is the note?",
+            {"id": "p3", "template": "ph-c wrote its note at Lamport {l0}. ph-a's note at Lamport {l1} arrives last, "
+                                      "and ph-a's wall clock said it was later. What is the note?",
              "ops": [op("ph-c:1", 5, "note", "water", "1 L bottles"), op("ph-a:1", 2, "note", "water", "Use first")],
              "ask": {"item": "water", "field": "note"}},
-            {"id": "p4", "prompt": "Tarpaulin is deleted at Lamport 4, then restored at Lamport 6. Is it alive?",
+            {"id": "p4", "template": "Tarpaulin is deleted at Lamport {l1}, then restored at Lamport {l2}. Is it alive?",
              "ops": [op("ph-a:1", 1, "adjust", "tarpaulin", 3), op("ph-a:2", 4, "delete", "tarpaulin", True),
                      op("ph-b:1", 6, "delete", "tarpaulin", False)],
              "ask": {"item": "tarpaulin", "field": "alive"}},
@@ -226,6 +235,8 @@ STAGES = [
             "prompt": "In your own words: how does the ledger decide which rename wins, and why not use the "
                       "time on the phone?",
             "min_points": 3,
+            "min_words": 25,
+            "example_case": "p1",
             "rubric": [
                 {"id": "lamport", "point": "Writes are ordered by a Lamport (logical) clock.",
                  "keywords": kw("lamport", "logical", "counter")},
@@ -233,7 +244,8 @@ STAGES = [
                  "keywords": kw("wall clock*", "skew*", "wrong time", "phone clock*", "phone s clock*",
                                 "phone time", "system time", "time zone*", "drift*", "clock is wrong",
                                 "clocks are wrong")},
-                {"id": "highest-wins", "point": "The highest Lamport time wins.",
+                {"id": "highest-wins", "example": True,
+                 "point": "The highest Lamport time wins (name the Lamport times of your case).",
                  "keywords": kw("highest", "higher", "larger", "largest", "bigger", "biggest", "greatest",
                                 "max*", "latest")},
                 {"id": "tie-break", "point": "Ties are broken by replica id, so every phone agrees.",
@@ -250,16 +262,17 @@ STAGES = [
                    "so the merge keeps both and the count goes negative. A live item below zero is flagged "
                    "for a human.",
         "predict": [
-            {"id": "p1", "prompt": "2 blankets left. Phones A and B, both offline, each hand out 2. "
-                                   "Is blankets flagged as oversold?",
+            {"id": "p1", "reroll": "scale", "template": "{v0} blankets left. Phones A and B, both offline, each hand out {v1}. "
+                                      "Is blankets flagged as oversold?",
              "ops": [op("ph-a:1", 1, "adjust", "blankets", 2), op("ph-a:2", 2, "adjust", "blankets", -2),
                      op("ph-b:1", 2, "adjust", "blankets", -2)],
              "ask": {"item": "blankets", "field": "oversold"}},
-            {"id": "p2", "prompt": "4 bags of rice arrive and exactly 4 are handed out. Is rice flagged?",
+            {"id": "p2", "reroll": "scale", "template": "{v0} bags of rice arrive and exactly {v0} are handed out, {v1} by one phone "
+                                      "and {v2} by another. Is rice flagged?",
              "ops": [op("ph-a:1", 1, "adjust", "rice", 4), op("ph-b:1", 1, "adjust", "rice", -3),
                      op("ph-a:2", 2, "adjust", "rice", -1)],
              "ask": {"item": "rice", "field": "oversold"}},
-            {"id": "p3", "prompt": "Water went to -5, then the item was deleted. Is water flagged?",
+            {"id": "p3", "reroll": "scale", "template": "Water went to -{v0}, then the item was deleted. Is water flagged?",
              "ops": [op("ph-a:1", 1, "adjust", "water", -5), op("ph-b:1", 3, "delete", "water", True)],
              "ask": {"item": "water", "field": "oversold"}},
         ],
@@ -295,11 +308,14 @@ STAGES = [
         "explain": {
             "prompt": "In your own words: why can stock go below zero, and what does the ledger do about it?",
             "min_points": 3,
+            "min_words": 25,
+            "example_case": "p1",
             "rubric": [
                 {"id": "offline-both", "point": "Two phones handed out the same last stock while offline.",
                  "keywords": kw("offline", "both", "two phones", "concurrent*", "same time", "no signal",
                                 "without signal", "no internet")},
-                {"id": "negative", "point": "Merging both handouts makes the quantity negative.",
+                {"id": "negative", "example": True,
+                 "point": "Merging both handouts makes the quantity negative (show it with the numbers of your case).",
                  "keywords": kw("negative", "below zero", "less than zero", "under zero", "minus")},
                 {"id": "really-happened", "point": "Both handouts really happened, so neither can be rejected.",
                  "keywords": kw("really", "actually", "happened", "real", "physical*", "cannot undo",
@@ -316,7 +332,10 @@ STAGES = [
 ]
 
 
-PREDICT_PROMPT = "Predict the merged result. The real merge then runs on the same operations and checks you."
+EXPLAIN_RULES = (" Write at least {min_words} words, one sentence for each point you make, and use the numbers of your "
+                 "own case {example_case} as a worked example.")
+PREDICT_PROMPT = ("Predict the merged result of your own cases. The real merge then runs on the same operations and "
+                  "checks you; a wrong case is replaced by a new one with different numbers.")
 QUESTIONS = {"qty": "What is the quantity of {item}?", "name": "What is the name of {item}?",
              "note": "What is the note on {item}?", "alive": "Is {item} still alive (not deleted)? yes or no",
              "oversold": "Is {item} flagged as oversold? yes or no"}
@@ -356,6 +375,22 @@ def _outcome(mod, ops: list[dict]):
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
+EXCERPT_RADIUS = 2            # two lines either side of the changed line: 3 to 5 lines in all
+
+
+def _excerpt(mutated: str, lineno: int) -> dict:
+    """A few lines around the changed line, never the whole function. line_index says which one changed. Blank lines
+    are skipped so the learner gets five lines of code, not whitespace."""
+    import textwrap
+    lines = mutated.splitlines()
+    code = [i for i, text in enumerate(lines) if text.strip()]
+    at = code.index(lineno - 1)
+    picked = code[max(0, at - EXCERPT_RADIUS):at + EXCERPT_RADIUS + 1]
+    window = textwrap.dedent("\n".join(lines[i] for i in picked)).splitlines()
+    assert 3 <= len(window) <= 5, (len(window), lineno)
+    return {"excerpt": window, "line_index": picked.index(lineno - 1)}
+
+
 def _bug(stage: dict, source: str) -> dict:
     spec = dict(stage["bug"])
     m = next(m for m in MUTANTS if m["name"] == spec["mutant"])
@@ -377,8 +412,7 @@ def _bug(stage: dict, source: str) -> dict:
     return {
         "mutant": m["name"],
         "prompt": spec["prompt"],
-        "snippet": _enclosing_function(mutated, lineno),
-        "line": mutated.splitlines()[lineno - 1].strip(),
+        **_excerpt(mutated, lineno),
         "options": spec["options"],
         "answer": spec["answer"],
         "explanation": spec["explanation"],
@@ -393,11 +427,13 @@ def build() -> list[dict]:
         s = json.loads(json.dumps(stage))
         cases = []
         for case in s["predict"]:
-            c = {"id": case["id"], "prompt": case["prompt"], "ops": case["ops"], **case["ask"]}
+            c = {"id": case["id"], "template": case["template"], "reroll": case.get("reroll", "free"),
+                 "prompt": render(case["template"], case["ops"]), "ops": case["ops"], **case["ask"]}
             c["question"] = QUESTIONS[c["field"]].format(item=c["item"])
             c["expected"] = answer(c)
             cases.append(c)
         s["predict"] = {"prompt": PREDICT_PROMPT, "cases": cases}
+        s["explain"]["prompt"] += EXPLAIN_RULES.format(**s["explain"])
         s["bug"] = _bug(s, source)
         s["code"] = _function_source(source, stage["code"])
         out.append(s)

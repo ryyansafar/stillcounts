@@ -3,32 +3,39 @@
   "stages": [
    {
     "bug": {
-     "line": "for op in ops:",
+     "excerpt": [
+      "def merge(ops: Iterable[Op]) -> dict[str, dict]:",
+      "    by_item: dict[str, list[Op]] = {}",
+      "    for op in ops:",
+      "        by_item.setdefault(op.item, []).append(op)",
+      "    state: dict[str, dict] = {}"
+     ],
      "options": [
       {
-       "id": "a",
-       "text": "The quantity sum ignores negative adjustments."
+       "id": "d",
+       "text": "Last-writer-wins picks the earliest write."
       },
       {
        "id": "b",
        "text": "merge groups the raw operations without calling dedupe(), so a retried operation is counted again."
       },
       {
-       "id": "c",
-       "text": "Items are sorted by name, so the delivery order changes the result."
+       "id": "a",
+       "text": "The quantity sum ignores negative adjustments."
       },
       {
-       "id": "d",
-       "text": "Last-writer-wins picks the earliest write."
+       "id": "c",
+       "text": "Items are sorted by name, so the delivery order changes the result."
       }
      ],
-     "prompt": "This merge was changed by one line. Phones now report too many blankets after a bad signal day. What is wrong?",
-     "snippet": "def merge(ops: Iterable[Op]) -> dict[str, dict]:\n    by_item: dict[str, list[Op]] = {}\n    for op in ops:\n        by_item.setdefault(op.item, []).append(op)\n    state: dict[str, dict] = {}\n    for item in sorted(by_item):\n        group = by_item[item]\n        names = [o for o in group if o.kind == \"create\"]\n        notes = [o for o in group if o.kind == \"note\"]\n        flags = [o for o in group if o.kind == \"delete\"]\n        state[item] = {\n            \"name\": _lww(names, item),\n            \"qty\": sum(o.value for o in group if o.kind == \"adjust\"),\n            \"note\": _lww(notes, \"\"),\n            \"alive\": not _lww(flags, False),\n        }\n    return state"
+     "prompt": "This merge was changed by one line. Phones now report too many blankets after a bad signal day. What is wrong?"
     },
     "code": null,
     "explain": {
+     "example_case": "p1",
      "min_points": 3,
-     "prompt": "In your own words: why can the same operation arrive more than once, and why is it never counted twice?"
+     "min_words": 25,
+     "prompt": "In your own words: why can the same operation arrive more than once, and why is it never counted twice? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example."
     },
     "id": "duplicate-ids",
     "order": 1,
@@ -43,28 +50,28 @@
          "id": "ph-a:1",
          "item": "blankets",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 19,
          "replica": "ph-a",
-         "value": 10
+         "value": 11
         },
         {
          "id": "ph-a:1",
          "item": "blankets",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 19,
          "replica": "ph-a",
-         "value": 10
+         "value": 11
         },
         {
          "id": "ph-b:1",
          "item": "blankets",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 19,
          "replica": "ph-b",
-         "value": 5
+         "value": 30
         }
        ],
-       "prompt": "Phone A received 10 blankets. The signal dropped and the outbox sent it again. Phone B received 5. What is the blanket count?",
+       "prompt": "Phone A received 11 blankets. The signal dropped and the outbox sent it again. Phone B received 30. What is the blanket count?",
        "question": "What is the quantity of blankets?"
       },
       {
@@ -76,36 +83,36 @@
          "id": "ph-a:1",
          "item": "rice",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 18,
          "replica": "ph-a",
-         "value": 20
+         "value": 25
         },
         {
          "id": "ph-a:2",
          "item": "rice",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 27,
          "replica": "ph-a",
-         "value": -4
+         "value": -20
         },
         {
          "id": "ph-a:2",
          "item": "rice",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 27,
          "replica": "ph-a",
-         "value": -4
+         "value": -20
         },
         {
          "id": "ph-a:2",
          "item": "rice",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 27,
          "replica": "ph-a",
-         "value": -4
+         "value": -20
         }
        ],
-       "prompt": "20 bags of rice arrive, then one issue of 4 bags is retried three times. How much rice is left?",
+       "prompt": "25 bags of rice arrive, then one issue of 20 bags is retried three times. How much rice is left?",
        "question": "What is the quantity of rice?"
       },
       {
@@ -117,24 +124,24 @@
          "id": "ph-a:1",
          "item": "water",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 9,
          "replica": "ph-a",
-         "value": 4
+         "value": 29
         },
         {
          "id": "ph-a:1",
          "item": "water",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 40,
          "replica": "ph-a",
-         "value": 7
+         "value": 25
         }
        ],
-       "prompt": "Two copies of id ph-a:1 disagree: one says +4 at Lamport 1, the other +7 at Lamport 2. The merge keeps the copy with the larger (lamport, replica, kind, item, value). What is the water count?",
+       "prompt": "Two copies of id ph-a:1 disagree: one says +29 at Lamport 9, the other +25 at Lamport 40. The merge keeps the copy with the larger (lamport, replica, kind, item, value). What is the water count?",
        "question": "What is the quantity of water?"
       }
      ],
-     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+     "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers."
     },
     "progress": {
      "bug": false,
@@ -153,32 +160,39 @@
    },
    {
     "bug": {
-     "line": "\"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),",
+     "excerpt": [
+      "state[item] = {",
+      "    \"name\": _lww(names, item),",
+      "    \"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),",
+      "    \"note\": _lww(notes, \"\"),",
+      "    \"alive\": not _lww(flags, False),"
+     ],
      "options": [
-      {
-       "id": "a",
-       "text": "abs() turns every issue (a negative adjustment) into a receipt."
-      },
-      {
-       "id": "b",
-       "text": "Adjustments from other replicas are skipped."
-      },
       {
        "id": "c",
        "text": "The sum should be taken over unique items, not operations."
       },
       {
+       "id": "a",
+       "text": "abs() turns every issue (a negative adjustment) into a receipt."
+      },
+      {
        "id": "d",
        "text": "Notes are added into the quantity."
+      },
+      {
+       "id": "b",
+       "text": "Adjustments from other replicas are skipped."
       }
      ],
-     "prompt": "One line of the merge was changed. Now the stock only ever goes up. What is wrong?",
-     "snippet": "def merge(ops: Iterable[Op]) -> dict[str, dict]:\n    by_item: dict[str, list[Op]] = {}\n    for op in dedupe(ops):\n        by_item.setdefault(op.item, []).append(op)\n    state: dict[str, dict] = {}\n    for item in sorted(by_item):\n        group = by_item[item]\n        names = [o for o in group if o.kind == \"create\"]\n        notes = [o for o in group if o.kind == \"note\"]\n        flags = [o for o in group if o.kind == \"delete\"]\n        state[item] = {\n            \"name\": _lww(names, item),\n            \"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),\n            \"note\": _lww(notes, \"\"),\n            \"alive\": not _lww(flags, False),\n        }\n    return state"
+     "prompt": "One line of the merge was changed. Now the stock only ever goes up. What is wrong?"
     },
     "code": null,
     "explain": {
+     "example_case": "p1",
      "min_points": 3,
-     "prompt": "In your own words: why does the ledger add up signed changes instead of storing the current count?"
+     "min_words": 25,
+     "prompt": "In your own words: why does the ledger add up signed changes instead of storing the current count? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example."
     },
     "id": "signed-adjust-sum",
     "order": 2,
@@ -193,28 +207,28 @@
          "id": "ph-a:1",
          "item": "tarpaulin",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 8,
          "replica": "ph-a",
-         "value": 50
+         "value": 29
         },
         {
          "id": "ph-a:2",
          "item": "tarpaulin",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 43,
          "replica": "ph-a",
-         "value": -12
+         "value": -2
         },
         {
          "id": "ph-a:3",
          "item": "tarpaulin",
          "kind": "adjust",
-         "lamport": 3,
+         "lamport": 44,
          "replica": "ph-a",
-         "value": -8
+         "value": -12
         }
        ],
-       "prompt": "50 tarpaulins arrive, then 12 and 8 are handed out. How many are left?",
+       "prompt": "29 tarpaulins arrive, then 2 and 12 are handed out. How many are left?",
        "question": "What is the quantity of tarpaulin?"
       },
       {
@@ -226,36 +240,36 @@
          "id": "ph-a:1",
          "item": "paracetamol",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 33,
          "replica": "ph-a",
-         "value": 10
+         "value": 38
         },
         {
          "id": "ph-b:1",
          "item": "paracetamol",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 33,
          "replica": "ph-b",
-         "value": -3
+         "value": -21
         },
         {
          "id": "ph-a:2",
          "item": "paracetamol",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 50,
          "replica": "ph-a",
-         "value": -2
+         "value": -20
         },
         {
          "id": "ph-b:2",
          "item": "paracetamol",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 50,
          "replica": "ph-b",
-         "value": 6
+         "value": 7
         }
        ],
-       "prompt": "Two phones were offline all morning. A: +10, -2. B: -3, +6. What is the paracetamol count after they sync?",
+       "prompt": "Two phones were offline all morning. A: +38, -20. B: -21, +7. What is the paracetamol count after they sync?",
        "question": "What is the quantity of paracetamol?"
       },
       {
@@ -267,40 +281,40 @@
          "id": "ph-a:1",
          "item": "baby-food",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 18,
          "replica": "ph-a",
-         "value": 5
+         "value": 22
         },
         {
          "id": "ph-a:2",
          "item": "baby-food",
          "kind": "note",
-         "lamport": 2,
+         "lamport": 49,
          "replica": "ph-a",
-         "value": "stage 2 jars"
+         "value": "stage 2 jars #71"
         },
         {
          "id": "ph-a:3",
          "item": "baby-food",
          "kind": "adjust",
-         "lamport": 3,
+         "lamport": 50,
          "replica": "ph-a",
-         "value": -3
+         "value": -23
         },
         {
          "id": "ph-b:1",
          "item": "baby-food",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 49,
          "replica": "ph-b",
-         "value": -4
+         "value": -20
         }
        ],
-       "prompt": "Baby food: +5 received, then two phones issue 3 and 4. A note is also added. What is the count?",
+       "prompt": "Baby food: +22 received, then two phones issue 23 and 20. A note is also added. What is the count?",
        "question": "What is the quantity of baby-food?"
       }
      ],
-     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+     "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers."
     },
     "progress": {
      "bug": false,
@@ -319,32 +333,39 @@
    },
    {
     "bug": {
-     "line": "return min(ops, key=_order).value if ops else default",
+     "excerpt": [
+      "    return [best[k] for k in sorted(best)]",
+      "def _lww(ops: list[Op], default: Any) -> Any:",
+      "    return min(ops, key=_order).value if ops else default",
+      "def merge(ops: Iterable[Op]) -> dict[str, dict]:",
+      "    by_item: dict[str, list[Op]] = {}"
+     ],
      "options": [
       {
-       "id": "a",
-       "text": "Replica ids should never be compared."
+       "id": "d",
+       "text": "Writes should be ordered by the phone's wall clock."
       },
       {
        "id": "b",
        "text": "The default should be an empty string."
       },
       {
-       "id": "c",
-       "text": "min() keeps the oldest write, so a later write never takes effect."
+       "id": "a",
+       "text": "Replica ids should never be compared."
       },
       {
-       "id": "d",
-       "text": "Writes should be ordered by the phone's wall clock."
+       "id": "c",
+       "text": "min() keeps the oldest write, so a later write never takes effect."
       }
      ],
-     "prompt": "One line was changed. Renames no longer stick. What is wrong?",
-     "snippet": "def _lww(ops: list[Op], default: Any) -> Any:\n    return min(ops, key=_order).value if ops else default"
+     "prompt": "One line was changed. Renames no longer stick. What is wrong?"
     },
     "code": null,
     "explain": {
+     "example_case": "p1",
      "min_points": 3,
-     "prompt": "In your own words: how does the ledger decide which rename wins, and why not use the time on the phone?"
+     "min_words": 25,
+     "prompt": "In your own words: how does the ledger decide which rename wins, and why not use the time on the phone? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example."
     },
     "id": "lamport-lww",
     "order": 3,
@@ -359,20 +380,20 @@
          "id": "ph-a:1",
          "item": "blankets",
          "kind": "create",
-         "lamport": 1,
+         "lamport": 5,
          "replica": "ph-a",
-         "value": "Blankets"
+         "value": "Blankets #36"
         },
         {
          "id": "ph-b:1",
          "item": "blankets",
          "kind": "create",
-         "lamport": 3,
+         "lamport": 48,
          "replica": "ph-b",
-         "value": "Wool blankets"
+         "value": "Wool blankets #23"
         }
        ],
-       "prompt": "Phone A names the item 'Blankets' at Lamport 1. Phone B renames it 'Wool blankets' at Lamport 3. What is the name?",
+       "prompt": "Phone A names the item 'Blankets #36' at Lamport 5. Phone B renames it 'Wool blankets #23' at Lamport 48. What is the name?",
        "question": "What is the name of blankets?"
       },
       {
@@ -384,20 +405,20 @@
          "id": "ph-b:1",
          "item": "rice",
          "kind": "create",
-         "lamport": 2,
+         "lamport": 29,
          "replica": "ph-b",
-         "value": "Rice (25 kg)"
+         "value": "Rice (25 kg) #70"
         },
         {
          "id": "ph-a:1",
          "item": "rice",
          "kind": "create",
-         "lamport": 2,
+         "lamport": 29,
          "replica": "ph-a",
-         "value": "Rice"
+         "value": "Rice #14"
         }
        ],
-       "prompt": "ph-a and ph-b both rename rice at Lamport 2. A tie on time is broken by replica id. What is the name?",
+       "prompt": "ph-a and ph-b both rename rice at Lamport 29. A tie on time is broken by replica id. What is the name?",
        "question": "What is the name of rice?"
       },
       {
@@ -409,20 +430,20 @@
          "id": "ph-c:1",
          "item": "water",
          "kind": "note",
-         "lamport": 5,
+         "lamport": 41,
          "replica": "ph-c",
-         "value": "1 L bottles"
+         "value": "1 L bottles #77"
         },
         {
          "id": "ph-a:1",
          "item": "water",
          "kind": "note",
-         "lamport": 2,
+         "lamport": 15,
          "replica": "ph-a",
-         "value": "Use first"
+         "value": "Use first #85"
         }
        ],
-       "prompt": "ph-c wrote its note at Lamport 5. ph-a's note at Lamport 2 arrives last, and ph-a's wall clock said it was later. What is the note?",
+       "prompt": "ph-c wrote its note at Lamport 41. ph-a's note at Lamport 15 arrives last, and ph-a's wall clock said it was later. What is the note?",
        "question": "What is the note on water?"
       },
       {
@@ -434,15 +455,15 @@
          "id": "ph-a:1",
          "item": "tarpaulin",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 29,
          "replica": "ph-a",
-         "value": 3
+         "value": 17
         },
         {
          "id": "ph-a:2",
          "item": "tarpaulin",
          "kind": "delete",
-         "lamport": 4,
+         "lamport": 30,
          "replica": "ph-a",
          "value": true
         },
@@ -450,16 +471,16 @@
          "id": "ph-b:1",
          "item": "tarpaulin",
          "kind": "delete",
-         "lamport": 6,
+         "lamport": 47,
          "replica": "ph-b",
          "value": false
         }
        ],
-       "prompt": "Tarpaulin is deleted at Lamport 4, then restored at Lamport 6. Is it alive?",
+       "prompt": "Tarpaulin is deleted at Lamport 30, then restored at Lamport 47. Is it alive?",
        "question": "Is tarpaulin still alive (not deleted)? yes or no"
       }
      ],
-     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+     "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers."
     },
     "progress": {
      "bug": false,
@@ -478,15 +499,16 @@
    },
    {
     "bug": {
-     "line": "oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]",
+     "excerpt": [
+      "    winner = max(g, key=_order)",
+      "    conflicts += sum(1 for o in g if o.replica != winner.replica)",
+      "oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]",
+      "return {\"ops\": len(unique), \"items\": len(state), \"conflicts\": conflicts, \"oversold\": oversold}"
+     ],
      "options": [
       {
        "id": "a",
        "text": "Deleted items are flagged."
-      },
-      {
-       "id": "b",
-       "text": "Conflicts are counted for the winning replica."
       },
       {
        "id": "c",
@@ -495,15 +517,20 @@
       {
        "id": "d",
        "text": "qty <= 0 flags stock of exactly zero; it should be qty < 0."
+      },
+      {
+       "id": "b",
+       "text": "Conflicts are counted for the winning replica."
       }
      ],
-     "prompt": "One line of the statistics was changed. Coordinators now get alerts for shelves that are simply empty. What is wrong?",
-     "snippet": "def stats(ops: Iterable[Op]) -> dict:\n    unique = dedupe(ops)\n    state = merge(unique)\n    conflicts = 0\n    groups: dict[tuple[str, str], list[Op]] = {}\n    for o in unique:\n        if o.kind in (\"create\", \"note\", \"delete\"):\n            groups.setdefault((o.item, o.kind), []).append(o)\n    for g in groups.values():\n        winner = max(g, key=_order)\n        conflicts += sum(1 for o in g if o.replica != winner.replica)\n    oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]\n    return {\"ops\": len(unique), \"items\": len(state), \"conflicts\": conflicts, \"oversold\": oversold}"
+     "prompt": "One line of the statistics was changed. Coordinators now get alerts for shelves that are simply empty. What is wrong?"
     },
     "code": null,
     "explain": {
+     "example_case": "p1",
      "min_points": 3,
-     "prompt": "In your own words: why can stock go below zero, and what does the ledger do about it?"
+     "min_words": 25,
+     "prompt": "In your own words: why can stock go below zero, and what does the ledger do about it? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example."
     },
     "id": "oversell-flag",
     "order": 4,
@@ -518,28 +545,28 @@
          "id": "ph-a:1",
          "item": "blankets",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 6,
          "replica": "ph-a",
-         "value": 2
+         "value": 12
         },
         {
          "id": "ph-a:2",
          "item": "blankets",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 37,
          "replica": "ph-a",
-         "value": -2
+         "value": -12
         },
         {
          "id": "ph-b:1",
          "item": "blankets",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 37,
          "replica": "ph-b",
-         "value": -2
+         "value": -12
         }
        ],
-       "prompt": "2 blankets left. Phones A and B, both offline, each hand out 2. Is blankets flagged as oversold?",
+       "prompt": "12 blankets left. Phones A and B, both offline, each hand out 12. Is blankets flagged as oversold?",
        "question": "Is blankets flagged as oversold? yes or no"
       },
       {
@@ -551,28 +578,28 @@
          "id": "ph-a:1",
          "item": "rice",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 26,
          "replica": "ph-a",
-         "value": 4
+         "value": 44
         },
         {
          "id": "ph-b:1",
          "item": "rice",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 26,
          "replica": "ph-b",
-         "value": -3
+         "value": -33
         },
         {
          "id": "ph-a:2",
          "item": "rice",
          "kind": "adjust",
-         "lamport": 2,
+         "lamport": 52,
          "replica": "ph-a",
-         "value": -1
+         "value": -11
         }
        ],
-       "prompt": "4 bags of rice arrive and exactly 4 are handed out. Is rice flagged?",
+       "prompt": "44 bags of rice arrive and exactly 44 are handed out, 33 by one phone and 11 by another. Is rice flagged?",
        "question": "Is rice flagged as oversold? yes or no"
       },
       {
@@ -584,24 +611,24 @@
          "id": "ph-a:1",
          "item": "water",
          "kind": "adjust",
-         "lamport": 1,
+         "lamport": 3,
          "replica": "ph-a",
-         "value": -5
+         "value": -45
         },
         {
          "id": "ph-b:1",
          "item": "water",
          "kind": "delete",
-         "lamport": 3,
+         "lamport": 5,
          "replica": "ph-b",
          "value": true
         }
        ],
-       "prompt": "Water went to -5, then the item was deleted. Is water flagged?",
+       "prompt": "Water went to -45, then the item was deleted. Is water flagged?",
        "question": "Is water flagged as oversold? yes or no"
       }
      ],
-     "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you."
+     "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers."
     },
     "progress": {
      "bug": false,
@@ -622,14 +649,14 @@
  },
  "expected": {
   "duplicate-ids": {
-   "p1": 15,
-   "p2": 16,
-   "p3": 7
+   "p1": 41,
+   "p2": 5,
+   "p3": 25
   },
   "lamport-lww": {
-   "p1": "Wool blankets",
-   "p2": "Rice (25 kg)",
-   "p3": "1 L bottles",
+   "p1": "Wool blankets #23",
+   "p2": "Rice (25 kg) #70",
+   "p3": "1 L bottles #77",
    "p4": true
   },
   "oversell-flag": {
@@ -638,9 +665,9 @@
    "p3": false
   },
   "signed-adjust-sum": {
-   "p1": 30,
-   "p2": 11,
-   "p3": -2
+   "p1": 15,
+   "p2": 4,
+   "p3": -21
   }
  }
 }

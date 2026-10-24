@@ -5,10 +5,12 @@
   "title": "Counted once, even when sent twice",
   "summary": "A phone's outbox retries until the server says yes, so the same operation can arrive more than once. Every operation has a unique id, and the merge keeps one copy per id.",
   "predict": {
-   "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you.",
+   "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers.",
    "cases": [
     {
      "id": "p1",
+     "template": "Phone A received {v0} blankets. The signal dropped and the outbox sent it again. Phone B received {v2}. What is the blanket count?",
+     "reroll": "free",
      "prompt": "Phone A received 10 blankets. The signal dropped and the outbox sent it again. Phone B received 5. What is the blanket count?",
      "ops": [
       {
@@ -43,6 +45,8 @@
     },
     {
      "id": "p2",
+     "template": "{v0} bags of rice arrive, then one issue of {v1} bags is retried three times. How much rice is left?",
+     "reroll": "free",
      "prompt": "20 bags of rice arrive, then one issue of 4 bags is retried three times. How much rice is left?",
      "ops": [
       {
@@ -85,6 +89,8 @@
     },
     {
      "id": "p3",
+     "template": "Two copies of id ph-a:1 disagree: one says +{v0} at Lamport {l0}, the other +{v1} at Lamport {l1}. The merge keeps the copy with the larger (lamport, replica, kind, item, value). What is the water count?",
+     "reroll": "free",
      "prompt": "Two copies of id ph-a:1 disagree: one says +4 at Lamport 1, the other +7 at Lamport 2. The merge keeps the copy with the larger (lamport, replica, kind, item, value). What is the water count?",
      "ops": [
       {
@@ -114,8 +120,14 @@
   "bug": {
    "mutant": "merge-skips-dedupe",
    "prompt": "This merge was changed by one line. Phones now report too many blankets after a bad signal day. What is wrong?",
-   "snippet": "def merge(ops: Iterable[Op]) -> dict[str, dict]:\n    by_item: dict[str, list[Op]] = {}\n    for op in ops:\n        by_item.setdefault(op.item, []).append(op)\n    state: dict[str, dict] = {}\n    for item in sorted(by_item):\n        group = by_item[item]\n        names = [o for o in group if o.kind == \"create\"]\n        notes = [o for o in group if o.kind == \"note\"]\n        flags = [o for o in group if o.kind == \"delete\"]\n        state[item] = {\n            \"name\": _lww(names, item),\n            \"qty\": sum(o.value for o in group if o.kind == \"adjust\"),\n            \"note\": _lww(notes, \"\"),\n            \"alive\": not _lww(flags, False),\n        }\n    return state",
-   "line": "for op in ops:",
+   "excerpt": [
+    "def merge(ops: Iterable[Op]) -> dict[str, dict]:",
+    "    by_item: dict[str, list[Op]] = {}",
+    "    for op in ops:",
+    "        by_item.setdefault(op.item, []).append(op)",
+    "    state: dict[str, dict] = {}"
+   ],
+   "line_index": 2,
    "options": [
     {
      "id": "a",
@@ -205,8 +217,10 @@
    "hook": null
   },
   "explain": {
-   "prompt": "In your own words: why can the same operation arrive more than once, and why is it never counted twice?",
+   "prompt": "In your own words: why can the same operation arrive more than once, and why is it never counted twice? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example.",
    "min_points": 3,
+   "min_words": 25,
+   "example_case": "p1",
    "rubric": [
     {
      "id": "unique-id",
@@ -220,7 +234,8 @@
     },
     {
      "id": "duplicates",
-     "point": "Retries on a flaky network deliver the same operation more than once.",
+     "example": true,
+     "point": "Retries on a flaky network deliver the same operation more than once, so counting every copy gives the wrong total (show it with the numbers of your case).",
      "keywords": [
       "retr*",
       "resen*",
@@ -273,10 +288,12 @@
   "title": "Quantity is a sum of signed changes",
   "summary": "Phones never send 'the count is 30'. They send changes: +50 received, -12 issued. The quantity is the sum of every signed adjustment, so offline changes from many phones add up.",
   "predict": {
-   "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you.",
+   "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers.",
    "cases": [
     {
      "id": "p1",
+     "template": "{v0} tarpaulins arrive, then {v1} and {v2} are handed out. How many are left?",
+     "reroll": "free",
      "prompt": "50 tarpaulins arrive, then 12 and 8 are handed out. How many are left?",
      "ops": [
       {
@@ -311,6 +328,8 @@
     },
     {
      "id": "p2",
+     "template": "Two phones were offline all morning. A: +{v0}, -{v2}. B: -{v1}, +{v3}. What is the paracetamol count after they sync?",
+     "reroll": "free",
      "prompt": "Two phones were offline all morning. A: +10, -2. B: -3, +6. What is the paracetamol count after they sync?",
      "ops": [
       {
@@ -353,6 +372,8 @@
     },
     {
      "id": "p3",
+     "template": "Baby food: +{v0} received, then two phones issue {v2} and {v3}. A note is also added. What is the count?",
+     "reroll": "free",
      "prompt": "Baby food: +5 received, then two phones issue 3 and 4. A note is also added. What is the count?",
      "ops": [
       {
@@ -398,8 +419,14 @@
   "bug": {
    "mutant": "quantity-counts-magnitudes",
    "prompt": "One line of the merge was changed. Now the stock only ever goes up. What is wrong?",
-   "snippet": "def merge(ops: Iterable[Op]) -> dict[str, dict]:\n    by_item: dict[str, list[Op]] = {}\n    for op in dedupe(ops):\n        by_item.setdefault(op.item, []).append(op)\n    state: dict[str, dict] = {}\n    for item in sorted(by_item):\n        group = by_item[item]\n        names = [o for o in group if o.kind == \"create\"]\n        notes = [o for o in group if o.kind == \"note\"]\n        flags = [o for o in group if o.kind == \"delete\"]\n        state[item] = {\n            \"name\": _lww(names, item),\n            \"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),\n            \"note\": _lww(notes, \"\"),\n            \"alive\": not _lww(flags, False),\n        }\n    return state",
-   "line": "\"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),",
+   "excerpt": [
+    "state[item] = {",
+    "    \"name\": _lww(names, item),",
+    "    \"qty\": sum(abs(o.value) for o in group if o.kind == \"adjust\"),",
+    "    \"note\": _lww(notes, \"\"),",
+    "    \"alive\": not _lww(flags, False),"
+   ],
+   "line_index": 2,
    "options": [
     {
      "id": "a",
@@ -492,12 +519,15 @@
    }
   },
   "explain": {
-   "prompt": "In your own words: why does the ledger add up signed changes instead of storing the current count?",
+   "prompt": "In your own words: why does the ledger add up signed changes instead of storing the current count? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example.",
    "min_points": 3,
+   "min_words": 25,
+   "example_case": "p1",
    "rubric": [
     {
      "id": "signed-change",
-     "point": "Each operation is a signed change, not an absolute count.",
+     "example": true,
+     "point": "Each operation is a signed change, not an absolute count (show it with the numbers of your case).",
      "keywords": [
       "signed",
       "sign",
@@ -566,10 +596,12 @@
   "title": "Last writer wins, by Lamport time",
   "summary": "Names, notes and deletions keep one value. The write with the highest (Lamport time, replica id) wins. The phone's wall clock is never used: it can be hours wrong.",
   "predict": {
-   "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you.",
+   "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers.",
    "cases": [
     {
      "id": "p1",
+     "template": "Phone A names the item '{s0}' at Lamport {l0}. Phone B renames it '{s1}' at Lamport {l1}. What is the name?",
+     "reroll": "free",
      "prompt": "Phone A names the item 'Blankets' at Lamport 1. Phone B renames it 'Wool blankets' at Lamport 3. What is the name?",
      "ops": [
       {
@@ -596,6 +628,8 @@
     },
     {
      "id": "p2",
+     "template": "ph-a and ph-b both rename rice at Lamport {l0}. A tie on time is broken by replica id. What is the name?",
+     "reroll": "free",
      "prompt": "ph-a and ph-b both rename rice at Lamport 2. A tie on time is broken by replica id. What is the name?",
      "ops": [
       {
@@ -622,6 +656,8 @@
     },
     {
      "id": "p3",
+     "template": "ph-c wrote its note at Lamport {l0}. ph-a's note at Lamport {l1} arrives last, and ph-a's wall clock said it was later. What is the note?",
+     "reroll": "free",
      "prompt": "ph-c wrote its note at Lamport 5. ph-a's note at Lamport 2 arrives last, and ph-a's wall clock said it was later. What is the note?",
      "ops": [
       {
@@ -648,6 +684,8 @@
     },
     {
      "id": "p4",
+     "template": "Tarpaulin is deleted at Lamport {l1}, then restored at Lamport {l2}. Is it alive?",
+     "reroll": "free",
      "prompt": "Tarpaulin is deleted at Lamport 4, then restored at Lamport 6. Is it alive?",
      "ops": [
       {
@@ -685,8 +723,14 @@
   "bug": {
    "mutant": "lww-picks-earliest",
    "prompt": "One line was changed. Renames no longer stick. What is wrong?",
-   "snippet": "def _lww(ops: list[Op], default: Any) -> Any:\n    return min(ops, key=_order).value if ops else default",
-   "line": "return min(ops, key=_order).value if ops else default",
+   "excerpt": [
+    "    return [best[k] for k in sorted(best)]",
+    "def _lww(ops: list[Op], default: Any) -> Any:",
+    "    return min(ops, key=_order).value if ops else default",
+    "def merge(ops: Iterable[Op]) -> dict[str, dict]:",
+    "    by_item: dict[str, list[Op]] = {}"
+   ],
+   "line_index": 2,
    "options": [
     {
      "id": "a",
@@ -768,8 +812,10 @@
    "hook": null
   },
   "explain": {
-   "prompt": "In your own words: how does the ledger decide which rename wins, and why not use the time on the phone?",
+   "prompt": "In your own words: how does the ledger decide which rename wins, and why not use the time on the phone? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example.",
    "min_points": 3,
+   "min_words": 25,
+   "example_case": "p1",
    "rubric": [
     {
      "id": "lamport",
@@ -799,7 +845,8 @@
     },
     {
      "id": "highest-wins",
-     "point": "The highest Lamport time wins.",
+     "example": true,
+     "point": "The highest Lamport time wins (name the Lamport times of your case).",
      "keywords": [
       "highest",
       "higher",
@@ -834,10 +881,12 @@
   "title": "Oversold stock is flagged, not hidden",
   "summary": "Two offline phones can both hand out the last blankets. Both handouts really happened, so the merge keeps both and the count goes negative. A live item below zero is flagged for a human.",
   "predict": {
-   "prompt": "Predict the merged result. The real merge then runs on the same operations and checks you.",
+   "prompt": "Predict the merged result of your own cases. The real merge then runs on the same operations and checks you; a wrong case is replaced by a new one with different numbers.",
    "cases": [
     {
      "id": "p1",
+     "template": "{v0} blankets left. Phones A and B, both offline, each hand out {v1}. Is blankets flagged as oversold?",
+     "reroll": "scale",
      "prompt": "2 blankets left. Phones A and B, both offline, each hand out 2. Is blankets flagged as oversold?",
      "ops": [
       {
@@ -872,7 +921,9 @@
     },
     {
      "id": "p2",
-     "prompt": "4 bags of rice arrive and exactly 4 are handed out. Is rice flagged?",
+     "template": "{v0} bags of rice arrive and exactly {v0} are handed out, {v1} by one phone and {v2} by another. Is rice flagged?",
+     "reroll": "scale",
+     "prompt": "4 bags of rice arrive and exactly 4 are handed out, 3 by one phone and 1 by another. Is rice flagged?",
      "ops": [
       {
        "id": "ph-a:1",
@@ -906,6 +957,8 @@
     },
     {
      "id": "p3",
+     "template": "Water went to -{v0}, then the item was deleted. Is water flagged?",
+     "reroll": "scale",
      "prompt": "Water went to -5, then the item was deleted. Is water flagged?",
      "ops": [
       {
@@ -935,8 +988,13 @@
   "bug": {
    "mutant": "oversold-includes-zero",
    "prompt": "One line of the statistics was changed. Coordinators now get alerts for shelves that are simply empty. What is wrong?",
-   "snippet": "def stats(ops: Iterable[Op]) -> dict:\n    unique = dedupe(ops)\n    state = merge(unique)\n    conflicts = 0\n    groups: dict[tuple[str, str], list[Op]] = {}\n    for o in unique:\n        if o.kind in (\"create\", \"note\", \"delete\"):\n            groups.setdefault((o.item, o.kind), []).append(o)\n    for g in groups.values():\n        winner = max(g, key=_order)\n        conflicts += sum(1 for o in g if o.replica != winner.replica)\n    oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]\n    return {\"ops\": len(unique), \"items\": len(state), \"conflicts\": conflicts, \"oversold\": oversold}",
-   "line": "oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]",
+   "excerpt": [
+    "    winner = max(g, key=_order)",
+    "    conflicts += sum(1 for o in g if o.replica != winner.replica)",
+    "oversold = [i for i, s in state.items() if s[\"qty\"] <= 0 and s[\"alive\"]]",
+    "return {\"ops\": len(unique), \"items\": len(state), \"conflicts\": conflicts, \"oversold\": oversold}"
+   ],
+   "line_index": 2,
    "options": [
     {
      "id": "a",
@@ -1031,8 +1089,10 @@
    }
   },
   "explain": {
-   "prompt": "In your own words: why can stock go below zero, and what does the ledger do about it?",
+   "prompt": "In your own words: why can stock go below zero, and what does the ledger do about it? Write at least 25 words, one sentence for each point you make, and use the numbers of your own case p1 as a worked example.",
    "min_points": 3,
+   "min_words": 25,
+   "example_case": "p1",
    "rubric": [
     {
      "id": "offline-both",
@@ -1050,7 +1110,8 @@
     },
     {
      "id": "negative",
-     "point": "Merging both handouts makes the quantity negative.",
+     "example": true,
+     "point": "Merging both handouts makes the quantity negative (show it with the numbers of your case).",
      "keywords": [
       "negative",
       "below zero",

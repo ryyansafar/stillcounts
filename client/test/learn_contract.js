@@ -18,14 +18,15 @@ test("the real stage list renders as four checkpoints per stage with the options
     assert.strictEqual(s.earned, false);
     assert.strictEqual(s.code, null);
     assert.ok(s.checkpoints.predict.cases.length >= 3);
-    assert.ok(s.checkpoints.bug.snippet && s.checkpoints.bug.options.length >= 2);
+    assert.ok(s.checkpoints.bug.excerpt.length >= 3 && s.checkpoints.bug.excerpt.length <= 5 && s.checkpoints.bug.options.length >= 2);
+    assert.ok(!("line_index" in s.checkpoints.bug) && !("answer" in s.checkpoints.bug));
     assert.ok(s.checkpoints.bug.options.every((o) => o.id && o.text));
     assert.ok(s.checkpoints.write.stub.includes("def "));
     assert.ok(s.checkpoints.explain.prompt);
   });
 });
 
-test("the browser's merge gives the same answer as the real grader for every predict case", () => {
+test("the browser's merge gives the same answer as the real merge for every one of this learner's predict cases", () => {
   const stages = L.normalizeStages(fixture.api);
   let n = 0;
   stages.forEach((s) => s.checkpoints.predict.cases.forEach((c) => {

@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from learn.grader import load_stages
+from learn.cases import answer
 from server.app import create_app
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,8 +18,9 @@ COMMITTED = ROOT / "client" / "test" / "fixtures" / "learn_contract.json"
 
 def build_fixture(tmp_path) -> dict:
     client = TestClient(create_app(tmp_path / "ops.jsonl"))
+    client.cookies.set("sc_learner", "contract-fixture-learner")          # a fixed learner, so the cases are the same every run
     api = client.get("/api/learn/stages").json()
-    expected = {s["id"]: {c["id"]: c["expected"] for c in s["predict"]["cases"]} for s in load_stages()}
+    expected = {s["id"]: {c["id"]: answer(c) for c in s["predict"]["cases"]} for s in api["stages"]}
     return {"api": api, "expected": expected}
 
 

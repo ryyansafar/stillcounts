@@ -11,3 +11,5 @@ htmlcov/
 node_modules/
 data/*.jsonl
 data/chaos_results.json
+data/learn_progress.json
+data/learn_progress.json.tmp

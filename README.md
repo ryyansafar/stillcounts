@@ -20,6 +20,13 @@ python3 -m venv .venv && .venv/bin/pip install pytest hypothesis fastapi uvicorn
 .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port 8000
 ```
 
+## Earn the Code (Learn mode)
+`learn/stages.json` holds four stages (duplicate ids, signed adjust sum, Lamport last-writer-wins, oversell flag). Each has predict cases whose answers come from the real merge, a find-the-bug item built from a real mutant in `oracle/mutation.py`, a small function to write and an explain rubric. `learn/grader.py` grades all four checkpoints with plain code: written functions run in a subprocess with a timeout, plugged into the real ledger code and judged by the referee. Edit the content in `learn/build_stages.py`, then regenerate:
+
+```bash
+.venv/bin/python -m learn.build_stages
+```
+
 ## Devin
 Devin sessions propose hostile network scenarios (partitions, reordering, duplicates, clock skew), build a chaos harness, run it against the oracle and open pull requests for anything they break. The sessions and pull requests are listed in `docs/devin.md`. A human presses merge.
 

@@ -1,8 +1,9 @@
 // Caches the app shell so the ledger opens and works with no network at all.
 // Strategy: network first (so updates arrive when there is a signal), cache as the fallback after a short timeout.
-var CACHE = "stillcounts-v8";
+var CACHE = "stillcounts-v9";
 var SHELL = ["/", "/static/auth.js", "/static/crdt.js", "/static/exchange.js", "/static/app.js", "/static/style.css", "/static/manifest.webmanifest", "/static/icons/icon-192.png",
-             "/static/learn.html", "/static/learn.js", "/static/learn.css",
+             "/static/learn.html", "/static/learn.js", "/static/learn.css", "/static/understand.js", "/static/learn_views.js",
+             "/static/ledger.html", "/board", "/static/icons/icon.svg",
              "/race", "/static/race.js", "/static/race.css"];
 var NETWORK_TIMEOUT_MS = 2500;
 

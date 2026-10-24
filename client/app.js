@@ -208,7 +208,7 @@
     });
   }
 
-  // Unicode-aware so names in Malayalam, Hindi or Tamil get their own item instead of all collapsing to one id. Names are
+  // Unicode-aware so non-English item names get their own item instead of all collapsing to one id. Names are
   // NFC-normalised first so the same word typed on two keyboards is one item; a name with no letters or digits at all
   // (only symbols) falls back to a short hash of the name, so it is stable and still distinct.
   function hash36(text) {

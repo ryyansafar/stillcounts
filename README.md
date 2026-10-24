@@ -2,7 +2,7 @@
 
 **A field-team ledger that keeps counting with the internet pulled.** Any team that counts stock in a disaster (floods, earthquakes, a clinic after a storm, a food bank) can keep tapping on their phones with no signal. The counts queue on the phone and merge deterministically when the connection returns: every operation has a unique id, so none is applied twice, and the ledger is a function of the set of operations, not of the order they arrived in.
 
-Built for Devin Hacks Kochi (24 Oct 2026). Track: *Works anyway* (unreliable internet). A Kochi relief camp is the worked example (item names in Malayalam, Hindi or Tamil get their own rows); nothing in the code is specific to one place.
+Built for Devin Hacks Kochi (24 Oct 2026). Track: *Works anyway* (unreliable internet). A Kochi relief camp is the worked example; nothing in the code is specific to one place.
 
 **How sure are we?** A simulated attack harness (below) runs 24 hostile scenarios. Most pass; two still fail on some seeds and are listed openly. The board's headline is built from what the phones report, never from a claim of "nothing lost".
 

@@ -82,6 +82,18 @@
     return true;
   }
 
+  // The base already holds a DIFFERENT op under this id (a reinstalled or legacy client reused it). Keeping both under one
+  // id would leave this phone and the base disagreeing for good, so this phone's op gets a fresh id and is sent again;
+  // the base's op under the old id is pulled in as usual. Returns the new id, or null if this rejection is not that case.
+  function reidentify(r) {
+    if (!r.id || r.reason !== "id reused with different content") return null;
+    var op = ops.filter(function (o) { return o.id === r.id; })[0];
+    if (!op) return null;
+    delete known[op.id]; delete synced[op.id];
+    op.id = replica + ":" + uid(); known[op.id] = true;
+    return op.id;
+  }
+
   function sync() {
     if (busy) return; busy = true;
     var unsent = ops.filter(function (o) { return !synced[o.id]; });
@@ -93,9 +105,11 @@
         // The base's log is not the one this phone last read (restored, wiped, lines dropped): forget what we thought
         // it had. Below, every op the base does return is marked sent again, so only the ones it lost go back out.
         if (body.reset) synced = {};
-        var again = {};
+        var again = {}, renamed = false;
         (body.rejected || []).forEach(function (r) {
+          var fresh;
           if (restamp(r, body.max_lamport)) { again[r.id] = true; body.max_lamport += 1; }
+          else if ((fresh = reidentify(r))) { again[fresh] = true; renamed = true; }
           else if (r.id) { rejected += 1; }
         });
         unsent.slice(0, 500).forEach(function (o) { if (!again[o.id]) synced[o.id] = true; });
@@ -105,7 +119,9 @@
         });
         (body.rejected || []).forEach(function (r) { if (r.id && !again[r.id]) synced[r.id] = true; });
         if (body.ops.length) anchor = body.ops[body.ops.length - 1].id; else if (body.cursor === 0) anchor = null;
-        cursor = body.cursor; epoch = body.epoch; online = true; lastSync = new Date(); persist();
+        cursor = body.cursor; epoch = body.epoch; online = true;
+        if (renamed) { cursor = 0; anchor = null; }       // re-read the whole log so the base's op under the old id is surely here
+        lastSync = new Date(); persist();
       })
       .catch(function () { online = false; })
       .then(function () { busy = false; render(); });

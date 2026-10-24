@@ -325,7 +325,7 @@ class Device:
         self.close_tabs()
         state = js_loads(text_of(self.storage["sc_state"])) if "sc_state" in self.storage else {}
         synced = set(state.get("synced") or [])
-        self.sim.destroy([o["id"] for o in state.get("ops") or [] if o["id"] not in synced], self)
+        self.sim.destroy([op_key(o) for o in state.get("ops") or [] if o["id"] not in synced], self)
         self.storage = {"sc_replica": js_dumps(keep_replica)} if keep_replica else {}
 
 
@@ -449,7 +449,7 @@ class Phone:
             return
         self.busy = True
         batch = self.unsent()[:BATCH]
-        body = js_dumps({"replica": self.replica, "cursor": self.cursor, "epoch": self.epoch, "anchor": self.anchor,
+        body = js_dumps({"replica": self.replica, "name": None, "cursor": self.cursor, "epoch": self.epoch, "anchor": self.anchor,
                          "held": len(self.ops), "queued": len(self.unsent()), "ops": batch})
         self.sim.net.request(self.name, "POST", "/api/sync", body.encode(),
                              lambda status, data: self.sim.on_device(self.device, lambda: self._reply(batch, status, data), self))
@@ -466,6 +466,21 @@ class Phone:
                 return True
         return False
 
+    def reidentify(self, r: dict) -> str | None:
+        """app.js reidentify(): the base holds a different op under this id, so this phone's op gets a fresh id."""
+        if not r.get("id") or r.get("reason") != "id reused with different content":
+            return None
+        for o in self.ops:
+            if o["id"] == r["id"]:
+                before = dict(o)
+                self.known.pop(o["id"], None)
+                self.synced.pop(o["id"], None)
+                o["id"] = self.replica + ":" + self.uid()
+                self.known[o["id"]] = True
+                self.sim.reidentified(before, o)
+                return o["id"]
+        return None
+
     def _reply(self, batch: list[dict], status: int | None, data: bytes) -> None:
         if not self.alive:
             return                     # the page that sent this request is gone
@@ -476,11 +491,15 @@ class Phone:
             if body.get("reset"):
                 self.synced = {}
             again: set[str] = set()
+            renamed = False
             newest = body.get("max_lamport")
             for r in body.get("rejected") or []:
                 if self.restamp(r, newest):
                     again.add(r["id"])
                     newest += 1
+                elif (fresh := self.reidentify(r)):
+                    again.add(fresh)
+                    renamed = True
                 elif r.get("id"):
                     self.rejected += 1
                     self.sim.server_rejected(self.device, r)
@@ -503,6 +522,8 @@ class Phone:
             self.cursor = body["cursor"]
             self.epoch = body.get("epoch")
             self.online = True
+            if renamed:
+                self.cursor, self.anchor = 0, None
             self.persist()
         except TabKilled:
             raise
@@ -596,7 +617,7 @@ class Simulation:
         self.devices: dict[str, Device] = {}
         self.created: list[tuple[str, dict]] = []      # (device, op) for every op a volunteer saw on screen
         self.expected_rejected: set[str] = set()        # ids a scenario injected as invalid on purpose
-        self.destroyed: set[str] = set()                # ids wiped with site data before they left the phone
+        self.destroyed: set[str] = set()                # keys of ops wiped with site data before they left the phone
         self.unexpected_rejections: list[tuple[str, str, str]] = []
         self.labels: list[str] = []
 
@@ -616,13 +637,19 @@ class Simulation:
         """A (buggy) client edited an op in place: the volunteer now expects the new content."""
         self.created = [(d, dict(new) if o["id"] == op_id else o) for d, o in self.created]
 
+    def reidentified(self, before: dict, after: dict) -> None:
+        """A phone gave a tap a fresh id after the base refused its old one: the volunteer's tap is unchanged."""
+        same = {k: before[k] for k in ("replica", "lamport", "kind", "item", "value")}
+        self.created = [(d, dict(after) if o["id"] == before["id"] and all(o.get(k) == v for k, v in same.items()) else o)
+                        for d, o in self.created]
+
     def expect_rejected(self, op: dict | str) -> None:
         self.expected_rejected.add(op if isinstance(op, str) else op["id"])
 
-    def destroy(self, ids: list[str], device: Device) -> None:
-        self.destroyed.update(ids)
-        if ids:
-            self.note(f"{device.name}: wipe destroyed {len(ids)} unsynced ops")
+    def destroy(self, keys: list[str], device: Device) -> None:
+        self.destroyed.update(keys)
+        if keys:
+            self.note(f"{device.name}: wipe destroyed {len(keys)} unsynced ops")
 
     def server_rejected(self, device: Device, r: dict) -> None:
         if r["id"] not in self.expected_rejected:
@@ -790,9 +817,9 @@ class Simulation:
         logs: dict[str, list[dict]] = {"server": server_ops}
         for name, dev in self.devices.items():
             logs[name] = [o for o in (dev.tab.ops if dev.tab else []) if o["id"] not in refused]
-        seen = {o.get("id") for log in logs.values() for o in log}
-        skip = refused | (self.destroyed - seen)
-        created = [o for _, o in self.created if o["id"] not in skip]
+        seen = {op_key(o) for log in logs.values() for o in log}       # by content: a reused id is a different op
+        gone = self.destroyed - seen
+        created = [o for _, o in self.created if o["id"] not in refused and op_key(o) not in gone]
         errors: list[str] = []
         if server_err:
             errors.append(server_err)
@@ -822,8 +849,8 @@ class Simulation:
                           f"{reason}")
         ok = not errors
         extra = []
-        if self.destroyed - seen:
-            extra.append(f"{len(self.destroyed - seen)} unsynced ops destroyed by a wipe")
+        if gone:
+            extra.append(f"{len(gone)} unsynced ops destroyed by a wipe")
         if self.expected_rejected:
             extra.append(f"{len(self.expected_rejected)} invalid ops injected")
         label = "; ".join(self.labels + extra + (["PASS"] if ok else []))

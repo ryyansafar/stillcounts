@@ -61,7 +61,11 @@ def s_net_retry_same_id_new_content(sim):
         tab.ops = [edited if o["id"] == first["id"] else o for o in tab.ops]
         tab.synced.pop(first["id"], None)
         tab.persist()
-        sim.supersede(first["id"], edited)
+        server_ops, _ = sim.server_log()
+        if any(o["id"] == first["id"] for o in server_ops):
+            sim.created_op(a, edited)                     # the base already holds the original tap: both taps are real
+        else:
+            sim.supersede(first["id"], edited)            # the original never left the phone: the edit replaces it
     else:
         sim.label("variant: legacy client reinstalls and reuses its old op id")
         a.wipe(keep_replica=a.tab.replica if a.tab else None)

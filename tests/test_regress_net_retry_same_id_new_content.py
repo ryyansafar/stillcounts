@@ -1,18 +1,17 @@
-"""Bug: an op id reused with different content diverges forever.
+"""Fixed (found by the chaos harness): an op id reused with different content used to diverge forever.
 
 A legacy client (or a reinstall that restores the old counter) sends `ph-a:<id>` again with a different value after
 the first copy already reached the server. The server answers `rejected: id reused with different content`, but the
-phone keeps its own copy in its log and never adopts the server's, so the phone and the server hold different ops
-under one id and their canonical() states differ. Nothing in the protocol repairs the divergence."""
+phone kept its own copy in its log and never adopted the server's, so the phone and the server held different ops
+under one id and their canonical() states differed. Fix: the phone gives its op a fresh id and sends it again, and
+pulls the base's op under the old id (client/app.js reidentify(), mirrored in chaos/sim.py)."""
 import pytest
 
 from chaos.scenarios import run_one
 from chaos.sim import Simulation
 
-pytestmark = pytest.mark.xfail(strict=True, reason="known product bug found by the chaos harness; remove this mark when the product is fixed")
-
 SCENARIO = "net_retry_same_id_new_content"
-FAILING_SEEDS = [0, 1, 2]   # first failing seeds of `python -m chaos.run --scenario net_retry_same_id_new_content`
+FAILING_SEEDS = [0, 1, 2]   # seeds that failed before the fix, from `python -m chaos.run --scenario net_retry_same_id_new_content`
 
 
 @pytest.mark.parametrize("seed", FAILING_SEEDS)

@@ -1,7 +1,7 @@
 // Learn mode, "Earn the Code": the real merge code stays locked until the learner earns a stage.
 // Plain code grades every checkpoint: predict is checked in the browser by the same merge the app uses (crdt.js),
 // so it works with no signal; find-the-bug and write are graded by the server's referee; explain shows which rubric points
-// were covered. Every request carries an X-Learner-Id header (a random id kept on this phone).
+// were covered. The server tells learners apart by an HttpOnly cookie it issues itself; the page sends no id.
 //
 // API (server/learn_api.py), stage = { id, order, title, summary, unlocked, progress, code (null while locked),
 //   predict: { prompt, cases: [{ id, prompt, question, ops, item, field }] },
@@ -88,10 +88,28 @@
     return typeof a === "number" ? "a whole number" : typeof a === "boolean" ? "yes or no" : "the text";
   }
 
-  function newLearnerId() {
-    var id = "l-";
-    for (var i = 0; i < 12; i++) id += Math.floor(Math.random() * 36).toString(36);
-    return id;
+  // server/learn_api.py nests the grader's answer under "result"; an older flat shape is still read.
+  function explanationOf(res) {
+    res = res || {};
+    return String((res.result || res).explanation || res.explanation || "");
+  }
+
+  function opText(o) {
+    return (o.id || "?") + " " + (o.kind || "") + (o.item ? " " + o.item : "") + (o.value === undefined ? "" : " " + JSON.stringify(o.value));
+  }
+
+  // The write referee's verdict: the counterexample first (the operations, then what the real merge gives against what
+  // yours gives), then the error string. Either part may be missing.
+  function failureText(r) {
+    r = r || {};
+    var parts = [], c = r.counterexample;
+    if (c) {
+      var ops = c.ops || [];
+      parts.push("on " + ops.length + " operations (" + ops.map(opText).join("; ") + ") the real merge gives " +
+                 JSON.stringify(c.expected) + " and yours gives " + JSON.stringify(c.got) + ".");
+    }
+    if (r.error) parts.push(r.error);
+    return parts.length ? parts.join(" ") : (r.failure || r.message || r.detail || "the referee found a difference.");
   }
 
   function key(stage, kind) { return stage.id + "/" + kind; }
@@ -152,12 +170,12 @@
     var st = { stages: normalizeStages(saved.stages || []), raw: saved.stages || null, passed: saved.passed || {},
                queue: saved.queue || [], codes: saved.codes || {}, drafts: saved.drafts || {}, selected: saved.selected || null,
                attempts: saved.attempts || {}, hints: saved.hints || {}, quiz: saved.quiz || {}, view: saved.view || "course", name: saved.name || "",
-               online: null, loaded: false, learner: saved.learner || newLearnerId() };
+               online: null, loaded: false };
     var pending = [], view = {};
 
     function persist() {
       try {
-        storage.setItem(KEY, JSON.stringify({ learner: st.learner, stages: st.raw, passed: st.passed, queue: st.queue, codes: st.codes,
+        storage.setItem(KEY, JSON.stringify({ stages: st.raw, passed: st.passed, queue: st.queue, codes: st.codes,
                                               drafts: st.drafts, selected: st.selected,
                                               attempts: st.attempts, hints: st.hints, quiz: st.quiz, view: st.view, name: st.name }));
       } catch (e) { /* storage full: keep going in memory */ }
@@ -182,9 +200,8 @@
     }
 
     function request(url, body) {
-      var headers = { "X-Learner-Id": st.learner };
-      var init = body === undefined ? { method: "GET", headers: headers }
-        : { method: "POST", headers: Object.assign({ "Content-Type": "application/json" }, headers), body: JSON.stringify(body) };
+      var init = body === undefined ? { method: "GET", credentials: "same-origin" }
+        : { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
       return new Promise(function (resolve, reject) {
         var timer = setTimeout(function () { reject(new Error("timeout")); }, TIMEOUT_MS);
         Promise.resolve().then(function () { return fetchFn(url, init); }).then(function (r) {
@@ -306,16 +323,9 @@
       return post(stage, "bug", { answer: answer }).then(function (res) {
         var ok = absorb(stage, "bug", res, false);
         record(stage, "bug", ok);
-        setResult("bug", ok ? "good" : "bad", ok ? "Found it." + (res.explanation ? " " + res.explanation : "") : "Not that one. Look again.");
+        setResult("bug", ok ? "good" : "bad", ok ? "Found it." + (explanationOf(res) ? " " + explanationOf(res) : "") : "Not that one. Look again.");
         refresh();
       }, function (err) { setResult("bug", "warn", offlineText(err)); refresh(); });
-    }
-
-    function failureText(r) {
-      if (r.error) return r.error;
-      var c = r.counterexample;
-      if (c) return "on " + (c.ops || []).length + " operations the real merge gives " + JSON.stringify(c.expected) + " and yours gives " + JSON.stringify(c.got) + ".";
-      return r.failure || r.message || r.detail || "the referee found a difference.";
     }
 
     function doWrite(stage) {
@@ -621,7 +631,7 @@
     return { ready: ready, idle: idle, flush: function () { return track(flush().then(load)); }, reload: load, state: st };
   }
 
-  var api = { KINDS: KINDS, normalizeStages: normalizeStages, predictAnswer: predictAnswer, gradePredict: gradePredict,
+  var api = { KINDS: KINDS, normalizeStages: normalizeStages, failureText: failureText, explanationOf: explanationOf, predictAnswer: predictAnswer, gradePredict: gradePredict,
               isEarned: isEarned, isStageLocked: isStageLocked, isCheckpointLocked: isCheckpointLocked, progress: progress, mount: mount };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
   root.Learn = api;

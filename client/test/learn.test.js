@@ -52,7 +52,7 @@ const CASES = [
   { id: "p3", prompt: "Is it oversold?", ops: OPS2, item: "rice", field: "oversold" },
 ];
 const REAL_CODE = "def merge(ops):\n    ...";
-const LEARNER = /^[A-Za-z0-9_-]{1,64}$/;
+const BUG_EXPLANATION = "Taking abs() counts a withdrawal as stock coming in.";
 
 function fakeServer() {
   const passed = {};
@@ -72,20 +72,22 @@ function fakeServer() {
   });
   async function fetchStub(url, init) {
     const headers = (init && init.headers) || {};
-    calls.push({ url, method: (init && init.method) || "GET", headers, body: init && init.body ? JSON.parse(init.body) : null });
+    calls.push({ url, method: (init && init.method) || "GET", headers, credentials: init && init.credentials, body: init && init.body ? JSON.parse(init.body) : null });
     if (offline) throw new TypeError("Failed to fetch");
     const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
-    if (!LEARNER.test(headers["X-Learner-Id"] || "")) return json({ detail: "learner id required" }, 422);
     if (url === "/api/learn/stages") return json({ stages: [stage("quantity", "Quantities add up", 1), stage("lww", "Last writer wins", 2)] });
     const m = url.match(/^\/api\/learn\/([^/]+)\/(predict|bug|write|explain)$/);
     if (!m) return json({ detail: "not found" }, 404);
     const [, id, kind] = m; const body = JSON.parse(init.body);
     let ok, result = {};
     if (kind === "predict") ok = body.answer.p1 === 12 && body.answer.p2 === "Rice B" && body.answer.p3 === true;
-    if (kind === "bug") ok = body.answer === "a";
+    if (kind === "bug") {      // same nesting as server/learn_api.py grade(): everything the grader says sits under result
+      ok = body.answer === "a";
+      result = { answer: "abs-of-value", mutant: "abs", explanation: BUG_EXPLANATION, counterexample: { case: "p1", ops: OPS, expected: 12, got: 18 } };
+    }
     if (kind === "write") {
       ok = /sum\(/.test(body.source);
-      if (!ok) result = { passed: false, error: null, counterexample: { ops: OPS, expected: 12, got: 0 } };
+      if (!ok) result = { passed: false, error: "the result differs from the real merge", counterexample: { ops: OPS, expected: 12, got: 0 } };
     }
     if (kind === "explain") {
       ok = body.text.trim().length > 0;
@@ -164,7 +166,6 @@ test("renders the stage list with locks and a progress bar", async () => {
   const server = fakeServer();
   const { root } = await mounted(server);
   assert.strictEqual(server.calls[0].url, "/api/learn/stages");
-  assert.match(server.calls[0].headers["X-Learner-Id"], LEARNER, "every request names the learner");
   const items = byAttr(root, "data-stage", "quantity").concat(byAttr(root, "data-stage", "lww"));
   assert.strictEqual(items.length, 2);
   assert.strictEqual(one(root, "data-stage", "lww").getAttribute("data-locked"), "true");
@@ -176,12 +177,21 @@ test("renders the stage list with locks and a progress bar", async () => {
   assert.strictEqual(byAttr(root, "data-case", "p1").length + byAttr(root, "data-case", "p2").length + byAttr(root, "data-case", "p3").length, 3);
 });
 
-test("the learner id is created once and kept", async () => {
+test("the learner is the server's HttpOnly cookie: no id is invented, stored or sent by the page", async () => {
   const storage = memoryStorage(), server = fakeServer();
-  await mounted(server, storage);
-  await mounted(server, storage);
-  const ids = new Set(server.calls.map((c) => c.headers["X-Learner-Id"]));
-  assert.strictEqual(ids.size, 1);
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server, storage);
+  one(root, "data-choice", "a").fire("click"); await app.idle();
+  assert.ok(server.calls.length >= 2);
+  server.calls.forEach((c) => assert.ok(!("X-Learner-Id" in c.headers), "the header is gone"));
+  assert.ok(!/learner/i.test(JSON.stringify(storage.dump)), "nothing learner-shaped in local storage");
+  assert.ok(!/X-Learner-Id/.test(read("learn.js").replace(/^\/\/.*$/gm, "")), "learn.js has no learner header code");
+});
+
+test("the browser is told to send the cookie with every request", async () => {
+  const server = fakeServer();
+  await mounted(server);
+  server.calls.forEach((c) => assert.strictEqual(c.credentials, "same-origin"));
 });
 
 function answerAll(root, values) {
@@ -226,6 +236,50 @@ test("earning predict, bug and write unlocks the next stage and reveals the real
   one(root, "data-action", "explain").fire("click"); await app.idle();
   assert.match(one(root, "data-rubric", "explain").textContent, /Covered: mentions signed adjustments/);
   assert.match(one(root, "data-rubric", "explain").textContent, /Missed: mentions order does not matter/);
+});
+
+test("a correct find-the-bug shows the explanation the API nests under result", async () => {
+  const server = fakeServer();
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server);
+  one(root, "data-choice", "b").fire("click"); await app.idle();
+  assert.ok(!/abs\(\)/.test(one(root, "data-result", "bug").textContent), "a wrong pick does not reveal it");
+  one(root, "data-choice", "a").fire("click"); await app.idle();
+  const text = one(root, "data-result", "bug").textContent;
+  assert.match(text, /Found it\./);
+  assert.ok(text.includes(BUG_EXPLANATION), text);
+});
+
+test("find-the-bug still copes with an un-nested explanation", async () => {
+  const server = fakeServer(), inner = server.fetch;
+  server.fetch = async (url, init) => {
+    const r = await inner(url, init), body = await r.json();
+    if (/\/bug$/.test(url)) { body.explanation = "flat"; body.result = { passed: body.passed }; }
+    return { ok: r.ok, status: r.status, json: async () => body };
+  };
+  server.passed["quantity/predict"] = true;
+  const { root, app } = await mounted(server);
+  one(root, "data-choice", "a").fire("click"); await app.idle();
+  assert.match(one(root, "data-result", "bug").textContent, /Found it\. flat/);
+});
+
+test("a failed write shows the counterexample first, then the error string", async () => {
+  const server = fakeServer();
+  server.passed["quantity/predict"] = true; server.passed["quantity/bug"] = true;
+  const { root, app } = await mounted(server);
+  one(root, "data-input", "write").value = "def quantity(group):\n    return 0\n";
+  one(root, "data-action", "write").fire("click"); await app.idle();
+  const text = one(root, "data-result", "write").textContent;
+  assert.match(text, /^Not yet: /);
+  const at = (re) => text.search(re);
+  assert.ok(at(/a:1/) > 0 && at(/real merge gives 12 and yours gives 0/) > at(/a:1/), "the operations come before expected and got: " + text);
+  assert.ok(at(/the result differs from the real merge/) > at(/yours gives 0/), "the error string comes after the counterexample: " + text);
+  assert.ok(text.includes("b:2") && text.includes("-3"), "every operation is shown");
+});
+
+test("failureText falls back to the error alone when there is no counterexample", () => {
+  assert.strictEqual(L.failureText({ error: "SyntaxError: bad", counterexample: null }), "SyntaxError: bad");
+  assert.match(L.failureText({}), /referee/);
 });
 
 test("a stale cache is corrected by the server's progress on reload", async () => {

@@ -38,27 +38,33 @@ def _load(source: str) -> types.ModuleType:
     return module
 
 
-def _killed(mod: types.ModuleType) -> bool:
-    """True if the referee (golden vectors, order independence, clock rules) notices the mutation."""
+def referee_failure(mod: types.ModuleType) -> str | None:
+    """The full referee: golden answers, order independence and clock rules. Returns why it failed, or None if it passed."""
     try:
         for case in json.loads(VECTORS.read_text()):
             ops = [mod.Op(**o) for o in case["ops"]]
-            if mod.merge(ops) != case["state"] or mod.stats(ops) != case["stats"]:
-                return True
+            if mod.merge(ops) != case["state"]:
+                return f"merged state differs from the reference on '{case['name']}'"
+            if mod.stats(ops) != case["stats"]:
+                return f"statistics differ from the reference on '{case['name']}'"
         permutation_check(generate_ops(0xA3, 120, 3), perms=40, seed=3, merge_fn=mod.merge)
         c = mod.Clock("a")
         c.observe(10)
         if c.tick() != 11:
-            return True
+            return "the Lamport clock does not advance past an observed remote time"
         try:
-            mod.merge([mod.Op("a:1", "a", 1, "adjust", "x", 0)])   # a zero adjust must be refused
+            mod.merge([mod.Op("a:1", "a", 1, "adjust", "x", 0)])
         except ValueError:
-            return False                                            # refused correctly: the mutation went unnoticed
-        return True                                                 # accepted: the referee noticed the mutation
-    except OracleFailure:
-        return True
-    except Exception:
-        return True
+            return None                                             # refused correctly: all checks passed
+        return "a zero adjustment was accepted"
+    except OracleFailure as exc:
+        return str(exc)
+    except Exception as exc:                                        # a crash is also a failure
+        return f"crashed: {type(exc).__name__}"
+
+
+def _killed(mod: types.ModuleType) -> bool:
+    return referee_failure(mod) is not None
 
 
 def run() -> dict:

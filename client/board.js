@@ -50,5 +50,18 @@
   $("tab-ledger").addEventListener("click", function () { tab("ledger"); });
   $("tab-attack").addEventListener("click", function () { tab("attack"); });
   $("seed").addEventListener("click", function () { fetch("/api/seed", { method: "POST" }).then(poll); });
+  function panels() {
+    var origin = location.origin;
+    $("qr").src = "/api/qr.svg?text=" + encodeURIComponent(origin + "/");
+    $("joinurl").textContent = origin.replace(/^https?:\/\//, "");
+    fetch("/api/referee").then(function (r) { return r.json(); }).then(function (d) {
+      $("p-referee").textContent = d.killed + " / " + d.total;
+    }).catch(function () {});
+    fetch("/api/devin").then(function (r) { return r.json(); }).then(function (d) {
+      $("p-devin").textContent = d.sessions + " sessions";
+      $("p-devin-sub").textContent = d.prs + " pull requests · " + d.structured_outputs + " structured results";
+    }).catch(function () {});
+  }
+  panels(); setInterval(panels, 15000);
   setInterval(poll, 1000); poll();
 })();

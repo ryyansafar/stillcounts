@@ -22,6 +22,11 @@ td.neg { color: var(--bad); }
 .tabs button[aria-pressed="true"] { background: var(--olive); }
 .run { padding: 8px 12px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .ok { color: var(--good); } .fail { color: var(--bad); }
+.panels { display:grid; grid-template-columns: auto 1fr 1fr; gap:12px; margin:12px 0; align-items:stretch; }
+.panel { background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:12px 16px; display:flex; gap:14px; align-items:center; }
+.panel b { font-size:34px; font-variant-numeric: tabular-nums; }
+.panel span { color: var(--muted); font-size:14px; word-break:break-all; }
+@media (max-width:760px){ .panels{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -33,6 +38,11 @@ td.neg { color: var(--bad); }
     <button type="button" id="seed">Load starting stock (seeded)</button>
   </div>
   <section id="ledger">
+    <div class="panels">
+      <div class="panel"><img id="qr" alt="QR code to open the phone app" width="132" height="132"><div><b>Scan to join</b><br><span id="joinurl"></span></div></div>
+      <div class="panel"><div><b id="p-referee">–</b><br><span>mutants caught by the referee</span></div></div>
+      <div class="panel"><div><b id="p-devin">–</b><br><span id="p-devin-sub">Devin sessions</span></div></div>
+    </div>
     <div class="big" id="headline">Waiting for phones</div>
     <div class="stats">
       <div class="stat"><b id="s-ops">0</b><span>operations</span></div>

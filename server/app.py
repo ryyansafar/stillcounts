@@ -1,6 +1,7 @@
 """The 'base' sync server. It only stores and relays operations; all merging is the pure CRDT, so it can never lose an update."""
 from __future__ import annotations
 
+import io
 import json
 import os
 import threading
@@ -8,8 +9,9 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+import segno
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -146,6 +148,18 @@ def _to_dict(op: Op) -> dict:
     return op.__dict__.copy()
 
 
+_REFEREE: dict | None = None
+
+
+def _referee_score() -> dict:
+    """Run the mutation test once and keep the answer: how many deliberately broken merges the referee catches."""
+    global _REFEREE
+    if _REFEREE is None:
+        from oracle.mutation import run
+        _REFEREE = run()
+    return _REFEREE
+
+
 def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
                notifier: Callable[[str, str], None] | None = None) -> FastAPI:
     app = FastAPI(title="Still Counts base")
@@ -224,6 +238,27 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
             return json.loads(path.read_text())
         except ValueError:
             return {"runs": []}
+
+    @app.get("/api/referee")
+    def referee() -> dict:
+        from functools import lru_cache
+        return _referee_score()
+
+    @app.get("/api/devin")
+    def devin_counts() -> dict:
+        path = Path(store_path).parent / "devin_counts.json"
+        try:
+            return json.loads(path.read_text())
+        except (OSError, ValueError):
+            return {"sessions": 0, "prs": 0, "structured_outputs": 0, "by_status": {}}
+
+    @app.get("/api/qr.svg")
+    def qr(text: str = Query(..., max_length=300)) -> Response:
+        if not text.startswith(("http://", "https://")):
+            raise HTTPException(status_code=422, detail="only http(s) links")
+        buf = io.BytesIO()
+        segno.make(text, error="m").save(buf, kind="svg", scale=8, border=2, dark="#f2f2ee", light=None)
+        return Response(buf.getvalue(), media_type="image/svg+xml")
 
     @app.get("/api/log")
     def log() -> dict:

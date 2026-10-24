@@ -16,20 +16,25 @@ Generated from `data/devin_evidence.json` by `python -m ops.devin_evidence`. Do 
 | PLAY-RACE | writer | [b62f854c](https://app.devin.ai/sessions/b62f854c22854c36a5e8393e1bef45bc) | Referee Race: server/race_api.py, client/race.*, board tab. Merged. | [PR #4](https://github.com/ryyansafar/stillcounts/pull/4) (merged) |
 | QA-RECORD | browser QA | [64a5017f](https://app.devin.ai/sessions/64a5017f4b964c65b808ac4ac157e6cc) | Drove the app in a browser, filed 5 issues with screenshots and pushed branch devin/qa-fixes (3 fix commits and a screenshots commit). It opened no pull request and wrote no docs/QA.md. Two of the three fixes were cherry-picked by hand; the screenshots stay on the branch because the issues link to them. | [issue #6](https://github.com/ryyansafar/stillcounts/issues/6), [issue #7](https://github.com/ryyansafar/stillcounts/issues/7), [issue #8](https://github.com/ryyansafar/stillcounts/issues/8), [issue #9](https://github.com/ryyansafar/stillcounts/issues/9), [issue #10](https://github.com/ryyansafar/stillcounts/issues/10) |
 
+## Who did what
+
+Devin wrote the scenario list (three read-only scouts), the first version of the chaos harness, and the Learn, Race and board-tab scaffolding. A human wrote the merge function, the referee, the server, the phone client, the sync protocol fixes, the sandbox that finally held, and every bug fix the harness provoked. Counting sessions or pull requests overstates how much of the hard part Devin did.
+
 ## ACU use
 
-Not recorded. The Devin API was not queried when this page was written, so no ACU figure is claimed. data/devin_counts.json (a live snapshot, git-ignored) had reported 0.0, which means 'not reported', not zero. Each session was launched with an ACU cap: 3 by default (ops/devin_client.py) and 5 for the sessions started by ops/launch_extra.py. Run `python -m ops.devin_counts <env file> 30` with a Devin token to refresh the live panel.
+Not recorded, and not claimed. The Devin API has not been queried: no Devin token was available in the environment where this page was last updated. The earlier live snapshot (git-ignored data/devin_counts.json) reported 0.0, which means 'not reported', not zero. Each session was launched with an ACU cap: 3 by default (ops/devin_client.py) and 5 for the sessions started by ops/launch_extra.py, so the most any session could have used is capped, but the actual figure is unknown. To fill it in: run `python -m ops.devin_counts <env file> 30` with a Devin token and copy the figure here.
 
 ## Rejected or overridden work
 
-- LEARN-CONTENT's write grader (PR #5) only blocked imports of the project's own modules. A submitted function that imported os could write a file on the host. It was replaced with an AST check, a builtins whitelist and resource limits (tests/test_learn_sandbox.py), and the write endpoint is closed to the LAN by default.
+- LEARN-CONTENT's write grader (PR #5) only blocked imports of the project's own modules. A submitted function that imported os could write a file on the host. It was replaced by hand with an AST check, a builtins whitelist and resource limits.
+- A later blind review found the replacement was still escapable: the learner's function ran inside the ledger module's namespace, where `json` was visible, and `json.codecs.sys.modules["os"]` passed the AST check. That was also fixed by hand: the function now runs in a fresh namespace that holds only ledger symbols (tests/test_learn_sandbox.py has the exact probe as a regression test). The Learn write endpoint is still closed to the LAN by default.
 - QA-RECORD's branch devin/qa-fixes was never turned into a pull request. Its client fix for two tabs and for half-typed notes was cherry-picked, then changed: a tab now takes over only operations it has never seen, so a stale record cannot undo a resync.
 - QA-RECORD's third fix commit (install segno in run.sh and CI) was not cherry-picked because main already had the CI fix; run.sh was fixed separately.
-- WRITER-chaos-sim reported 8 failing scenarios but opened no fix pull requests. Five are now fixed by hand, one is down to 4 of 500 seeds, and two remain open (see README).
-- No Devin pull request was rejected outright; all five were merged by a human pressing merge.
+- WRITER-chaos-sim reported 8 failing scenarios but opened no fix pull requests. All of the fixes (cursor and reset, re-stamping refused Lamport times, two tabs, a fresh id for a reused id, most of the restore-from-backup cases) were written by hand. Two scenarios are still open (see README).
+- No Devin pull request was rejected outright; all five were merged by a human pressing merge. Two of the five (the chaos harness and the Learn grader) needed substantial human rework afterwards.
 
 ## What Devin did not do
 
 - It did not write the merge function (`stillcounts/crdt.py`) or the referee (`oracle/`); those are never edited by agents (`.github/CODEOWNERS`).
 - The three scouts are read-only: they proposed scenarios and changed nothing.
-- No session opened a pull request that fixes a bug the harness found.
+- No session opened a pull request that fixes a bug the harness found, and no Devin session was run on one afterwards: the open scenarios were left to a human.

@@ -46,6 +46,10 @@ Generated from `data/devin_evidence.json` by `python -m ops.devin_evidence`. Do 
 |---|---|---|---|---|
 {chr(10).join(rows)}
 
+## Who did what
+
+{evidence['share_of_work']}
+
 ## ACU use
 
 {evidence['acu_note']}
@@ -58,7 +62,7 @@ Generated from `data/devin_evidence.json` by `python -m ops.devin_evidence`. Do 
 
 - It did not write the merge function (`stillcounts/crdt.py`) or the referee (`oracle/`); those are never edited by agents (`.github/CODEOWNERS`).
 - The three scouts are read-only: they proposed scenarios and changed nothing.
-- No session opened a pull request that fixes a bug the harness found.
+- No session opened a pull request that fixes a bug the harness found, and no Devin session was run on one afterwards: the open scenarios were left to a human.
 """
 
 

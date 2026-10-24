@@ -15,5 +15,11 @@ case "${1:-serve}" in
          if [ -n "${STILLCOUNTS_TOKEN:-}" ]; then
            echo "Open the board on THIS laptop with its token: http://localhost:${PORT:-8000}/board?t=${STILLCOUNTS_TOKEN}"
          fi
-         .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port "${PORT:-8000}" ;;
+         # HTTPS (needed for the phone app to be saved for offline use): STILLCOUNTS_TLS_CERT and STILLCOUNTS_TLS_KEY,
+         # for example from `mkcert <laptop-ip> localhost`. See docs/DEMO.md.
+         TLS=()
+         if [ -n "${STILLCOUNTS_TLS_CERT:-}" ] && [ -n "${STILLCOUNTS_TLS_KEY:-}" ]; then
+           TLS=(--ssl-certfile "$STILLCOUNTS_TLS_CERT" --ssl-keyfile "$STILLCOUNTS_TLS_KEY")
+         fi
+         .venv/bin/python -m uvicorn server.app:app --host 0.0.0.0 --port "${PORT:-8000}" ${TLS[@]+"${TLS[@]}"} ;;
 esac

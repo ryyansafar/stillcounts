@@ -155,7 +155,9 @@
     return { reason: reason, text: REASON_TEXT[reason] };
   }
 
-  function learnerId(chat) { return ("chat-" + String(chat.id).replace(/[^A-Za-z0-9_-]/g, "")).slice(0, 64); }
+  // Not an identity: the server knows the browser by its own HttpOnly cookie. This only names the attempt, so a new chat starts the
+  // built-in course from zero instead of inheriting what an earlier chat of this browser earned.
+  function learnerId(chat) { return ("c" + String(chat.id).replace(/[^A-Za-z0-9]/g, "")).slice(0, 24); }
 
   function gradeUrl(chat, stage, kind) {
     if (chat.course === "builtin") return "/api/learn/" + encodeURIComponent(stage.id) + "/" + kind;
@@ -188,7 +190,35 @@
   function newStage(p) {
     return { n: p.n, id: p.id || ("s" + p.n), title: p.title || ("Stage " + p.n), summary: p.summary || "", built: false,
              passed: { predict: false, bug: false, write: false, explain: false }, code: null, view: null, files: [], concepts: [],
-             bugHint: "", announced: false };
+             bugHint: "", announced: false, cases: {}, options: null, bugLockUntil: 0 };
+  }
+
+  // What the server sent back after a miss outranks the copy of the stage that came with the snapshot: wrong predict cases are
+  // replaced by new ones, a wrong bug pick reshuffles the options and locks them.
+  function applyCurrent(st) {
+    var v = st.view;
+    if (!v) return;
+    if (v.predict && Array.isArray(v.predict.cases) && st.cases) {
+      v.predict.cases = v.predict.cases.map(function (c) { return st.cases[c.id] || c; });
+    }
+    if (v.bug && Array.isArray(st.options)) v.bug.options = st.options.slice();
+  }
+
+  function absorbResult(st, ev, now) {
+    var r = ev.result;
+    if (!r || typeof r !== "object") return;
+    st.cases = st.cases || {};
+    if (ev.kind === "predict") {
+      if (!ev.passed && Array.isArray(r.new_cases)) r.new_cases.forEach(function (c) { if (c && c.id) st.cases[c.id] = clone(c); });
+    }
+    if (ev.kind === "bug") {
+      if (ev.passed) { st.options = null; st.bugLockUntil = 0; }
+      else {
+        if (Array.isArray(r.options)) st.options = clone(r.options);
+        if (Number(r.locked_for) > 0) st.bugLockUntil = (now || 0) + Number(r.locked_for) * 1000;
+      }
+    }
+    applyCurrent(st);
   }
 
   function ensureStage(c, n) {
@@ -215,6 +245,7 @@
     var view = clone(v);
     delete view.code;
     st.view = view;
+    applyCurrent(st);
     if (v.unlocked === true) REQUIRED.forEach(function (k) { st.passed[k] = true; });
     mergeProgress(st, v.progress);
     if (v.status === "built" && !st.built) {
@@ -273,6 +304,7 @@
         if (!st) break;
         if (ev.passed) st.passed[ev.kind] = true;
         mergeProgress(st, ev.progress);
+        absorbResult(st, ev, now);
         if (isEarned(st) && typeof ev.code === "string") st.code = ev.code;
         announceEarned(c, st, now);
         break;

@@ -219,7 +219,7 @@ test("grade URLs: built-in demo uses the existing Learn API, a live session uses
   assert.strictEqual(K.gradeUrl(live, { n: 2, id: "st2" }, "write"), "/api/devin/sessions/abc/stages/2/write");
   const demo = K.createChat({ id: "c2", prompt: "x", now: 1, source: "replay", course: "builtin" });
   assert.strictEqual(K.gradeUrl(demo, { n: 1, id: "duplicate-ids" }, "bug"), "/api/learn/duplicate-ids/bug");
-  assert.match(K.learnerId(demo), /^[A-Za-z0-9_-]{1,64}$/);
+  assert.match(K.learnerId(demo), /^[A-Za-z0-9]{1,24}$/);
 });
 
 test("saved chats keep at most 30 chats and 300 thread items, drop unknown junk, and survive bad JSON", () => {
@@ -260,4 +260,23 @@ test("a snapshot never moves a built stage back and never un-earns one", () => {
   assert.strictEqual(K.stageBuild(c, 1), "built");
   assert.strictEqual(K.isEarned(c.stages[0]), true);
   assert.strictEqual(c.stages[0].code, "code");
+});
+
+test("a wrong predict replaces the missed cases with the server's new ones, and a later snapshot does not bring the old ones back", () => {
+  const v = view(1, { predict: { prompt: "p", cases: [{ id: "p1", ops: [1] }, { id: "p2", ops: [2] }] } });
+  let c = step(fresh(), { type: "snapshot", snap: snap("waiting_for_user", [v]), now: 3 }).chat;
+  c = step(c, { type: "checkpoint", n: 1, kind: "predict", passed: false, progress: {}, code: null, now: 4,
+                result: { wrong: ["p2"], new_cases: [{ id: "p2", ops: [99] }] } }).chat;
+  assert.deepStrictEqual(c.stages[0].view.predict.cases.map((x) => x.ops[0]), [1, 99]);
+  c = step(c, { type: "snapshot", snap: snap("waiting_for_user", [v]), now: 5 }).chat;
+  assert.deepStrictEqual(c.stages[0].view.predict.cases.map((x) => x.ops[0]), [1, 99], "the server's current cases win over a stale copy");
+});
+
+test("a wrong bug pick reshuffles the options and locks them for the time the server names", () => {
+  const v = view(1, { bug: { prompt: "b", excerpt: ["a", "b"], options: [{ id: "a", text: "A" }, { id: "b", text: "B" }] } });
+  let c = step(fresh(), { type: "snapshot", snap: snap("waiting_for_user", [v]), now: 3 }).chat;
+  c = step(c, { type: "checkpoint", n: 1, kind: "bug", passed: false, progress: {}, code: null, now: 1000,
+                result: { options: [{ id: "b", text: "B" }, { id: "a", text: "A" }], locked_for: 30 } }).chat;
+  assert.deepStrictEqual(c.stages[0].view.bug.options.map((o) => o.id), ["b", "a"]);
+  assert.strictEqual(c.stages[0].bugLockUntil, 31000);
 });

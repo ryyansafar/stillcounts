@@ -212,7 +212,7 @@
       var chat = get(id), st = chat && K.stageOf(chat, n);
       if (!chat || !st || !K.canWork(chat, n)) return Promise.reject(new Error("locked: earn the earlier stage first"));
       return B.grade({ fetch: o.fetch, url: K.gradeUrl(chat, st, kind), body: body, learner: K.learnerId(chat) }).then(function (res) {
-        return dispatch(id, { type: "checkpoint", n: n, kind: kind, passed: res.passed === true, progress: res.progress, code: res.code }).then(function () {
+        return dispatch(id, { type: "checkpoint", n: n, kind: kind, passed: res.passed === true, progress: res.progress, code: res.code, result: res.result }).then(function () {
           if (kind !== "explain" && typeof hooks.reportAttempt === "function") hooks.reportAttempt(res.passed === true);
           return res;
         });

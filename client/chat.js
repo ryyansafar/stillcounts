@@ -22,7 +22,7 @@
 
   function mountChat(o) {
     var doc = o.doc, ctl = o.ctl, host = o.host || {};
-    var ui = { stick: true, results: {}, busy: {}, drafts: {}, sideOpen: false, cache: {}, composer: "" };
+    var ui = { stick: true, results: {}, busy: {}, drafts: {}, picks: {}, lockTimers: {}, tick: 0, sideOpen: false, cache: {}, composer: "" };
 
     function h(tag, attrs, kids) {
       var e = doc.createElement(tag);
@@ -119,7 +119,8 @@
       var chat = ctl.active(); if (!chat) return;
       ui.busy[b.n] = true; ui.results[b.n + "/" + kind] = { cls: "", text: "Checking…" }; render();
       ctl.grade(chat.id, b.n, kind, body).then(function (res) { ui.results[b.n + "/" + kind] = V.outcome(kind, res, cp && cp.hint ? cp : { hint: HINTS[kind] }); }, function (err) {
-        var text = err.status === 403 ? "Code is graded on the base laptop only. Ask the host to run it there."
+        var text = err.status === 429 ? "Too many tries in a row. Wait a moment, then try again."
+          : err.status === 403 ? "Code is graded on the base laptop only. Ask the host to run it there."
           : /locked/.test(err.message) ? "Locked. Earn the earlier stage first."
           : err.status ? "The server could not grade this (HTTP " + err.status + "). Try again later." : "Needs a signal: grading runs on the server. Your answer is kept here.";
         ui.results[b.n + "/" + kind] = { cls: "warn", text: text };
@@ -156,11 +157,42 @@
       } else if (kind === "bug") {
         kids.push(h("p", { text: cp.prompt || "One line of this code is wrong. What is it?" }), h("pre", { className: "code", text: cp.snippet || cp.mutant_source || "" }));
         var opts = cp.options || cp.choices;
+        var lines = Array.isArray(cp.excerpt) ? cp.excerpt : null;
+        var left = Math.max(0, Math.ceil(((b.lockUntil || 0) - Date.now()) / 1000));
+        var pick = ui.picks[b.n] = ui.picks[b.n] || { line: null, option: null };
+        if (left > 0) {
+          kids.push(h("p", { className: "sub", "data-lock": b.n, text: "Locked for " + left + " more seconds after a wrong pick. The options were reshuffled." }));
+          clearTimeout(ui.lockTimers[b.n]);
+          ui.lockTimers[b.n] = setTimeout(function () { ui.tick++; render(); }, left * 1000 + 50);
+        }
+        if (lines) {
+          kids.push(h("p", { className: "sub", text: "Step 1: click the line that was changed. Step 2: pick the cause. Then press Check." }));
+          var box = h("div", { className: "excerpt code", "data-excerpt": b.n }, lines.map(function (l, i) {
+            var lb = h("button", { type: "button", className: "line" + (pick.line === i ? " picked" : ""), "data-line": String(i), "aria-pressed": pick.line === i ? "true" : "false", text: l });
+            if (left > 0) lb.disabled = true;
+            return on(lb, "click", function () { pick.line = i; render(); });
+          }));
+          kids.push(box);
+        } else {
+          kids.push(h("pre", { className: "code", text: cp.snippet || cp.mutant_source || "" }));
+        }
         if (Array.isArray(opts) && opts.length) {
           kids.push(h("div", { className: "choices" }, opts.map(function (c) {
             var id = typeof c === "string" ? c : c.id;
-            return on(h("button", { type: "button", "data-choice": id, text: typeof c === "string" ? c : (c.text || c.id) }), "click", function () { submitKind(b, "bug", { answer: id }, cp); });
+            var ob = h("button", { type: "button", "data-choice": id, "aria-pressed": pick.option === id ? "true" : "false", className: pick.option === id ? "picked" : "", text: typeof c === "string" ? c : (c.text || c.id) });
+            if (left > 0) ob.disabled = true;
+            return on(ob, "click", function () {
+              if (lines) { pick.option = id; render(); } else submitKind(b, "bug", { answer: id }, cp);
+            });
           })));
+          if (lines) {
+            var go = h("button", { type: "button", className: "wide", "data-action": "bug", text: "Check" });
+            if (left > 0) go.disabled = true;
+            kids.push(on(go, "click", function () {
+              if (pick.line === null || !pick.option) { ui.results[b.n + "/bug"] = { cls: "warn", text: "Click the changed line, pick the cause, then press Check." }; render(); return; }
+              submitKind(b, "bug", { answer: { option: pick.option, line: pick.line } }, cp);
+            }));
+          }
         } else {
           var bi = field(b, kind, "text", h("input", { type: "text", className: "field", "data-input": "bug", "aria-label": "What is wrong", placeholder: "What is wrong?", value: draft(b, kind, "text") }));
           kids.push(h("div", { className: "row" }, [bi, on(h("button", { type: "button", "data-action": "bug", text: "Check" }), "click", function () {

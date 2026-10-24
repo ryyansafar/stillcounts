@@ -25,8 +25,8 @@
     KINDS.forEach(function (k) { var r = (ui.results || {})[st.n + "/" + k]; if (r) results[k] = r; });
     var canWork = K.canWork(chat, st.n), cur = currentKind(st);
     return { key: "cp" + st.n, type: "checkpoint", n: st.n, view: st.view, bugHint: st.bugHint, passed: Object.assign({}, st.passed), canWork: canWork,
-             current: cur, results: results, easy: chat.difficulty <= 1, level: chat.difficulty,
-             sig: JSON.stringify([st.passed, canWork, cur, results, chat.difficulty, (ui.busy || {})[st.n]]) };
+             current: cur, lockUntil: st.bugLockUntil || 0, results: results, easy: chat.difficulty <= 1, level: chat.difficulty,
+             sig: JSON.stringify([st.passed, canWork, cur, results, chat.difficulty, (ui.busy || {})[st.n], st.bugLockUntil || 0, (ui.picks || {})[st.n] || null, ui.tick || 0, st.view ? [st.view.predict && st.view.predict.cases, st.view.bug && st.view.bug.options] : null]) };
   }
 
   function blocks(chat, ui) {

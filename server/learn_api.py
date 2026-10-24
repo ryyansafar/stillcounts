@@ -65,6 +65,20 @@ def learner_id(request: Request, response: Response) -> str:
 
 Learner = Annotated[str, Depends(learner_id)]
 
+ATTEMPT_PATTERN = r"^[A-Za-z0-9]{1,24}$"
+
+
+def attempt_id(request: Request, response: Response) -> str:
+    """The learner for the built-in course: the cookie id plus, when the page names one, a fresh attempt (a new chat).
+    The attempt only splits this browser's own progress; it can never reach another browser's, because the cookie id
+    is part of the key and the server issues it."""
+    base = learner_id(request, response)
+    attempt = request.headers.get("x-attempt", "")
+    return f"{base}-{attempt}" if re.fullmatch(ATTEMPT_PATTERN, attempt) else base
+
+
+Attempt = Annotated[str, Depends(attempt_id)]
+
 
 class AnswerIn(BaseModel):
     answer: Any = None
@@ -306,26 +320,26 @@ def learn_router(progress_path: Path, stages_path: Path | None = None, grader: A
                 "progress": state, "unlocked": is_open, "code": stages[stage_id].get("code") if is_open else None}
 
     @router.get("/stages")
-    def list_stages(learner: Learner, response: Response) -> dict:
+    def list_stages(learner: Attempt, response: Response) -> dict:
         response.headers["Cache-Control"] = "no-store"        # the cases in this list are this learner's own
         return {"stages": [view_of(learner, sid) for sid in stages]}
 
     @router.post("/{stage_id}/predict")
-    def predict(stage_id: str, body: AnswerIn, learner: Learner) -> dict:
+    def predict(stage_id: str, body: AnswerIn, learner: Attempt) -> dict:
         find(stage_id)
         if len(json.dumps(body.answer)) > MAX_ANSWER:
             raise HTTPException(status_code=422, detail=f"answer longer than {MAX_ANSWER} characters")
         return grade(learner, stage_id, "predict", body.answer)
 
     @router.post("/{stage_id}/bug")
-    def bug(stage_id: str, body: AnswerIn, learner: Learner) -> dict:
+    def bug(stage_id: str, body: AnswerIn, learner: Attempt) -> dict:
         find(stage_id)
         if len(json.dumps(body.answer)) > MAX_ANSWER:
             raise HTTPException(status_code=422, detail=f"answer longer than {MAX_ANSWER} characters")
         return grade(learner, stage_id, "bug", body.answer)
 
     @router.post("/{stage_id}/write")
-    def write(stage_id: str, body: SourceIn, learner: Learner, request: Request) -> dict:
+    def write(stage_id: str, body: SourceIn, learner: Attempt, request: Request) -> dict:
         find(stage_id)
         if is_remote(request) and not remote_write_allowed():
             raise HTTPException(status_code=403, detail="writing code is graded on the base laptop only; "
@@ -338,7 +352,7 @@ def learn_router(progress_path: Path, stages_path: Path | None = None, grader: A
         return grade(learner, stage_id, "write", body.source)
 
     @router.post("/{stage_id}/explain")
-    def explain(stage_id: str, body: TextIn, learner: Learner) -> dict:
+    def explain(stage_id: str, body: TextIn, learner: Attempt) -> dict:
         find(stage_id)
         return grade(learner, stage_id, "explain", body.text)
 

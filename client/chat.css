@@ -151,3 +151,9 @@ textarea.field { resize: vertical; margin-bottom: 8px; }
   .chatrow .del { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) { .side { transition: none; } }
+
+/* find the bug: click the changed line, then pick the cause */
+.excerpt { display: block; margin: 8px 0; }
+.excerpt .line { display: block; width: 100%; text-align: left; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; white-space: pre; overflow-x: auto; margin: 2px 0; }
+.excerpt .line.picked, .choices button.picked { outline: 1px solid var(--accent, currentColor); outline-offset: -1px; }
+.excerpt .line:disabled, .choices button:disabled { opacity: .55; cursor: not-allowed; }

@@ -342,3 +342,19 @@ def test_write_from_loopback_is_allowed(monkeypatch, tmp_path):
 
 def test_the_host_can_opt_a_lan_in(monkeypatch, tmp_path):
     assert _write_from("192.168.1.20", monkeypatch, tmp_path, allow=True).status_code == 200
+
+
+def test_an_attempt_header_starts_a_fresh_run_for_the_same_browser(env):
+    """A new chat is a new attempt: same server-issued cookie, its own progress. It cannot reach anyone else's progress."""
+    earn(env, client=env.client)
+    assert stages_of(env.client)[0]["unlocked"] is True
+    fresh = stages_of(env.client, headers={"X-Attempt": "chat2"})
+    assert fresh[0]["unlocked"] is False and fresh[0]["code"] is None
+    assert post(env.client, "lww", "predict", "right", {"X-Attempt": "chat2"}).json()["progress"] == {"predict": True, "bug": False, "write": False, "explain": False}
+    assert stages_of(env.client)[0]["unlocked"] is True                                # the first attempt is untouched
+    assert stages_of(env.other(), headers={"X-Attempt": "chat2"})[0]["progress"]["predict"] is False   # another browser has nothing of it
+
+
+def test_a_malformed_attempt_header_is_ignored(env):
+    earn(env)
+    assert stages_of(env.client, headers={"X-Attempt": "../../x y"})[0]["unlocked"] is True

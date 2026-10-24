@@ -76,6 +76,7 @@ test("the course loader asks the existing Learn API and falls back to the saved 
   const views = await B.loadCourse({ fetch: f, storage: store, learner: "chat-c1" });
   assert.deepStrictEqual(views.map((v) => [v.n, v.id]), [[1, "a"], [2, "b"]]);
   assert.strictEqual(f.calls[0].init.headers["X-Learner-Id"], undefined, "the page sends no learner id, the server cookie identifies it");
+  assert.strictEqual(f.calls[0].init.headers["X-Attempt"], "chat-c1", "it only names the attempt");
   const offline = await B.loadCourse({ fetch: fakeFetch({ "GET /api/learn/stages": new Error("down") }), storage: store, learner: "chat-c1" });
   assert.strictEqual(offline.length, 2);
   await assert.rejects(() => B.loadCourse({ fetch: fakeFetch({ "GET /api/learn/stages": new Error("down") }), storage: { getItem: () => null, setItem() {} }, learner: "x" }));
@@ -86,4 +87,17 @@ test("grade posts to the given url without a client-chosen learner id", async ()
   const r = await B.grade({ fetch: f, url: "/api/learn/a/bug", body: { answer: "b" }, learner: "chat-c1" });
   assert.strictEqual(r.passed, true);
   assert.strictEqual(f.calls[0].init.headers["X-Learner-Id"], undefined, "the page sends no learner id, the server cookie identifies it");
+  assert.strictEqual(f.calls[0].init.headers["X-Attempt"], "chat-c1", "it only names the attempt");
+});
+
+test("the saved copy of the course keeps no code and no earned progress, so an offline new chat starts from zero", async () => {
+  let saved = null;
+  const store = { getItem: () => saved, setItem: (k, v) => { saved = v; } };
+  const f = fakeFetch({ "GET /api/learn/stages": { body: { stages: [{ id: "a", title: "A", unlocked: true, code: "SECRET", progress: { predict: true, bug: true, write: true, explain: false } }] } } });
+  await B.loadCourse({ fetch: f, storage: store });
+  const offline = await B.loadCourse({ fetch: fakeFetch({ "GET /api/learn/stages": new Error("down") }), storage: store });
+  assert.strictEqual(offline[0].unlocked, false);
+  assert.strictEqual(offline[0].code, null);
+  assert.deepStrictEqual(offline[0].progress, { predict: false, bug: false, write: false, explain: false });
+  assert.ok(!saved.includes("SECRET"));
 });

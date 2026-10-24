@@ -56,7 +56,8 @@
 
   function call(fetchFn, timeoutMs, method, url, body, learner) {
     var headers = {};
-    // no learner id here: the server tells browsers apart by the HttpOnly cookie it issues itself
+    // no identity here: the server tells browsers apart by the HttpOnly cookie it issues itself; this only names the attempt (the chat)
+    if (learner) headers["X-Attempt"] = learner;
     var init = { method: method, headers: headers };
     if (body !== undefined) { init.headers = Object.assign({ "Content-Type": "application/json" }, headers); init.body = JSON.stringify(body); }
     return new Promise(function (resolve, reject) {
@@ -102,7 +103,8 @@
     return call(o.fetch, o.timeoutMs || 8000, "GET", "/api/learn/stages", undefined, o.learner).then(function (data) {
       var list = Array.isArray(data) ? data : (data && data.stages) || [];
       var views = list.map(function (s, i) { return Object.assign({}, s, { n: i + 1 }); });
-      var locked = views.map(function (v) { return v.unlocked ? v : Object.assign({}, v, { code: null }); });
+      // the saved copy is only the skeleton of the course: never its code and never what any attempt earned
+      var locked = views.map(function (v) { return Object.assign({}, v, { code: null, unlocked: false, progress: { predict: false, bug: false, write: false, explain: false } }); });
       try { o.storage.setItem(COURSE_KEY, JSON.stringify(locked)); } catch (e) { /* storage full */ }
       if (!views.length) throw new Error("the Learn API returned no stages");
       return views;

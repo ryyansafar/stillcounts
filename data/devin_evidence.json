@@ -45,7 +45,7 @@
    "role": "LEARN-API",
    "session_id": "b07e7de909c548838985ef0ece21ee3d",
    "kind": "writer",
-   "outcome": "server/learn_api.py: locked code, per-learner progress, capped and rate-limited writes. Merged.",
+   "outcome": "server/learn_api.py: gated reference-code reveal, per-learner progress, capped and rate-limited writes. Merged.",
    "pr": 2,
    "issues": []
   },

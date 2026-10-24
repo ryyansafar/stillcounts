@@ -1,6 +1,6 @@
 # Demo script: 3 minutes, two beats and a close
 
-The one line: **people paste AI code they do not understand. Earn the Code makes that gap visible, then closes it: code stays locked until you earn it, and it still works with the Wi-Fi pulled.**
+The one line: **people paste AI code they do not understand. Earn the Code makes that gap visible, then closes it: the reference solution is revealed only after you earn it, and the lessons still work with the Wi-Fi pulled.** Be straight about it if asked: the merge code and its JavaScript twin are public, so nothing is secret. What is gated is the guided path, the reveal and your unlock record.
 
 Track fit: primary Track 2 (make the invisible visible), secondary Track 3 (works anyway), tertiary Track 4 (play).
 
@@ -27,17 +27,17 @@ STILLCOUNTS_LEARN_WRITE_LAN=1 scripts/run.sh   # prints the board link with this
 
 ## Beat 1: the invisible gap (0:00 to 1:40)
 
-1. Say: "Devin built much of the scaffolding around this app, and AI-written code like it gets pasted every day. Raise a hand if you could explain the merge." Show the pasted-code state: every stage locked, the real code hidden. This is what understanding looks like when you have only pasted: nothing earned. Then open the Understanding tab: every line unseen, gap score low.
-2. Hand the volunteer stage 1, **Counted once, even when sent twice**. **Predict**: two phones, one signal drop, one operation sent twice. What is the blanket count? They answer; the real merge runs and checks them. Show that a wrong guess is graded by running the code, not by anyone's opinion.
-3. **Find the bug**: the same code with one line changed. They pick what is wrong from four statements. The grader is plain code.
-4. Say where it goes next: **Write** (a small function, judged by the same referee that tests the real app) and **Explain** (keyword-matched against a rubric shown after, practice only). Passing predict, find the bug and write unlocks the real code.
+1. Say: "Devin built much of the scaffolding around this app, and AI-written code like it gets pasted every day. Raise a hand if you could explain the merge." Show the pasted-code state: every stage not yet earned, the reference code not revealed. This is what understanding looks like when you have only pasted: nothing earned. Then open the Understanding tab: every line unseen, gap score low.
+2. Hand the volunteer stage 1, **Counted once, even when sent twice**. **Predict**: two phones, one signal drop, one operation sent twice. What is the blanket count? Their numbers are their own: no other phone has the same case. They answer; the server runs the real merge and checks them. Show that a wrong guess only names the wrong case and swaps in a new one: it never shows the answer.
+3. **Find the bug**: a five-line excerpt of the same code with one line changed. They click the changed line and pick the cause from four statements. A wrong pick locks the options for 30 seconds. The grader is plain code.
+4. Say where it goes next: **Write** (a small function, judged by the same referee that tests the real app) and **Explain** (keyword-matched against a rubric shown after, practice only). Passing predict, find the bug and write reveals the reference code. Explain never unlocks anything.
 
 ## Beat 2: offline (1:40 to 2:30)
 
 1. Pull the Wi-Fi: airplane mode on the volunteer's phone.
-2. The volunteer does another stage's **Predict** checkpoint. It is graded in the browser with the same merge, so it works. Show the pill or banner as the phone reports it.
+2. The volunteer does another stage's **Predict** checkpoint. With no signal the phone grades it itself with the public merge and says the pass is provisional. Show the pill or banner as the phone reports it.
 3. Say which parts do need the base: find the bug, write and explain go through `/api/learn`. Do not hide that. If the phone shows a warning that it is offline, read it out.
-4. Turn Wi-Fi back on. Progress is on the base laptop.
+4. Turn Wi-Fi back on. The phone sends the answers again and the base laptop re-checks them: the pass counts only if the server agrees. Progress is on the base laptop.
 
 ## Close (2:30 to 3:00)
 

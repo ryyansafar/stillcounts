@@ -273,9 +273,13 @@ def create_app(store_path: str | Path = ROOT / "data" / "ops.jsonl",
 
     @app.get("/api/chaos")
     def chaos() -> dict:
-        path = Path(store_path).parent / "chaos_results.json"
-        if not path.exists():
-            return {"runs": []}
+        folder = Path(store_path).parent
+        path = folder / "chaos_results.json"
+        if not path.exists():       # full per-run output is git-ignored; fall back to the committed summary
+            try:
+                return {"runs": [], "summary": json.loads((folder / "chaos_summary.json").read_text())}
+            except (OSError, ValueError):
+                return {"runs": []}
         try:
             return json.loads(path.read_text())
         except ValueError:

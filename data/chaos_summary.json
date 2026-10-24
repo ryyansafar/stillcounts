@@ -1,0 +1,137 @@
+{
+ "note": "Summary of a real run: python -m chaos.run --seeds 0:500. Full per-run output (about 2 MB) is regenerated locally and git-ignored.",
+ "seeds": [
+  0,
+  500
+ ],
+ "runs": 12500,
+ "failed": 3506,
+ "lost_ops": 92222,
+ "by_scenario": {
+  "net_torn_append_crash": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "net_retry_same_id_new_content": {
+   "runs": 500,
+   "failed": 240,
+   "lost": 240
+  },
+  "net_corrupt_line_shifts_cursor": {
+   "runs": 500,
+   "failed": 455,
+   "lost": 455
+  },
+  "net_restore_old_backup": {
+   "runs": 500,
+   "failed": 491,
+   "lost": 11261
+  },
+  "net_outbox_clobber_inflight": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "net_poison_in_huge_backlog": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "net_double_sync_in_flight": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "net_late_heal_skew_spoof": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "ids_line_separator_text": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "ids_lone_surrogate_text": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "ids_same_id_two_contents": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "ids_replica_name_collision": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "ids_enormous_lamport": {
+   "runs": 500,
+   "failed": 499,
+   "lost": 3429
+  },
+  "ids_coerced_lamport_types": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "ids_lamport_ties_tombstones": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "ids_unicode_size_edges": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "life_two_tabs_one_phone": {
+   "runs": 500,
+   "failed": 398,
+   "lost": 2345
+  },
+  "life_reinstall_resets_identity": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "life_kill_mid_append": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "life_cursor_after_log_shrinks": {
+   "runs": 500,
+   "failed": 488,
+   "lost": 4611
+  },
+  "life_kill_between_saves": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "life_storage_quota": {
+   "runs": 500,
+   "failed": 435,
+   "lost": 65937
+  },
+  "life_stale_sw_bad_batch": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  },
+  "life_clock_jump_lamport": {
+   "runs": 500,
+   "failed": 500,
+   "lost": 3944
+  },
+  "control_network_chaos": {
+   "runs": 500,
+   "failed": 0,
+   "lost": 0
+  }
+ }
+}

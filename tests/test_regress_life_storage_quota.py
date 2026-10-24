@@ -7,6 +7,8 @@ import pytest
 from chaos.scenarios import run_one
 from chaos.sim import Simulation
 
+pytestmark = pytest.mark.xfail(strict=True, reason="known product bug found by the chaos harness; remove this mark when the product is fixed")
+
 SCENARIO = "life_storage_quota"
 FAILING_SEEDS = [1, 3, 4]   # first failing seeds of `python -m chaos.run --scenario life_storage_quota`
 

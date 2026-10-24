@@ -121,3 +121,10 @@ def test_chaos_results_default_to_empty_and_read_the_file(tmp_path):
     assert c.get("/api/chaos").json() == {"runs": []}
     (tmp_path / "chaos_results.json").write_text(json.dumps({"runs": [{"seed": 1, "ok": True}]}))
     assert c.get("/api/chaos").json()["runs"][0]["seed"] == 1
+
+
+def test_chaos_falls_back_to_the_committed_summary(tmp_path):
+    c, _ = make(tmp_path)
+    (tmp_path / "chaos_summary.json").write_text(json.dumps({"runs": 5, "failed": 1}))
+    body = c.get("/api/chaos").json()
+    assert body["runs"] == [] and body["summary"]["failed"] == 1

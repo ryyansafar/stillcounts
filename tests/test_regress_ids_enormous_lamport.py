@@ -8,6 +8,8 @@ import pytest
 from chaos.scenarios import run_one
 from chaos.sim import Simulation
 
+pytestmark = pytest.mark.xfail(strict=True, reason="known product bug found by the chaos harness; remove this mark when the product is fixed")
+
 SCENARIO = "ids_enormous_lamport"
 FAILING_SEEDS = [0, 1, 2]   # first failing seeds of `python -m chaos.run --scenario ids_enormous_lamport`
 

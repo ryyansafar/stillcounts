@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests
+httpx
+jsonschema
+segno
+pytest
+pytest-cov
+hypothesis

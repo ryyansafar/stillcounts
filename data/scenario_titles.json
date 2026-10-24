@@ -1,0 +1,30 @@
+{
+  "areas": {"network": "Network and server", "ids": "Ids, clocks and text", "lifecycle": "Phone and app lifecycle", "control": "Control"},
+  "scenarios": {
+    "net_torn_append_crash": {"area": "network", "title": "Server crashes while saving an operation"},
+    "net_retry_same_id_new_content": {"area": "network", "title": "A retried tap arrives with the same id but different content"},
+    "net_corrupt_line_shifts_cursor": {"area": "network", "title": "A damaged line in the server log shifts every phone's place in it"},
+    "net_restore_old_backup": {"area": "network", "title": "Server restored from an older backup"},
+    "net_outbox_clobber_inflight": {"area": "network", "title": "A tap made while a slow sync is in flight"},
+    "net_poison_in_huge_backlog": {"area": "network", "title": "One bad tap hidden in a huge offline backlog"},
+    "net_double_sync_in_flight": {"area": "network", "title": "The same phone syncs twice at once"},
+    "net_late_heal_skew_spoof": {"area": "network", "title": "A phone returns late with a wild clock and a faked identity"},
+    "ids_line_separator_text": {"area": "ids", "title": "A note containing a Unicode line separator"},
+    "ids_lone_surrogate_text": {"area": "ids", "title": "Broken Unicode in a note"},
+    "ids_same_id_two_contents": {"area": "ids", "title": "Two different taps share one id"},
+    "ids_replica_name_collision": {"area": "ids", "title": "Two phones claim the same name"},
+    "ids_enormous_lamport": {"area": "ids", "title": "An absurdly large logical time"},
+    "ids_coerced_lamport_types": {"area": "ids", "title": "Logical time sent as text, a decimal or true"},
+    "ids_lamport_ties_tombstones": {"area": "ids", "title": "Ties between a delete and a restore"},
+    "ids_unicode_size_edges": {"area": "ids", "title": "Unusual names and huge quantities"},
+    "life_two_tabs_one_phone": {"area": "lifecycle", "title": "Two browser tabs open on one phone"},
+    "life_reinstall_resets_identity": {"area": "lifecycle", "title": "App reinstalled or site data cleared"},
+    "life_kill_mid_append": {"area": "lifecycle", "title": "Server killed in the middle of a write"},
+    "life_cursor_after_log_shrinks": {"area": "lifecycle", "title": "Server log gets shorter than a phone expects"},
+    "life_kill_between_saves": {"area": "lifecycle", "title": "App killed between two saves"},
+    "life_storage_quota": {"area": "lifecycle", "title": "Phone storage fills up (stress test with a tiny quota)"},
+    "life_stale_sw_bad_batch": {"area": "lifecycle", "title": "Old cached app version sends invalid taps"},
+    "life_clock_jump_lamport": {"area": "lifecycle", "title": "Phone clock jumps forward"},
+    "control_network_chaos": {"area": "control", "title": "Control: dropped, duplicated and reordered requests only"}
+  }
+}

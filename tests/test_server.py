@@ -167,3 +167,27 @@ def test_a_foreign_data_dir_still_serves_the_committed_evidence_and_summary(tmp_
     assert c.get("/api/devin").json()["sessions"] == 9
     chaos = c.get("/api/chaos").json()
     assert chaos["summary"]["runs"] > 0 and len(chaos["summary"]["by_scenario"]) == 25
+
+
+def test_the_referee_endpoint_reports_the_curated_set_and_the_real_mutation_run(tmp_path):
+    c, _ = make(tmp_path)
+    body = c.get("/api/referee").json()
+    assert body["killed"] == body["total"] == 14
+    assert body["mutmut"]["total"] == body["mutmut"]["killed"] + body["mutmut"]["survived"]
+
+
+def test_break_the_referee_button_catches_a_broken_merge_and_alerts(tmp_path):
+    from fastapi.testclient import TestClient
+    from server.app import create_app
+    sent = []
+    c = TestClient(create_app(tmp_path / "ops.jsonl", notifier=lambda t, m: sent.append((t, m))))
+    body = c.post("/api/referee/break", json={"mutant": "lww-picks-earliest"}).json()
+    assert body["caught"] is True and body["reason"]
+    assert sent and "Referee failed" in sent[0][1]
+    assert c.post("/api/referee/break", json={"mutant": "not-a-mutant"}).status_code == 422
+
+
+def test_chaos_endpoint_carries_plain_language_titles_for_every_scenario(tmp_path):
+    c, _ = make(tmp_path)
+    body = c.get("/api/chaos").json()
+    assert set(body["titles"]["scenarios"]) == set(body["summary"]["by_scenario"])

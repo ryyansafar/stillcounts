@@ -23,10 +23,16 @@ td.neg { color: var(--bad); }
 .run { padding: 8px 12px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .ok { color: var(--good); } .fail { color: var(--bad); }
 .panels { display:grid; grid-template-columns: auto 1fr 1fr; gap:12px; margin:12px 0; align-items:stretch; }
+.panels.one { grid-template-columns: auto; justify-content: start; }
+.panels.two { grid-template-columns: 1fr 1fr; }
+.group { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; margin: 18px 0 6px; }
+.big.alert { color: var(--bad); animation: flash .5s 6; }
+@keyframes flash { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .big.alert { animation: none; } }
 .panel { background: var(--panel); border:1px solid var(--line); border-radius:16px; padding:12px 16px; display:flex; gap:14px; align-items:center; }
 .panel b { font-size:34px; font-variant-numeric: tabular-nums; }
 .panel span { color: var(--muted); font-size:14px; word-break:break-all; }
-@media (max-width:760px){ .panels{grid-template-columns:1fr;} }
+@media (max-width:760px){ .panels, .panels.two{grid-template-columns:1fr;} }
 .note-line { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
 .bar-note { color: var(--muted); font-size: 14px; margin: 4px 0 12px; }
 .csv { margin-left:auto; align-self:center; color: var(--muted); font-size:14px; }
@@ -37,21 +43,20 @@ td.neg { color: var(--bad); }
 <body>
 <main>
   <header><h1>Still Counts · board</h1><span id="conn" class="pill" role="status">connecting</span></header>
-  <div class="tabs">
+  <div class="tabs" role="tablist">
     <button type="button" id="tab-ledger" aria-pressed="true">Ledger</button>
     <button type="button" id="tab-attack" aria-pressed="false">Attack</button>
+    <button type="button" id="tab-proof" aria-pressed="false">Proof</button>
     <button type="button" id="tab-race" aria-pressed="false">Race</button>
     <button type="button" id="seed">Load starting stock (seeded)</button>
     <a class="navlink" href="/static/learn.html">Learn</a>
     <a class="csv" href="/api/export.csv" download>Download CSV (paper fallback)</a>
   </div>
   <section id="ledger">
-    <div class="panels">
+    <div class="panels one">
       <div class="panel"><img id="qr" alt="QR code to open the phone app" width="132" height="132"><div><b>Scan to join</b><br><span id="joinurl"></span></div></div>
-      <div class="panel"><div><b id="p-referee">–</b><br><span>mutants caught by the referee</span></div></div>
-      <div class="panel"><div><b id="p-devin">–</b><br><span id="p-devin-sub">Devin sessions</span></div></div>
     </div>
-    <div class="big" id="headline">Waiting for phones</div>
+    <div class="big" id="headline" aria-live="assertive">Waiting for phones</div>
     <div class="stats">
       <div class="stat"><b id="s-ops">0</b><span>operations</span></div>
       <div class="stat"><b id="s-caught">–</b><span>phones caught up (as reported)</span></div>
@@ -59,13 +64,22 @@ td.neg { color: var(--bad); }
       <div class="stat"><b id="s-phones">0</b><span>phones seen</span></div>
     </div>
     <div class="feed" id="feed" aria-live="polite"></div>
-    <p class="note-line" id="harness-line"></p>
     <table><thead><tr><th>Item</th><th>Stock</th><th>Note</th></tr></thead><tbody id="rows"></tbody></table>
   </section>
   <section id="attack" class="hidden">
     <div class="big" id="attack-head">Attack harness</div>
     <p class="bar-note" id="attack-note">These are simulated phones, a faulty network and a crashing server, not the phones in this room.</p>
     <div id="runs"></div>
+  </section>
+  <section id="proof" class="hidden">
+    <div class="big">How we check the merge</div>
+    <div class="panels two">
+      <div class="panel"><div><b id="p-referee">–</b><br><span>of our 14 hand-written broken merges are caught by the referee</span></div></div>
+      <div class="panel"><div><b id="p-mutmut">–</b><br><span id="p-mutmut-sub">mutmut run on stillcounts/crdt.py</span></div></div>
+      <div class="panel"><div><b id="p-devin">–</b><br><span id="p-devin-sub">Devin sessions</span></div></div>
+      <div class="panel"><div><button type="button" id="break-referee">Break the referee on purpose</button><br><span id="break-result" role="status">Runs the referee on a merge that picks the earliest writer.</span></div></div>
+    </div>
+    <p class="bar-note">The 14 broken merges are a list we wrote ourselves, so that number is a demo, not a score. The mutmut run is the independent check. Details in docs/mutation.md and docs/devin.md.</p>
   </section>
   <section id="race" class="hidden">
     <div class="panels">

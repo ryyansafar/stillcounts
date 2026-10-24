@@ -1,0 +1,15 @@
+{
+  "note": "A real run of mutmut against stillcounts/crdt.py. Reproduce: .venv/bin/pip install mutmut && .venv/bin/mutmut run (config in setup.cfg). The curated 14 mutants in oracle/mutation.py are a separate, hand-written demo set.",
+  "tool": "mutmut 3.8.0",
+  "target": "stillcounts/crdt.py",
+  "tests_run": ["tests/test_crdt.py", "tests/test_crdt_validation.py", "tests/test_vectors.py", "tests/test_oracle_permutations.py"],
+  "total": 166,
+  "killed": 163,
+  "survived": 3,
+  "first_run": {"killed": 142, "survived": 24, "note": "before tests/test_crdt_validation.py was added; the 21 extra kills came from tests, crdt.py was not changed"},
+  "surviving": [
+    {"mutant": "x_dedupe__mutmut_8", "why_equivalent": "`>` became `>=` when comparing two ops with the same total order key; that key includes every field, so the two ops are identical and keeping either gives the same result"},
+    {"mutant": "x_merge__mutmut_47", "why_equivalent": "the default for a missing delete flag became None instead of False; `not None` and `not False` are both True"},
+    {"mutant": "x_canonical__mutmut_4", "why_equivalent": "json.dumps(ensure_ascii=None) behaves exactly like ensure_ascii=False"}
+  ]
+}

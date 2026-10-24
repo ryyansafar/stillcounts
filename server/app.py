@@ -90,6 +90,10 @@ class SyncIn(BaseModel):
     ops: list[Any] = Field(default_factory=list, max_length=MAX_OPS_PER_SYNC)
 
 
+class BreakIn(BaseModel):
+    mutant: str = Field(default="lww-picks-earliest", max_length=64)
+
+
 class LogStore:
     """An append-only operation log on disk. Crash-safe appends, tolerant loading, and an epoch that changes whenever
     positions in the log may have shifted, so clients never trust a stale cursor."""
@@ -336,12 +340,25 @@ def create_app(store_path: str | Path = DATA_DIR / "ops.jsonl",
         per-run list of a short local run, if one exists. The board shows the summary first."""
         summary = read_json(folder / "chaos_summary.json", None) or read_json(COMMITTED / "chaos_summary.json", None)
         runs = read_json(folder / "chaos_results.json", {}).get("runs", [])
-        return {"runs": runs, "summary": summary} if summary else {"runs": runs}
+        titles = read_json(COMMITTED / "scenario_titles.json", {})
+        out = {"runs": runs, "titles": titles}
+        return {**out, "summary": summary} if summary else out
 
     @app.get("/api/referee")
     def referee() -> dict:
-        from functools import lru_cache
-        return _referee_score()
+        """The curated demo set of 14 hand-written mutants, plus the committed report of a real mutmut run."""
+        return {**_referee_score(), "mutmut": read_json(COMMITTED / "mutmut_report.json", None)}
+
+    @app.post("/api/referee/break")
+    def referee_break(body: BreakIn) -> dict:
+        """The demo's 'break the referee' button: run the referee on a deliberately broken copy of the merge. Nothing on
+        disk changes; an alert goes out through the notifier if one is set."""
+        from oracle.mutation import MUTANTS
+        from ops.oracle_guard import guard
+        if body.mutant not in {m["name"] for m in MUTANTS}:
+            raise HTTPException(status_code=422, detail="unknown mutant")
+        result = guard(body.mutant, notifier or (lambda title, message: None))
+        return {"mutant": body.mutant, "caught": not result["ok"], "reason": result.get("error")}
 
     @app.get("/api/devin")
     def devin_counts() -> dict:
